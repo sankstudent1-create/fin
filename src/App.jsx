@@ -1,6 +1,4 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-// ✅ VERCEL IMPORT: This works because we added it to package.json
-import { createClient } from '@supabase/supabase-js';
 import { 
   Plus, Wallet, Coffee, ShoppingBag, Car, Zap, Home, Heart, Smartphone, 
   Briefcase, Laptop, Gift, Star, X, Calendar, ArrowDownLeft, ArrowUpRight, 
@@ -9,73 +7,97 @@ import {
   WifiOff, RefreshCw, LayoutDashboard, FileText, Edit2, Globe, Tag, Baby
 } from 'lucide-react';
 
-// --- 🟢 SUPABASE CONFIGURATION ---
+// --- 🟢 CONFIGURATION ---
 const SUPABASE_URL = "https://rtcwtaweamrgyimyhhup.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0Y3d0YXdlYW1yZ3lpbXloaHVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MDcyODEsImV4cCI6MjA4NTE4MzI4MX0.6bD8rcBJjoi0pRBOPEWiToPDZ_09-aVu7MgYZIS7a-8";
 
-// --- 🎨 GLOBAL STYLES & PDF ENGINE ---
-const GlobalStyles = () => (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-    
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-color: #fff7ed;
-      color: #431407;
-      -webkit-tap-highlight-color: transparent;
+// --- 🎨 SYSTEM MANAGER (Styles & Scripts) ---
+// This component forces Tailwind and Supabase to load, fixing your CSS and Import errors.
+const SystemManager = ({ onLoad }) => {
+  useEffect(() => {
+    // 1. Inject Tailwind CSS (Fixes broken design)
+    if (!document.getElementById('tailwind-script')) {
+      const script = document.createElement('script');
+      script.id = 'tailwind-script';
+      script.src = "https://cdn.tailwindcss.com";
+      script.onload = () => {
+        // Configure Tailwind Theme
+        window.tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                orange: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c' }
+              },
+              fontFamily: {
+                sans: ['Outfit', 'sans-serif'],
+              }
+            }
+          }
+        };
+      };
+      document.head.appendChild(script);
     }
 
-    /* Mesh Gradients */
-    .bg-mesh {
-      background-color: #ff9a9e;
-      background-image: radial-gradient(at 40% 20%, hsla(28,100%,74%,1) 0px, transparent 50%),
-      radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%),
-      radial-gradient(at 0% 50%, hsla(355,100%,93%,1) 0px, transparent 50%);
+    // 2. Inject Google Fonts (Outfit)
+    if (!document.getElementById('google-fonts')) {
+      const link = document.createElement('link');
+      link.id = 'google-fonts';
+      link.rel = 'stylesheet';
+      link.href = "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap";
+      document.head.appendChild(link);
     }
 
-    .warm-shadow { box-shadow: 0 8px 30px rgba(234, 88, 12, 0.12); }
-    .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.6); }
-    
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    
-    /* Animations */
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
-    .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-
-    /* Desktop Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #fdba74; }
-
-    /* 🖨️ PDF PRINT ENGINE */
-    @media print {
-      @page { margin: 0; size: A4; }
-      body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .no-print { display: none !important; }
-      .print-only { display: block !important; }
-      #print-root { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white; padding: 40px; }
-      .pdf-header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 30px; border-radius: 20px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
-      .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
-      .pdf-card { border: 1px solid #fed7aa; background: #fff7ed; padding: 20px; border-radius: 15px; }
-      .pdf-table { width: 100%; border-collapse: collapse; }
-      .pdf-table th { text-align: left; color: #9a3412; font-size: 12px; text-transform: uppercase; padding-bottom: 10px; border-bottom: 2px solid #fdba74; }
-      .pdf-table td { padding: 12px 0; border-bottom: 1px solid #fed7aa; font-size: 14px; }
-      .pdf-footer { position: fixed; bottom: 20px; width: 100%; text-align: center; font-size: 10px; color: #aaa; }
+    // 3. Inject Supabase (Fixes 'Dynamic require' error)
+    if (!window.supabase) {
+      const script = document.createElement('script');
+      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      script.async = true;
+      script.onload = () => {
+        const { createClient } = window.supabase;
+        const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        onLoad(client);
+      };
+      document.body.appendChild(script);
+    } else {
+      // Already loaded
+      const { createClient } = window.supabase;
+      const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      onLoad(client);
     }
-    .print-only { display: none; }
-  `}</style>
-);
+  }, []);
+
+  return (
+    <style>{`
+      body { font-family: 'Outfit', sans-serif; background-color: #fff7ed; color: #431407; -webkit-tap-highlight-color: transparent; }
+      .bg-mesh { background-color: #ff9a9e; background-image: radial-gradient(at 40% 20%, hsla(28,100%,74%,1) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(355,100%,93%,1) 0px, transparent 50%); }
+      .warm-shadow { box-shadow: 0 8px 30px rgba(234, 88, 12, 0.12); }
+      .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.6); }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
+      
+      @media print {
+        @page { margin: 0; size: A4; }
+        body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .no-print { display: none !important; }
+        .print-only { display: block !important; }
+        #print-root { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white; padding: 40px; }
+        .pdf-header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 30px; border-radius: 20px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
+        .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+        .pdf-card { border: 1px solid #fed7aa; background: #fff7ed; padding: 20px; border-radius: 15px; }
+        .pdf-table { width: 100%; border-collapse: collapse; }
+        .pdf-table th { text-align: left; color: #9a3412; font-size: 12px; text-transform: uppercase; padding-bottom: 10px; border-bottom: 2px solid #fdba74; }
+        .pdf-table td { padding: 12px 0; border-bottom: 1px solid #fed7aa; font-size: 14px; }
+        .pdf-footer { position: fixed; bottom: 20px; width: 100%; text-align: center; font-size: 10px; color: #aaa; }
+      }
+      .print-only { display: none; }
+    `}</style>
+  );
+};
 
 // --- Config ---
-// Available icons for custom categories
-const ICON_MAP = {
-  Coffee, ShoppingBag, Car, Zap, Home, Heart, Smartphone, Briefcase, Laptop, 
-  Gift, Star, PieChart, Coins, TrendingUp, ShieldCheck, Baby, Percent, 
-  Camera, WifiOff, RefreshCw, LayoutDashboard, FileText, Tag, Globe
-};
+const ICON_MAP = { Coffee, ShoppingBag, Car, Zap, Home, Heart, Smartphone, Briefcase, Laptop, Gift, Star, PieChart, Coins, TrendingUp, ShieldCheck, Baby, Percent, Camera, WifiOff, RefreshCw, LayoutDashboard, FileText, Tag, Globe };
 
 const DEFAULT_CATEGORIES = [
   { name: 'Food', icon_key: 'Coffee', type: 'expense', usage_count: 10 },
@@ -124,17 +146,10 @@ const useOfflineSync = (supabase, userId) => {
 
       for (const action of pending) {
         try {
-          if (action.action === 'INSERT') {
-            await supabase.from('transactions').insert([action.data]);
-          } else if (action.action === 'DELETE') {
-            await supabase.from('transactions').delete().eq('id', action.id);
-          } else if (action.action === 'UPDATE') {
-            const { id, ...updates } = action.data;
-            await supabase.from('transactions').update(updates).eq('id', id);
-          }
-        } catch (e) {
-          newPending.push(action);
-        }
+          if (action.action === 'INSERT') await supabase.from('transactions').insert([action.data]);
+          else if (action.action === 'DELETE') await supabase.from('transactions').delete().eq('id', action.id);
+          else if (action.action === 'UPDATE') { const { id, ...updates } = action.data; await supabase.from('transactions').update(updates).eq('id', id); }
+        } catch (e) { newPending.push(action); }
       }
       localStorage.setItem(`pending_tx_${userId}`, JSON.stringify(newPending));
       setIsSyncing(false);
@@ -143,30 +158,6 @@ const useOfflineSync = (supabase, userId) => {
   }, [isOnline, userId, supabase]);
 
   return { isOnline, isSyncing };
-};
-
-// --- 🛠️ SUPABASE LOADER ---
-const useSupabase = () => {
-  const [client, setClient] = useState(null);
-  useEffect(() => {
-    // Standard initialization for Vercel/Node environment
-    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    setClient(client);
-  }, []);
-  return client;
-};
-
-// --- 🛠️ HEAD MANAGER (Favicons) ---
-const HeadManager = () => {
-  useEffect(() => {
-    document.title = "Orange Finance | Swinfosystems";
-    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-    link.type = 'image/svg+xml';
-    link.rel = 'icon';
-    link.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f97316%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M21 12V7H5a2 2 0 0 1 0-4h14v4%22/><path d=%22M3 5v14a2 2 0 0 0 2 2h16v-5%22/><path d=%22M18 12a2 2 0 0 0 0 4h4v-4Z%22/></svg>`;
-    document.getElementsByTagName('head')[0].appendChild(link);
-  }, []);
-  return null;
 };
 
 // --- 📊 COMPONENTS ---
@@ -222,24 +213,25 @@ const PrintView = ({ user, stats, reportData, transactions }) => (
 
 // --- 🏠 MAIN SCREENS ---
 export default function App() {
-  const supabase = useSupabase();
+  const [supabase, setSupabase] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setLoading(false); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setSession(session); setLoading(false); });
-    return () => subscription.unsubscribe();
-  }, [supabase]);
-
-  if (!supabase || loading) return <div className="min-h-screen flex items-center justify-center bg-orange-50 text-orange-500"><Loader2 className="animate-spin" size={40}/></div>;
+  // Called when SystemManager successfully loads the Supabase script
+  const handleSystemLoad = (client) => {
+    setSupabase(client);
+    client.auth.getSession().then(({ data: { session } }) => { setSession(session); setLoading(false); });
+    client.auth.onAuthStateChange((_event, session) => { setSession(session); setLoading(false); });
+  };
 
   return (
     <>
-      <GlobalStyles />
-      <HeadManager />
-      {!session ? <AuthScreen supabase={supabase} /> : <Dashboard session={session} supabase={supabase} />}
+      <SystemManager onLoad={handleSystemLoad} />
+      {(loading || !supabase) ? (
+        <div className="min-h-screen flex items-center justify-center bg-orange-50 text-orange-500"><Loader2 className="animate-spin" size={40}/></div>
+      ) : (
+        !session ? <AuthScreen supabase={supabase} /> : <Dashboard session={session} supabase={supabase} />
+      )}
     </>
   );
 }
