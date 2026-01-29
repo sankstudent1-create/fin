@@ -2,7 +2,8 @@ const CACHE_NAME = 'orange-finance-v1';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/favicon.ico'
 ];
 
 // Install SW and Cache Static Assets
