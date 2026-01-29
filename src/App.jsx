@@ -66,12 +66,11 @@ const SystemManager = ({ onLoad }) => {
       onLoad(client);
     }
 
-    // 4. Service Worker Registration (Critical for "Safari Offline" capability)
-    // You must create a 'sw.js' in your public folder for this to work fully.
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(() => {
-        console.log('Service Worker Registered');
-      }).catch(err => console.log('SW Registration Failed', err));
+    // 4. Service Worker Registration
+    if ('serviceWorker' in navigator && !window.location.href.includes('blob:')) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW Registered:', reg))
+        .catch(err => console.log('SW Fail:', err));
     }
 
   }, []);
@@ -174,8 +173,8 @@ const useOfflineSync = (supabase, userId) => {
       if (pending.length === 0) return;
 
       setIsSyncing(true);
-      const newPending = [];
-
+      
+      // Process pending actions
       for (const action of pending) {
         try {
           if (action.action === 'INSERT') {
@@ -201,12 +200,13 @@ const useOfflineSync = (supabase, userId) => {
   return { isOnline, isSyncing };
 };
 
-// --- 🛠️ HEAD MANAGER (PWA & Favicons) ---
+// --- 🛠️ HEAD MANAGER (PWA - META ONLY) ---
+// Note: Manifest is handled by the physical file now. We only inject meta tags.
 const HeadManager = () => {
   useEffect(() => {
     document.title = "Orange Finance | Swinfosystems";
     
-    // 1. Force PWA Scaling Limits (Prevents Zoom ruining layout)
+    // 1. Force PWA Scaling Limits
     let metaViewport = document.querySelector('meta[name="viewport"]');
     if (!metaViewport) {
       metaViewport = document.createElement('meta');
@@ -215,32 +215,14 @@ const HeadManager = () => {
     }
     metaViewport.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
 
-    // 2. Favicon
+    // 2. Favicon (Explicit link)
     const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
     link.type = 'image/svg+xml';
     link.rel = 'icon';
     link.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f97316%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M21 12V7H5a2 2 0 0 1 0-4h14v4%22/><path d=%22M3 5v14a2 2 0 0 0 2 2h16v-5%22/><path d=%22M18 12a2 2 0 0 0 0 4h4v-4Z%22/></svg>`;
     document.head.appendChild(link);
 
-    // 3. PWA Manifest (Simulated)
-    const manifest = {
-      name: "Orange Finance",
-      short_name: "Orange",
-      start_url: "/",
-      display: "standalone",
-      background_color: "#fff7ed",
-      theme_color: "#f97316",
-      icons: [
-        { src: "https://via.placeholder.com/192/f97316/ffffff?text=OF", sizes: "192x192", type: "image/png" },
-        { src: "https://via.placeholder.com/512/f97316/ffffff?text=OF", sizes: "512x512", type: "image/png" }
-      ]
-    };
-    const manifestLink = document.createElement('link');
-    manifestLink.rel = 'manifest';
-    manifestLink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
-    document.head.appendChild(manifestLink);
-
-    // 4. iOS Specifics
+    // 3. Apple Meta
     const appleMeta = document.createElement('meta');
     appleMeta.name = "apple-mobile-web-app-capable";
     appleMeta.content = "yes";
@@ -285,7 +267,6 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel }) => (
             <span className="pdf-user-name">{user?.user_metadata?.full_name || 'User'}</span>
             <span className="pdf-user-email">{user?.email}</span>
          </div>
-         {/* Use crossOrigin to allow printing external images if possible, otherwise it might be blank */}
          <img src={avatarUrl} alt="Profile" className="pdf-avatar" crossOrigin="anonymous" />
        </div>
     </div>
@@ -709,7 +690,7 @@ const Dashboard = ({ session, supabase }) => {
                     <span className="text-[10px] text-gray-400">Tap to edit</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {transactions.slice(0, 10).map(t => {
+                    {transactions.map(t => {
                       const cat = categories.find(c => c.name === t.category);
                       const CatIcon = ICON_MAP[cat?.icon_key] || Star;
                       const isEmoji = cat?.isEmoji;
@@ -855,7 +836,7 @@ const Dashboard = ({ session, supabase }) => {
                          const Icon = ICON_MAP[cat.icon_key] || Star;
                          return (
                            <button key={cat.name} onClick={() => setFormData({...formData, category: cat.name})} className={`flex flex-col items-center gap-2 p-2 rounded-2xl border-2 transition-all ${formData.category === cat.name ? 'border-orange-500 bg-orange-50' : 'border-transparent hover:bg-gray-50'}`}>
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${formData.category === cat.name ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.category === cat.name ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
                                 {cat.isEmoji ? cat.icon_key : <Icon size={18} />}
                               </div>
                               <span className="text-[10px] font-bold text-gray-500 truncate w-full text-center">{cat.name}</span>
