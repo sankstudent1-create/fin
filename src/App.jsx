@@ -215,11 +215,11 @@ const HeadManager = () => {
     }
     metaViewport.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
 
-    // 2. Favicon (Explicit link)
+    // 2. Favicon (Explicitly point to root file to avoid conflict)
     const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-    link.type = 'image/svg+xml';
+    link.type = 'image/x-icon';
     link.rel = 'icon';
-    link.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f97316%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M21 12V7H5a2 2 0 0 1 0-4h14v4%22/><path d=%22M3 5v14a2 2 0 0 0 2 2h16v-5%22/><path d=%22M18 12a2 2 0 0 0 0 4h4v-4Z%22/></svg>`;
+    link.href = '/favicon.ico';
     document.head.appendChild(link);
 
     // 3. Apple Meta
