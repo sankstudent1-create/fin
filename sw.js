@@ -1,4 +1,4 @@
-const CACHE_NAME = 'orange-finance-v5';
+const CACHE_NAME = 'orange-finance-v6';
 
 // Define the external icons we use so we can cache them
 const EXTERNAL_ICONS = [
