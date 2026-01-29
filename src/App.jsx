@@ -8,7 +8,7 @@ import {
   PieChart, List, ChevronRight, Lock, Mail, User, LogOut, Sparkles, 
   TrendingUp, Percent, ShieldCheck, Coins, Download, AlertCircle, Loader2, Trash2, Camera,
   WifiOff, RefreshCw, LayoutDashboard, FileText, Edit2, Globe, Tag, Baby,
-  Smile
+  Smile, Filter, ChevronDown
 } from 'lucide-react';
 
 // --- 🟢 CONFIGURATION ---
@@ -65,6 +65,15 @@ const SystemManager = ({ onLoad }) => {
       const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       onLoad(client);
     }
+
+    // 4. Service Worker Registration (Critical for "Safari Offline" capability)
+    // You must create a 'sw.js' in your public folder for this to work fully.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(() => {
+        console.log('Service Worker Registered');
+      }).catch(err => console.log('SW Registration Failed', err));
+    }
+
   }, []);
 
   return (
@@ -84,13 +93,31 @@ const SystemManager = ({ onLoad }) => {
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         #print-root { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white; padding: 40px; }
-        .pdf-header { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 30px; border-radius: 20px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .pdf-header-container {
+          border-bottom: 2px solid #f97316;
+          padding-bottom: 20px;
+          margin-bottom: 30px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+        
+        .pdf-brand-section h1 { font-size: 28px; font-weight: 800; color: #ea580c; margin: 0; }
+        .pdf-brand-section p { font-size: 12px; color: #9a3412; margin: 4px 0 0 0; }
+        
+        .pdf-user-section { display: flex; align-items: center; gap: 15px; }
+        .pdf-avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #f97316; }
+        .pdf-user-info { text-align: right; }
+        .pdf-user-name { font-weight: bold; font-size: 16px; color: #1f2937; display: block;}
+        .pdf-user-email { font-size: 12px; color: #6b7280; }
+
         .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
         .pdf-card { border: 1px solid #fed7aa; background: #fff7ed; padding: 20px; border-radius: 15px; }
-        .pdf-table { width: 100%; border-collapse: collapse; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .pdf-table th { text-align: left; color: #9a3412; font-size: 12px; text-transform: uppercase; padding-bottom: 10px; border-bottom: 2px solid #fdba74; }
-        .pdf-table td { padding: 12px 0; border-bottom: 1px solid #fed7aa; font-size: 14px; }
-        .pdf-footer { position: fixed; bottom: 20px; width: 100%; text-align: center; font-size: 10px; color: #aaa; }
+        .pdf-table td { padding: 12px 0; border-bottom: 1px solid #fed7aa; font-size: 13px; }
+        .pdf-footer { position: fixed; bottom: 20px; width: 100%; text-align: center; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
       }
       .print-only { display: none; }
     `}</style>
@@ -149,11 +176,9 @@ const useOfflineSync = (supabase, userId) => {
       setIsSyncing(true);
       const newPending = [];
 
-      // Process pending actions sequentially to maintain order
       for (const action of pending) {
         try {
           if (action.action === 'INSERT') {
-            // Remove local ID before insert to let DB assign real ID
             const { id, ...dataToInsert } = action.data;
             await supabase.from('transactions').insert([dataToInsert]);
           } else if (action.action === 'DELETE') {
@@ -164,13 +189,10 @@ const useOfflineSync = (supabase, userId) => {
           }
         } catch (e) {
           console.error("Sync error:", e);
-          // Only keep in pending if it's a network error, not a logic error
-          // For simplicity here, we might drop failed logic errors to prevent loops
         }
       }
       
-      // Clear pending after attempt
-      localStorage.setItem(`pending_tx_${userId}`, JSON.stringify([])); // Assume success for simplicity in this demo
+      localStorage.setItem(`pending_tx_${userId}`, JSON.stringify([])); 
       setIsSyncing(false);
     };
     if (isOnline) syncData();
@@ -184,14 +206,23 @@ const HeadManager = () => {
   useEffect(() => {
     document.title = "Orange Finance | Swinfosystems";
     
-    // 1. Favicon (Wallet Icon SVG)
+    // 1. Force PWA Scaling Limits (Prevents Zoom ruining layout)
+    let metaViewport = document.querySelector('meta[name="viewport"]');
+    if (!metaViewport) {
+      metaViewport = document.createElement('meta');
+      metaViewport.name = "viewport";
+      document.head.appendChild(metaViewport);
+    }
+    metaViewport.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
+
+    // 2. Favicon
     const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
     link.type = 'image/svg+xml';
     link.rel = 'icon';
     link.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f97316%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M21 12V7H5a2 2 0 0 1 0-4h14v4%22/><path d=%22M3 5v14a2 2 0 0 0 2 2h16v-5%22/><path d=%22M18 12a2 2 0 0 0 0 4h4v-4Z%22/></svg>`;
     document.head.appendChild(link);
 
-    // 2. PWA Manifest (Simulated for Browser to recognize standalone intent)
+    // 3. PWA Manifest (Simulated)
     const manifest = {
       name: "Orange Finance",
       short_name: "Orange",
@@ -200,16 +231,8 @@ const HeadManager = () => {
       background_color: "#fff7ed",
       theme_color: "#f97316",
       icons: [
-        {
-          src: "https://via.placeholder.com/192/f97316/ffffff?text=OF",
-          sizes: "192x192",
-          type: "image/png"
-        },
-        {
-          src: "https://via.placeholder.com/512/f97316/ffffff?text=OF",
-          sizes: "512x512",
-          type: "image/png"
-        }
+        { src: "https://via.placeholder.com/192/f97316/ffffff?text=OF", sizes: "192x192", type: "image/png" },
+        { src: "https://via.placeholder.com/512/f97316/ffffff?text=OF", sizes: "512x512", type: "image/png" }
       ]
     };
     const manifestLink = document.createElement('link');
@@ -217,28 +240,26 @@ const HeadManager = () => {
     manifestLink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
     document.head.appendChild(manifestLink);
 
-    // 3. Apple Mobile Web App
+    // 4. iOS Specifics
     const appleMeta = document.createElement('meta');
     appleMeta.name = "apple-mobile-web-app-capable";
     appleMeta.content = "yes";
     document.head.appendChild(appleMeta);
-
-    const statusMeta = document.createElement('meta');
-    statusMeta.name = "apple-mobile-web-app-status-bar-style";
-    statusMeta.content = "black-translucent";
-    document.head.appendChild(statusMeta);
 
   }, []);
   return null;
 };
 
 // --- 📊 COMPONENTS ---
-const TrendBarChart = ({ transactions }) => {
-  const data = transactions.slice(0, 10).reverse();
-  const max = Math.max(...data.map(t => t.amount), 100);
+const TrendBarChart = ({ transactions, type }) => {
+  const filtered = transactions.filter(t => t.type === type).slice(0, 10).reverse();
+  const max = Math.max(...filtered.map(t => t.amount), 100);
+  
+  if (filtered.length === 0) return <div className="text-gray-400 text-xs w-full text-center py-8">No data for chart</div>;
+
   return (
     <div className="flex items-end justify-between h-32 w-full gap-2 mt-4">
-      {data.map((t, i) => (
+      {filtered.map((t, i) => (
         <div key={i} className="flex flex-col items-center flex-1 group">
            <div className={`w-full rounded-t-lg transition-all duration-500 ${t.type === 'income' ? 'bg-emerald-400' : 'bg-orange-400'}`} style={{ height: `${(t.amount / max) * 100}%` }}></div>
            <span className="text-[10px] text-gray-400 mt-1 font-medium truncate w-full text-center hidden sm:block">
@@ -246,27 +267,55 @@ const TrendBarChart = ({ transactions }) => {
            </span>
         </div>
       ))}
-      {data.length === 0 && <div className="text-gray-400 text-xs w-full text-center">No recent data</div>}
     </div>
   );
 };
 
-const PrintView = ({ user, stats, reportData, transactions }) => (
+const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel }) => (
   <div id="print-root" className="print-only">
-    <div className="pdf-header">
-       <div><h1 className="text-3xl font-bold">Financial Report</h1><p className="opacity-90 mt-1">Generated for {user?.user_metadata?.full_name || user?.email}</p></div>
-       <div className="text-right"><h2 className="text-2xl font-bold opacity-80">{new Date().toLocaleDateString()}</h2><p className="text-xs uppercase tracking-widest opacity-70">Orange Finance</p></div>
-    </div>
-    <div className="pdf-grid">
-       <div className="pdf-card"><p className="text-orange-600 text-xs font-bold uppercase mb-2">Total Balance</p><h2 className="text-4xl font-bold text-gray-900">₹ {stats.balance.toLocaleString()}</h2></div>
-       <div className="pdf-card">
-          <div className="flex justify-between mb-2"><span className="text-emerald-600 text-xs font-bold uppercase">Income</span><span className="text-red-600 text-xs font-bold uppercase">Expense</span></div>
-          <div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">₹{stats.income.toLocaleString()}</span><span className="text-xl font-bold text-gray-800">₹{stats.expense.toLocaleString()}</span></div>
+    
+    <div className="pdf-header-container">
+       <div className="pdf-brand-section">
+         <h1>Fin by Swinfosystems</h1>
+         <p>fin.swinfosystems.online</p>
+         <p className="text-[10px] text-gray-500 mt-1">Generated: {new Date().toLocaleDateString()}</p>
+       </div>
+       <div className="pdf-user-section">
+         <div className="pdf-user-info">
+            <span className="pdf-user-name">{user?.user_metadata?.full_name || 'User'}</span>
+            <span className="pdf-user-email">{user?.email}</span>
+         </div>
+         {/* Use crossOrigin to allow printing external images if possible, otherwise it might be blank */}
+         <img src={avatarUrl} alt="Profile" className="pdf-avatar" crossOrigin="anonymous" />
        </div>
     </div>
-    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2 border-gray-200">Transaction History</h3>
+
+    <div className="mb-6">
+      <h2 className="text-xl font-bold text-gray-800 border-b pb-2">Report Summary ({filterLabel})</h2>
+    </div>
+
+    <div className="pdf-grid">
+       <div className="pdf-card">
+          <p className="text-emerald-600 text-xs font-bold uppercase mb-2">Total Income</p>
+          <h2 className="text-3xl font-bold text-gray-900">₹ {stats.income.toLocaleString()}</h2>
+       </div>
+       <div className="pdf-card">
+          <p className="text-red-600 text-xs font-bold uppercase mb-2">Total Expense</p>
+          <h2 className="text-3xl font-bold text-gray-900">₹ {stats.expense.toLocaleString()}</h2>
+       </div>
+    </div>
+
+    <h3 className="text-lg font-bold text-gray-900 mb-4">Transaction Details</h3>
     <table className="pdf-table">
-      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th style={{textAlign: 'right'}}>Amount</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th>Type</th>
+          <th style={{textAlign: 'right'}}>Amount</th>
+        </tr>
+      </thead>
       <tbody>
         {transactions.map(t => (
           <tr key={t.id}>
@@ -279,7 +328,10 @@ const PrintView = ({ user, stats, reportData, transactions }) => (
         ))}
       </tbody>
     </table>
-    <div className="pdf-footer">Generated by Orange Finance • Developed by Swinfosystems • fin.swinfosystems.online</div>
+
+    <div className="pdf-footer">
+       Financial Report • Generated via Fin by Swinfosystems • Secure & Private
+    </div>
   </div>
 );
 
@@ -390,8 +442,9 @@ const Dashboard = ({ session, supabase }) => {
   const fileInputRef = useRef(null);
   
   // Analytics Filters
-  const [filterTime, setFilterTime] = useState('month'); 
-  const [filterType, setFilterType] = useState('all'); 
+  const [filterMonth, setFilterMonth] = useState(new Date().getMonth());
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [analysisType, setAnalysisType] = useState('expense'); // expense | income
 
   // Offline Hook
   const { isOnline, isSyncing } = useOfflineSync(supabase, session.user.id);
@@ -402,7 +455,7 @@ const Dashboard = ({ session, supabase }) => {
     const cacheKeyTx = `cached_tx_${session.user.id}`;
     const cacheKeyCat = `cached_cat_${session.user.id}`;
 
-    // Load from cache first (Instant Load)
+    // Load from cache first
     const cachedTx = localStorage.getItem(cacheKeyTx);
     const cachedCat = localStorage.getItem(cacheKeyCat);
     if (cachedTx) setTransactions(JSON.parse(cachedTx));
@@ -410,7 +463,7 @@ const Dashboard = ({ session, supabase }) => {
 
     if (!isOnline) { setLoading(false); return; }
 
-    // Fetch Fresh from DB
+    // Fetch Fresh
     try {
       const { data: txData } = await supabase.from('transactions').select('*').order('date', { ascending: false });
       const { data: catData } = await supabase.from('categories').select('*').order('usage_count', { ascending: false });
@@ -439,57 +492,36 @@ const Dashboard = ({ session, supabase }) => {
   // --- 📝 TRANSACTIONS (Optimistic UI) ---
   const handleSaveTx = async () => {
     if (!formData.amount || !formData.title) return;
-    
-    // 1. Create Transaction Object
     const txData = {
+      user_id: session.user.id,
       title: formData.title,
       amount: parseFloat(formData.amount),
       category: formData.category,
       type: formData.type,
-      date: new Date().toISOString(),
-      user_id: session.user.id,
+      date: new Date().toISOString()
     };
 
-    // 2. Optimistic Update (Immediate UI Change)
-    const tempId = `temp-${Date.now()}`;
-    const optimisticTx = { ...txData, id: editingTx ? editingTx.id : tempId };
-    
-    let updatedTxList;
-    if (editingTx) {
-      updatedTxList = transactions.map(t => t.id === editingTx.id ? optimisticTx : t);
-    } else {
-      updatedTxList = [optimisticTx, ...transactions];
-    }
-    
-    setTransactions(updatedTxList);
-    localStorage.setItem(`cached_tx_${session.user.id}`, JSON.stringify(updatedTxList));
-    setShowModal(false); // Close modal instantly
-
-    // 3. Sync to Backend (Silent)
     if (isOnline) {
-      try {
-        if (editingTx) {
-          const { id, ...data } = txData;
-          await supabase.from('transactions').update(data).eq('id', editingTx.id);
-        } else {
-          await supabase.from('transactions').insert([txData]);
-          // Update category usage
-          const cat = categories.find(c => c.name === formData.category);
-          if (cat && cat.id) { 
-             await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
-          }
+      if (editingTx) {
+        await supabase.from('transactions').update(txData).eq('id', editingTx.id);
+      } else {
+        await supabase.from('transactions').insert([txData]);
+        const cat = categories.find(c => c.name === formData.category);
+        if (cat && cat.id) { 
+           await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
         }
-      } catch (e) { console.error("Sync failed:", e); }
+      }
     } else {
-      // Queue for offline sync
       const action = editingTx ? 'UPDATE' : 'INSERT';
       const payload = editingTx ? { ...txData, id: editingTx.id } : txData;
       const pendingKey = `pending_tx_${session.user.id}`;
       const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
       pending.push({ action, data: payload });
       localStorage.setItem(pendingKey, JSON.stringify(pending));
+      fetchData(); 
     }
 
+    setShowModal(false);
     setEditingTx(null);
     setFormData({ title: '', amount: '', category: 'Food', type: 'expense' });
   };
@@ -503,10 +535,10 @@ const Dashboard = ({ session, supabase }) => {
   const handleDelete = async (id) => {
     if (!confirm('Delete this transaction?')) return;
     
-    // Optimistic Delete
-    const updatedTxList = transactions.filter(t => t.id !== id);
-    setTransactions(updatedTxList);
-    localStorage.setItem(`cached_tx_${session.user.id}`, JSON.stringify(updatedTxList));
+    // Optimistic delete from UI state immediately
+    const newTxList = transactions.filter(t => t.id !== id);
+    setTransactions(newTxList);
+    localStorage.setItem(`cached_tx_${session.user.id}`, JSON.stringify(newTxList));
 
     if (isOnline) {
       await supabase.from('transactions').delete().eq('id', id);
@@ -521,26 +553,20 @@ const Dashboard = ({ session, supabase }) => {
   // --- 🏷️ CATEGORIES ---
   const handleSaveCategory = async () => {
     if (!catForm.name) return;
-    
-    // Optimistic Category Add
-    const newCat = { 
-      name: catForm.name, 
-      type: catForm.type, 
-      icon_key: catForm.icon_key, 
-      usage_count: 0,
-      user_id: session.user.id,
-      isEmoji: catForm.isEmoji
-    };
-    
-    setCategories([...categories, newCat]);
-    setShowCatModal(false);
-
     if (isOnline) {
-      await supabase.from('categories').insert([newCat]);
+      await supabase.from('categories').insert([{
+        user_id: session.user.id,
+        name: catForm.name,
+        type: catForm.type,
+        icon_key: catForm.icon_key,
+        usage_count: 0,
+        isEmoji: catForm.isEmoji // Store if it's emoji
+      }]);
     } else {
-      // Basic alert since category sync is complex offline
-      alert("Category saved locally. Will try to sync when online.");
+      alert("Connect to internet to save custom categories.");
+      return;
     }
+    setShowCatModal(false);
     setCatForm({ name: '', icon_key: 'Star', type: 'expense', isEmoji: false });
   };
 
@@ -565,37 +591,45 @@ const Dashboard = ({ session, supabase }) => {
 
   const filteredTx = useMemo(() => {
     let filtered = transactions;
-    const now = new Date();
-    if (filterTime === 'month') filtered = filtered.filter(t => new Date(t.date).getMonth() === now.getMonth());
-    else if (filterTime === 'quarter') {
-      const d = new Date(); d.setMonth(d.getMonth() - 3);
-      filtered = filtered.filter(t => new Date(t.date) >= d);
+    if (filterMonth !== 'all') {
+      filtered = filtered.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === parseInt(filterMonth) && d.getFullYear() === parseInt(filterYear);
+      });
     }
-    if (filterType !== 'all') filtered = filtered.filter(t => t.type === filterType);
     return filtered;
-  }, [transactions, filterTime, filterType]);
+  }, [transactions, filterMonth, filterYear]);
 
   const stats = useMemo(() => {
-    const inc = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-    const exp = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+    const inc = filteredTx.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+    const exp = filteredTx.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
     return { income: inc, expense: exp, balance: inc - exp };
-  }, [transactions]);
+  }, [filteredTx]);
 
   const reportData = useMemo(() => {
-    const relevantTx = filteredTx.filter(t => t.type === 'expense');
+    const relevantTx = filteredTx.filter(t => t.type === analysisType);
     const grouped = {};
     relevantTx.forEach(t => { grouped[t.category] = (grouped[t.category] || 0) + t.amount; });
     return Object.keys(grouped).map(cat => ({ 
       label: cat, value: grouped[cat], color: 'gray-500' 
     })).sort((a,b) => b.value - a.value);
-  }, [filteredTx]);
+  }, [filteredTx, analysisType]);
 
   const greeting = new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   return (
     <div className="flex h-screen bg-[#fff7ed] text-slate-800 overflow-hidden">
       <HeadManager />
-      <PrintView user={session.user} stats={stats} reportData={reportData} transactions={filteredTx} />
+      {/* Passing filteredTx to print view ensures PDF respects filters */}
+      <PrintView 
+        user={session.user} 
+        stats={stats} 
+        reportData={reportData} 
+        transactions={filteredTx} 
+        avatarUrl={avatarUrl}
+        filterLabel={filterMonth === 'all' ? `All Time` : `${monthNames[filterMonth]} ${filterYear}`}
+      />
 
       {/* 🖥️ DESKTOP SIDEBAR */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-orange-100 flex-col p-6 shadow-sm z-20 no-print">
@@ -675,7 +709,7 @@ const Dashboard = ({ session, supabase }) => {
                     <span className="text-[10px] text-gray-400">Tap to edit</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {transactions.map(t => {
+                    {transactions.slice(0, 10).map(t => {
                       const cat = categories.find(c => c.name === t.category);
                       const CatIcon = ICON_MAP[cat?.icon_key] || Star;
                       const isEmoji = cat?.isEmoji;
@@ -708,18 +742,54 @@ const Dashboard = ({ session, supabase }) => {
             <div className="animate-fade-in space-y-6">
                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div><h2 className="text-2xl font-bold text-gray-900">Analytics</h2><p className="text-sm text-gray-500">Track your spending patterns</p></div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {/* Month Filter */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1 flex">
-                       <button onClick={() => setFilterTime('month')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterTime === 'month' ? 'bg-orange-100 text-orange-700' : 'text-gray-500'}`}>Month</button>
-                       <button onClick={() => setFilterTime('all')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterTime === 'all' ? 'bg-orange-100 text-orange-700' : 'text-gray-500'}`}>All</button>
+                       <select 
+                         value={filterMonth} 
+                         onChange={(e) => setFilterMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                         className="px-2 py-1.5 text-xs font-bold bg-transparent outline-none text-gray-600"
+                       >
+                         <option value="all">All Year</option>
+                         {monthNames.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                       </select>
+                    </div>
+                    {/* Year Filter */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1 flex">
+                       <select 
+                         value={filterYear} 
+                         onChange={(e) => setFilterYear(parseInt(e.target.value))}
+                         className="px-2 py-1.5 text-xs font-bold bg-transparent outline-none text-gray-600"
+                       >
+                         {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                       </select>
                     </div>
                     <button onClick={() => window.print()} className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg"><Download size={14}/> PDF</button>
                   </div>
                </div>
+
+               {/* Stats Summary for Selected Period */}
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white p-4 rounded-2xl warm-shadow border border-gray-50">
+                     <p className="text-xs text-emerald-600 font-bold uppercase mb-1">Income ({filterMonth === 'all' ? 'All' : monthNames[filterMonth]})</p>
+                     <p className="text-2xl font-bold text-gray-900">₹{stats.income.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-2xl warm-shadow border border-gray-50">
+                     <p className="text-red-600 text-xs font-bold uppercase mb-1">Expense ({filterMonth === 'all' ? 'All' : monthNames[filterMonth]})</p>
+                     <p className="text-2xl font-bold text-gray-900">₹{stats.expense.toLocaleString()}</p>
+                  </div>
+               </div>
+
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white p-6 rounded-[2rem] warm-shadow border border-gray-50">
-                      <h4 className="text-xs font-bold text-gray-400 uppercase mb-4">Spending Trend</h4>
-                      <TrendBarChart transactions={transactions} />
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-xs font-bold text-gray-400 uppercase">Analysis</h4>
+                        <div className="flex bg-gray-100 rounded-lg p-1">
+                           <button onClick={() => setAnalysisType('expense')} className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${analysisType === 'expense' ? 'bg-white shadow text-orange-600' : 'text-gray-500'}`}>Exp</button>
+                           <button onClick={() => setAnalysisType('income')} className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${analysisType === 'income' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`}>Inc</button>
+                        </div>
+                      </div>
+                      <TrendBarChart transactions={filteredTx} type={analysisType} />
                   </div>
                   <div className="space-y-3">
                       {reportData.map((cat, i) => (
@@ -727,10 +797,11 @@ const Dashboard = ({ session, supabase }) => {
                            <span className="font-bold text-gray-700 text-sm">{cat.label}</span>
                            <div className="text-right">
                               <span className="block font-bold text-gray-900">₹{cat.value.toLocaleString()}</span>
-                              <div className="w-32 bg-gray-100 h-1.5 rounded-full mt-1 ml-auto"><div className="h-full rounded-full bg-orange-500" style={{width: `${Math.min((cat.value / (stats.expense || 1))*100, 100)}%`}}></div></div>
+                              <div className="w-32 bg-gray-100 h-1.5 rounded-full mt-1 ml-auto"><div className="h-full rounded-full bg-orange-500" style={{width: `${Math.min((cat.value / (analysisType === 'expense' ? stats.expense : stats.income) || 1)*100, 100)}%`}}></div></div>
                            </div>
                         </div>
                       ))}
+                      {reportData.length === 0 && <p className="text-center text-gray-400 text-sm py-4">No data for this period.</p>}
                   </div>
                </div>
             </div>
