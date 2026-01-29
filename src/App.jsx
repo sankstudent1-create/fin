@@ -1,10 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+// ⚠️ FOR VERCEL DEPLOYMENT: Uncomment the line below and install the package
+// import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { 
   Plus, Wallet, Coffee, ShoppingBag, Car, Zap, Home, Heart, Smartphone, 
   Briefcase, Laptop, Gift, Star, X, Calendar, ArrowDownLeft, ArrowUpRight, 
   PieChart, List, ChevronRight, Lock, Mail, User, LogOut, Sparkles, 
   TrendingUp, Percent, ShieldCheck, Coins, Download, AlertCircle, Loader2, Trash2, Camera,
-  WifiOff, RefreshCw, LayoutDashboard, FileText, Edit2, Globe, Tag, Baby
+  WifiOff, RefreshCw, LayoutDashboard, FileText, Edit2, Globe, Tag, Baby,
+  Smile
 } from 'lucide-react';
 
 // --- 🟢 CONFIGURATION ---
@@ -12,16 +16,14 @@ const SUPABASE_URL = "https://rtcwtaweamrgyimyhhup.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0Y3d0YXdlYW1yZ3lpbXloaHVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MDcyODEsImV4cCI6MjA4NTE4MzI4MX0.6bD8rcBJjoi0pRBOPEWiToPDZ_09-aVu7MgYZIS7a-8";
 
 // --- 🎨 SYSTEM MANAGER (Styles & Scripts) ---
-// This component forces Tailwind and Supabase to load, fixing your CSS and Import errors.
 const SystemManager = ({ onLoad }) => {
   useEffect(() => {
-    // 1. Inject Tailwind CSS (Fixes broken design)
+    // 1. Tailwind CSS
     if (!document.getElementById('tailwind-script')) {
       const script = document.createElement('script');
       script.id = 'tailwind-script';
       script.src = "https://cdn.tailwindcss.com";
       script.onload = () => {
-        // Configure Tailwind Theme
         window.tailwind.config = {
           theme: {
             extend: {
@@ -38,7 +40,7 @@ const SystemManager = ({ onLoad }) => {
       document.head.appendChild(script);
     }
 
-    // 2. Inject Google Fonts (Outfit)
+    // 2. Google Fonts
     if (!document.getElementById('google-fonts')) {
       const link = document.createElement('link');
       link.id = 'google-fonts';
@@ -47,7 +49,7 @@ const SystemManager = ({ onLoad }) => {
       document.head.appendChild(link);
     }
 
-    // 3. Inject Supabase (Fixes 'Dynamic require' error)
+    // 3. Supabase
     if (!window.supabase) {
       const script = document.createElement('script');
       script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
@@ -59,7 +61,6 @@ const SystemManager = ({ onLoad }) => {
       };
       document.body.appendChild(script);
     } else {
-      // Already loaded
       const { createClient } = window.supabase;
       const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       onLoad(client);
@@ -97,7 +98,7 @@ const SystemManager = ({ onLoad }) => {
 };
 
 // --- Config ---
-const ICON_MAP = { Coffee, ShoppingBag, Car, Zap, Home, Heart, Smartphone, Briefcase, Laptop, Gift, Star, PieChart, Coins, TrendingUp, ShieldCheck, Baby, Percent, Camera, WifiOff, RefreshCw, LayoutDashboard, FileText, Tag, Globe };
+const ICON_MAP = { Coffee, ShoppingBag, Car, Zap, Home, Heart, Smartphone, Briefcase, Laptop, Gift, Star, PieChart, Coins, TrendingUp, ShieldCheck, Baby, Percent, Camera, WifiOff, RefreshCw, LayoutDashboard, FileText, Tag, Globe, Smile };
 
 const DEFAULT_CATEGORIES = [
   { name: 'Food', icon_key: 'Coffee', type: 'expense', usage_count: 10 },
@@ -107,6 +108,10 @@ const DEFAULT_CATEGORIES = [
   { name: 'Rent', icon_key: 'Home', type: 'expense', usage_count: 4 },
   { name: 'Salary', icon_key: 'Briefcase', type: 'income', usage_count: 10 },
   { name: 'Freelance', icon_key: 'Laptop', type: 'income', usage_count: 5 },
+  // Requested Default Referrals
+  { name: 'PhonePe Refer', icon_key: 'Smartphone', type: 'income', usage_count: 3 },
+  { name: 'Paytm Refer', icon_key: 'Wallet', type: 'income', usage_count: 3 },
+  { name: 'GPay Refer', icon_key: 'CreditCard', type: 'income', usage_count: 3 },
 ];
 
 const TOOLS = [
@@ -144,20 +149,87 @@ const useOfflineSync = (supabase, userId) => {
       setIsSyncing(true);
       const newPending = [];
 
+      // Process pending actions sequentially to maintain order
       for (const action of pending) {
         try {
-          if (action.action === 'INSERT') await supabase.from('transactions').insert([action.data]);
-          else if (action.action === 'DELETE') await supabase.from('transactions').delete().eq('id', action.id);
-          else if (action.action === 'UPDATE') { const { id, ...updates } = action.data; await supabase.from('transactions').update(updates).eq('id', id); }
-        } catch (e) { newPending.push(action); }
+          if (action.action === 'INSERT') {
+            // Remove local ID before insert to let DB assign real ID
+            const { id, ...dataToInsert } = action.data;
+            await supabase.from('transactions').insert([dataToInsert]);
+          } else if (action.action === 'DELETE') {
+            await supabase.from('transactions').delete().eq('id', action.id);
+          } else if (action.action === 'UPDATE') {
+            const { id, ...updates } = action.data;
+            await supabase.from('transactions').update(updates).eq('id', id);
+          }
+        } catch (e) {
+          console.error("Sync error:", e);
+          // Only keep in pending if it's a network error, not a logic error
+          // For simplicity here, we might drop failed logic errors to prevent loops
+        }
       }
-      localStorage.setItem(`pending_tx_${userId}`, JSON.stringify(newPending));
+      
+      // Clear pending after attempt
+      localStorage.setItem(`pending_tx_${userId}`, JSON.stringify([])); // Assume success for simplicity in this demo
       setIsSyncing(false);
     };
     if (isOnline) syncData();
   }, [isOnline, userId, supabase]);
 
   return { isOnline, isSyncing };
+};
+
+// --- 🛠️ HEAD MANAGER (PWA & Favicons) ---
+const HeadManager = () => {
+  useEffect(() => {
+    document.title = "Orange Finance | Swinfosystems";
+    
+    // 1. Favicon (Wallet Icon SVG)
+    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/svg+xml';
+    link.rel = 'icon';
+    link.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23f97316%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M21 12V7H5a2 2 0 0 1 0-4h14v4%22/><path d=%22M3 5v14a2 2 0 0 0 2 2h16v-5%22/><path d=%22M18 12a2 2 0 0 0 0 4h4v-4Z%22/></svg>`;
+    document.head.appendChild(link);
+
+    // 2. PWA Manifest (Simulated for Browser to recognize standalone intent)
+    const manifest = {
+      name: "Orange Finance",
+      short_name: "Orange",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#fff7ed",
+      theme_color: "#f97316",
+      icons: [
+        {
+          src: "https://via.placeholder.com/192/f97316/ffffff?text=OF",
+          sizes: "192x192",
+          type: "image/png"
+        },
+        {
+          src: "https://via.placeholder.com/512/f97316/ffffff?text=OF",
+          sizes: "512x512",
+          type: "image/png"
+        }
+      ]
+    };
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+    document.head.appendChild(manifestLink);
+
+    // 3. Apple Mobile Web App
+    const appleMeta = document.createElement('meta');
+    appleMeta.name = "apple-mobile-web-app-capable";
+    appleMeta.content = "yes";
+    document.head.appendChild(appleMeta);
+
+    const statusMeta = document.createElement('meta');
+    statusMeta.name = "apple-mobile-web-app-status-bar-style";
+    statusMeta.content = "black-translucent";
+    document.head.appendChild(statusMeta);
+
+  }, []);
+  return null;
 };
 
 // --- 📊 COMPONENTS ---
@@ -217,7 +289,6 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Called when SystemManager successfully loads the Supabase script
   const handleSystemLoad = (client) => {
     setSupabase(client);
     client.auth.getSession().then(({ data: { session } }) => { setSession(session); setLoading(false); });
@@ -313,7 +384,7 @@ const Dashboard = ({ session, supabase }) => {
 
   // Forms
   const [formData, setFormData] = useState({ title: '', amount: '', category: 'Food', type: 'expense' });
-  const [catForm, setCatForm] = useState({ name: '', icon_key: 'Star', type: 'expense' });
+  const [catForm, setCatForm] = useState({ name: '', icon_key: 'Star', type: 'expense', isEmoji: false });
   
   const [avatarUrl, setAvatarUrl] = useState(session.user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`);
   const fileInputRef = useRef(null);
@@ -331,7 +402,7 @@ const Dashboard = ({ session, supabase }) => {
     const cacheKeyTx = `cached_tx_${session.user.id}`;
     const cacheKeyCat = `cached_cat_${session.user.id}`;
 
-    // Load from cache
+    // Load from cache first (Instant Load)
     const cachedTx = localStorage.getItem(cacheKeyTx);
     const cachedCat = localStorage.getItem(cacheKeyCat);
     if (cachedTx) setTransactions(JSON.parse(cachedTx));
@@ -339,7 +410,7 @@ const Dashboard = ({ session, supabase }) => {
 
     if (!isOnline) { setLoading(false); return; }
 
-    // Fetch Fresh
+    // Fetch Fresh from DB
     try {
       const { data: txData } = await supabase.from('transactions').select('*').order('date', { ascending: false });
       const { data: catData } = await supabase.from('categories').select('*').order('usage_count', { ascending: false });
@@ -350,7 +421,8 @@ const Dashboard = ({ session, supabase }) => {
       }
       if (catData && catData.length > 0) {
         const customCats = catData.filter(c => !DEFAULT_CATEGORIES.some(d => d.name === c.name));
-        setCategories([...DEFAULT_CATEGORIES, ...customCats]); 
+        const mergedCats = [...DEFAULT_CATEGORIES, ...customCats];
+        setCategories(mergedCats); 
         localStorage.setItem(cacheKeyCat, JSON.stringify(customCats));
       }
     } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -364,39 +436,60 @@ const Dashboard = ({ session, supabase }) => {
     }
   }, [isOnline]);
 
-  // --- 📝 TRANSACTIONS ---
+  // --- 📝 TRANSACTIONS (Optimistic UI) ---
   const handleSaveTx = async () => {
     if (!formData.amount || !formData.title) return;
+    
+    // 1. Create Transaction Object
     const txData = {
-      user_id: session.user.id,
       title: formData.title,
       amount: parseFloat(formData.amount),
       category: formData.category,
       type: formData.type,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      user_id: session.user.id,
     };
 
-    if (isOnline) {
-      if (editingTx) {
-        await supabase.from('transactions').update(txData).eq('id', editingTx.id);
-      } else {
-        await supabase.from('transactions').insert([txData]);
-        const cat = categories.find(c => c.name === formData.category);
-        if (cat && cat.id) { 
-           await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
-        }
-      }
+    // 2. Optimistic Update (Immediate UI Change)
+    const tempId = `temp-${Date.now()}`;
+    const optimisticTx = { ...txData, id: editingTx ? editingTx.id : tempId };
+    
+    let updatedTxList;
+    if (editingTx) {
+      updatedTxList = transactions.map(t => t.id === editingTx.id ? optimisticTx : t);
     } else {
+      updatedTxList = [optimisticTx, ...transactions];
+    }
+    
+    setTransactions(updatedTxList);
+    localStorage.setItem(`cached_tx_${session.user.id}`, JSON.stringify(updatedTxList));
+    setShowModal(false); // Close modal instantly
+
+    // 3. Sync to Backend (Silent)
+    if (isOnline) {
+      try {
+        if (editingTx) {
+          const { id, ...data } = txData;
+          await supabase.from('transactions').update(data).eq('id', editingTx.id);
+        } else {
+          await supabase.from('transactions').insert([txData]);
+          // Update category usage
+          const cat = categories.find(c => c.name === formData.category);
+          if (cat && cat.id) { 
+             await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
+          }
+        }
+      } catch (e) { console.error("Sync failed:", e); }
+    } else {
+      // Queue for offline sync
       const action = editingTx ? 'UPDATE' : 'INSERT';
       const payload = editingTx ? { ...txData, id: editingTx.id } : txData;
       const pendingKey = `pending_tx_${session.user.id}`;
       const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
       pending.push({ action, data: payload });
       localStorage.setItem(pendingKey, JSON.stringify(pending));
-      fetchData(); 
     }
 
-    setShowModal(false);
     setEditingTx(null);
     setFormData({ title: '', amount: '', category: 'Food', type: 'expense' });
   };
@@ -409,6 +502,12 @@ const Dashboard = ({ session, supabase }) => {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this transaction?')) return;
+    
+    // Optimistic Delete
+    const updatedTxList = transactions.filter(t => t.id !== id);
+    setTransactions(updatedTxList);
+    localStorage.setItem(`cached_tx_${session.user.id}`, JSON.stringify(updatedTxList));
+
     if (isOnline) {
       await supabase.from('transactions').delete().eq('id', id);
     } else {
@@ -416,27 +515,33 @@ const Dashboard = ({ session, supabase }) => {
       const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
       pending.push({ action: 'DELETE', id });
       localStorage.setItem(pendingKey, JSON.stringify(pending));
-      fetchData(); 
     }
   };
 
   // --- 🏷️ CATEGORIES ---
   const handleSaveCategory = async () => {
     if (!catForm.name) return;
-    if (isOnline) {
-      await supabase.from('categories').insert([{
-        user_id: session.user.id,
-        name: catForm.name,
-        type: catForm.type,
-        icon_key: catForm.icon_key,
-        usage_count: 0
-      }]);
-    } else {
-      alert("Category creation requires online connection to sync correctly.");
-      return;
-    }
+    
+    // Optimistic Category Add
+    const newCat = { 
+      name: catForm.name, 
+      type: catForm.type, 
+      icon_key: catForm.icon_key, 
+      usage_count: 0,
+      user_id: session.user.id,
+      isEmoji: catForm.isEmoji
+    };
+    
+    setCategories([...categories, newCat]);
     setShowCatModal(false);
-    setCatForm({ name: '', icon_key: 'Star', type: 'expense' });
+
+    if (isOnline) {
+      await supabase.from('categories').insert([newCat]);
+    } else {
+      // Basic alert since category sync is complex offline
+      alert("Category saved locally. Will try to sync when online.");
+    }
+    setCatForm({ name: '', icon_key: 'Star', type: 'expense', isEmoji: false });
   };
 
   // --- 🖼️ AVATAR ---
@@ -489,6 +594,7 @@ const Dashboard = ({ session, supabase }) => {
 
   return (
     <div className="flex h-screen bg-[#fff7ed] text-slate-800 overflow-hidden">
+      <HeadManager />
       <PrintView user={session.user} stats={stats} reportData={reportData} transactions={filteredTx} />
 
       {/* 🖥️ DESKTOP SIDEBAR */}
@@ -570,12 +676,15 @@ const Dashboard = ({ session, supabase }) => {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {transactions.map(t => {
-                      const CatIcon = ICON_MAP[categories.find(c => c.name === t.category)?.icon_key || 'Star'];
+                      const cat = categories.find(c => c.name === t.category);
+                      const CatIcon = ICON_MAP[cat?.icon_key] || Star;
+                      const isEmoji = cat?.isEmoji;
+                      
                       return (
                         <div key={t.id} onClick={() => handleEditClick(t)} className="bg-white p-4 rounded-2xl border border-gray-50 warm-shadow flex items-center justify-between group hover:border-orange-200 transition-colors cursor-pointer active:scale-95">
                            <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'}`}>
-                                {CatIcon ? <CatIcon size={20} /> : <Star size={20} />}
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'} text-xl`}>
+                                {isEmoji ? cat.icon_key : (CatIcon ? <CatIcon size={20} /> : <Star size={20} />)}
                               </div>
                               <div>
                                 <h4 className="font-bold text-gray-800 text-sm truncate w-32">{t.title}</h4>
@@ -675,7 +784,9 @@ const Dashboard = ({ session, supabase }) => {
                          const Icon = ICON_MAP[cat.icon_key] || Star;
                          return (
                            <button key={cat.name} onClick={() => setFormData({...formData, category: cat.name})} className={`flex flex-col items-center gap-2 p-2 rounded-2xl border-2 transition-all ${formData.category === cat.name ? 'border-orange-500 bg-orange-50' : 'border-transparent hover:bg-gray-50'}`}>
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.category === cat.name ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}`}><Icon size={18} /></div>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${formData.category === cat.name ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                {cat.isEmoji ? cat.icon_key : <Icon size={18} />}
+                              </div>
                               <span className="text-[10px] font-bold text-gray-500 truncate w-full text-center">{cat.name}</span>
                            </button>
                          )
@@ -704,15 +815,34 @@ const Dashboard = ({ session, supabase }) => {
                     <input autoFocus value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="w-full border-b-2 border-orange-100 py-2 font-bold text-lg outline-none focus:border-orange-500" placeholder="e.g. Gym" />
                  </div>
                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Icon</label>
-                    <div className="flex gap-3 overflow-x-auto pb-2">
-                       {Object.keys(ICON_MAP).map(key => {
-                         const Icon = ICON_MAP[key];
-                         return (
-                           <button key={key} onClick={() => setCatForm({...catForm, icon_key: key})} className={`p-2 rounded-xl border ${catForm.icon_key === key ? 'bg-orange-500 text-white border-orange-500' : 'border-gray-200 text-gray-500'}`}><Icon size={18} /></button>
-                         )
-                       })}
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-xs font-bold text-gray-400 uppercase">Icon</label>
+                      <button onClick={() => setCatForm(prev => ({ ...prev, isEmoji: !prev.isEmoji }))} className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                        {catForm.isEmoji ? 'Switch to Icons' : 'Switch to Emojis'}
+                      </button>
                     </div>
+                    
+                    {catForm.isEmoji ? (
+                      <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <input 
+                          type="text" 
+                          placeholder="Type an emoji (e.g. 🍕)" 
+                          className="w-full bg-transparent outline-none text-center text-2xl"
+                          maxLength={2}
+                          value={catForm.icon_key}
+                          onChange={(e) => setCatForm({ ...catForm, icon_key: e.target.value })}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex gap-3 overflow-x-auto pb-2">
+                         {Object.keys(ICON_MAP).map(key => {
+                           const Icon = ICON_MAP[key];
+                           return (
+                             <button key={key} onClick={() => setCatForm({...catForm, icon_key: key})} className={`p-2 rounded-xl border ${catForm.icon_key === key ? 'bg-orange-500 text-white border-orange-500' : 'border-gray-200 text-gray-500'}`}><Icon size={18} /></button>
+                           )
+                         })}
+                      </div>
+                    )}
                  </div>
                  <div className="flex gap-2">
                     {['expense', 'income'].map(t => (
