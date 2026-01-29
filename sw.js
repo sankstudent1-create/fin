@@ -1,4 +1,4 @@
-const CACHE_NAME = 'orange-finance-v1';
+const CACHE_NAME = 'orange-finance-v3';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -11,7 +11,13 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Opened cache');
-      return cache.addAll(URLS_TO_CACHE);
+      // Attempt to cache all files. If one fails (e.g., missing favicon), 
+      // catch the error so the Service Worker still installs!
+      return cache.addAll(URLS_TO_CACHE).catch(err => {
+        console.warn('Some assets failed to cache (likely missing files):', err);
+        // Ensure at least index.html is cached for basic offline support
+        return cache.add('/index.html');
+      });
     })
   );
   self.skipWaiting();
@@ -35,42 +41,49 @@ self.addEventListener('activate', (event) => {
 
 // Intercept Requests
 self.addEventListener('fetch', (event) => {
-  // Skip cross-origin requests (like Supabase/CDN) for now to avoid CORS issues in simple setup
-  if (!event.request.url.startsWith(self.location.origin)) {
+  // Skip cross-origin requests (like Supabase/CDN) to avoid CORS errors
+  // unless they are navigation requests (HTML pages)
+  const isNavigation = event.request.mode === 'navigate';
+  
+  if (!event.request.url.startsWith(self.location.origin) && !isNavigation) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached response if found
-      if (response) {
-        return response;
+    (async () => {
+      try {
+        // 1. Try Network First (Get freshest content)
+        // This is critical for authentication flows and real-time data
+        const networkResponse = await fetch(event.request);
+        
+        // If successful, cache it for later
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, networkResponse.clone());
+        }
+        
+        return networkResponse;
+      } catch (error) {
+        // 2. If Network fails (Offline), try Cache
+        console.log('Network failed, falling back to cache:', error);
+        
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        
+        // 3. Special handling for navigation (HTML) requests
+        // If we are offline and don't have the specific page cached, 
+        // return the main index.html (SPA Fallback)
+        if (isNavigation) {
+          const cache = await caches.open(CACHE_NAME);
+          const indexCache = await cache.match('/index.html');
+          return indexCache;
+        }
+        
+        // If nothing works, just propagate the error (browser will show offline page)
+        throw error;
       }
-
-      // Clone request for fetch
-      const fetchRequest = event.request.clone();
-
-      return fetch(fetchRequest).then((response) => {
-        // Check valid response
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-
-        // Clone response to cache
-        const responseToCache = response.clone();
-
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-
-        return response;
-      }).catch(() => {
-        // Fallback for offline (optional: serve a specific offline.html)
-        // For SPA, usually index.html is enough if cached
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      });
-    })
+    })()
   );
 });
