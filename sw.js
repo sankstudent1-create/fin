@@ -1,4 +1,4 @@
-const CACHE_NAME = 'orange-finance-v3';
+const CACHE_NAME = 'orange-finance-v4';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -77,8 +77,15 @@ self.addEventListener('fetch', (event) => {
         // return the main index.html (SPA Fallback)
         if (isNavigation) {
           const cache = await caches.open(CACHE_NAME);
-          const indexCache = await cache.match('/index.html');
-          return indexCache;
+          // Try finding index.html
+          let indexCache = await cache.match('/index.html');
+          // If not found, try finding root /
+          if (!indexCache) {
+             indexCache = await cache.match('/');
+          }
+          if (indexCache) {
+            return indexCache;
+          }
         }
         
         // If nothing works, just propagate the error (browser will show offline page)
