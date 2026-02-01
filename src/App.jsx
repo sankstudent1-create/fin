@@ -1590,10 +1590,26 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {!isOnline && <div className="flex items-center gap-2 bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse" title="Offline"><WifiOff size={14} /></div>}
-              {isOnline && isSyncing && <div className="flex items-center gap-2 bg-blue-100 text-blue-600 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse" title="Syncing..."><RefreshCw size={14} className="animate-spin" /></div>}
-              {isOnline && !isSyncing && <div className="flex items-center gap-2 bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold" title="Online & Synced"><Cloud size={14} /></div>}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 my-1">
+                {!isOnline && <div className="flex items-center gap-2 bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse" title="Offline"><WifiOff size={14} /></div>}
+                {isOnline && isSyncing && <div className="flex items-center gap-2 bg-blue-100 text-blue-600 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse" title="Syncing..."><RefreshCw size={14} className="animate-spin" /></div>}
+                {isOnline && !isSyncing && <div className="flex items-center gap-2 bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold" title="Online & Synced"><Cloud size={14} /></div>}
+              </div>
+
+              {/* Mobile Settings - Language & Logout */}
+              <div className="lg:hidden flex items-center gap-2 ml-1">
+                <div className="scale-75 origin-right">
+                  <LanguageSwitcher lang={lang} onLangChange={onLangChange} variant="light" />
+                </div>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="w-9 h-9 flex items-center justify-center bg-rose-50 text-rose-500 rounded-xl active:scale-90 transition-all border border-rose-100"
+                  title={t('logout')}
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
 
               <div className="hidden lg:flex items-center gap-4">
                 <button onClick={() => { setEditingTx(null); setShowModal(true); }} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
