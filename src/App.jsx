@@ -957,19 +957,53 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
 };
 
 // --- 🏠 MAIN SCREENS ---
-const LanguageSwitcher = ({ lang, onLangChange, variant = 'light' }) => (
-  <div className={`flex items-center gap-1 p-1 rounded-2xl no-print ${variant === 'dark' ? 'bg-gray-800/20' : 'bg-orange-100/50'}`}>
-    {LANG_OPTIONS.map(opt => (
+const LanguageSwitcher = ({ lang, onLangChange, variant = 'light', up = false }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const currentLang = LANG_OPTIONS.find(o => o.code === lang) || LANG_OPTIONS[0];
+
+  return (
+    <div className="relative no-print">
       <button
-        key={opt.code}
-        onClick={() => onLangChange(opt.code)}
-        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all ${lang === opt.code ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 font-medium'}`}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold uppercase transition-all shadow-sm active:scale-95 ${variant === 'dark'
+          ? 'bg-gray-800/40 text-gray-300 hover:bg-gray-800 border border-gray-700/50'
+          : 'bg-white border border-gray-100 text-gray-700 hover:bg-gray-50'
+          }`}
       >
-        {opt.native}
+        <Globe size={14} className={variant === 'dark' ? 'text-gray-500' : 'text-orange-400'} />
+        <span>{currentLang.native}</span>
+        <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-    ))}
-  </div>
-);
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
+          <div className={`absolute ${up ? 'bottom-full mb-3' : 'top-full mt-2'} right-0 w-36 py-2 rounded-2xl shadow-2xl z-[70] border animate-slide-up ${variant === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-white border-orange-50'
+            }`}>
+            <div className={`px-4 pb-2 mb-2 border-b text-[9px] font-black uppercase tracking-widest ${variant === 'dark' ? 'border-gray-800 text-gray-500' : 'border-gray-50 text-gray-400'}`}>Language</div>
+            {LANG_OPTIONS.map(opt => (
+              <button
+                key={opt.code}
+                onClick={() => {
+                  onLangChange(opt.code);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-bold uppercase transition-colors ${lang === opt.code
+                  ? (variant === 'dark' ? 'text-orange-400 bg-orange-500/10' : 'text-orange-600 bg-orange-50')
+                  : (variant === 'dark' ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50')
+                  }`}
+              >
+                {opt.native}
+                {lang === opt.code && <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 export default function App() {
   const [supabase, setSupabase] = useState(null);
@@ -1034,7 +1068,7 @@ const AuthScreen = ({ supabase, lang, t, onLangChange }) => {
     <div className="min-h-screen bg-mesh flex items-center justify-center p-6 animate-fade-in no-print">
       <div className="bg-white/90 backdrop-blur-xl p-8 rounded-[2.5rem] w-full max-w-sm warm-shadow-lg border border-white/50 animate-slide-up relative">
         <div className="absolute -top-12 left-0 right-0 flex justify-center">
-          <LanguageSwitcher lang={lang} onLangChange={onLangChange} />
+          <LanguageSwitcher lang={lang} onLangChange={onLangChange} up={true} />
         </div>
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-gradient-to-tr from-orange-500 to-rose-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-orange-500/30 transform -rotate-6">
@@ -1449,7 +1483,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         <div className="mt-auto pt-6 border-t border-orange-50">
           <div className="mb-4">
             <p className="text-[9px] font-bold text-gray-400 uppercase mb-2 ml-2">{t('language')}</p>
-            <LanguageSwitcher lang={lang} onLangChange={onLangChange} variant="dark" />
+            <LanguageSwitcher lang={lang} onLangChange={onLangChange} variant="dark" up={true} />
           </div>
           <button onClick={() => supabase.auth.signOut()} className="w-full flex items-center justify-center gap-2 text-red-500 text-sm font-medium hover:bg-red-50 py-2 rounded-lg transition-colors">
             <LogOut size={16} /> {t('logout')}
