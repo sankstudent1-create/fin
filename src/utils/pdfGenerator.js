@@ -1,5 +1,5 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const createPDF = (transactions, stats, userProfile, filterLabel) => {
   const doc = new jsPDF();
