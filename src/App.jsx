@@ -13,6 +13,7 @@ import { CalculatorModal } from './components/Calculators';
 import { AnalyticsDashboard } from './components/Analytics';
 import { generateEmailLink } from './utils/reportGenerator';
 import { getPDFFile, getCalcPDFFile } from './utils/pdfGenerator';
+import { captureCalculatorAsPDF, captureReportAsPDF } from './utils/premiumPdfGenerator';
 
 
 // --- 🟢 CONFIGURATION ---
@@ -1185,20 +1186,34 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     const isCalc = !!calcTitle;
     const filterLabel = isCalc ? calcTitle : (filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`);
 
-    // Give UI time to show loader and stabilize canvas if needed
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Give UI time to show loader
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
       let shareText = '';
       let pdfFile = null;
 
+      // Trigger print view rendering
+      if (isCalc) {
+        setCalculatorPrintData({ toolName: calcTitle, inputs: calcData, result: calcResult });
+      }
+      setIsPrinting(true);
+
+      // Wait for print view to render with charts and gradients
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Capture the premium print view as high-quality PDF
       if (isCalc) {
         shareText = `📊 ${calcTitle} Analysis Result\nVerified by Orange Finance: fin.swinfosystems.online`;
-        pdfFile = getCalcPDFFile(calcTitle, calcData, calcResult, session.user);
+        pdfFile = await captureCalculatorAsPDF(calcTitle);
       } else {
         shareText = `📈 Financial Report: ${filterLabel}\nVerified by Orange Finance: fin.swinfosystems.online`;
-        pdfFile = getPDFFile(filteredTx, stats, session.user, filterLabel);
+        pdfFile = await captureReportAsPDF(filterLabel);
       }
+
+      // Hide print view
+      setIsPrinting(false);
+      setCalculatorPrintData(null);
 
       // Check if device supports file sharing (mobile devices)
       const canShareFiles = navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] });
