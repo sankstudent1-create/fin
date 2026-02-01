@@ -342,8 +342,11 @@ const SystemManager = ({ onLoad }) => {
           background: #fff !important; 
           font-size: 13px !important;
           color: #0f172a !important;
-          zoom: 0.95;
+          zoom: 1; /* Reset zoom for better scale control */
         }
+        
+        /* Fix single-page clipping by expanding restricted containers */
+        .flex.h-screen { height: auto !important; overflow: visible !important; display: block !important; }
         
         .no-print { display: none !important; }
         .print-only { display: block !important; }
