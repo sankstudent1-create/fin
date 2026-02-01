@@ -12,6 +12,7 @@ import {
 import { CalculatorModal } from './components/Calculators';
 import { AnalyticsDashboard } from './components/Analytics';
 import { generateEmailLink } from './utils/reportGenerator';
+import { getPDFFile } from './utils/pdfGenerator';
 
 
 // --- 🟢 CONFIGURATION ---
@@ -1200,6 +1201,30 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     }
   }, [isPrinting]);
 
+  const handleShare = async () => {
+    const filterLabel = filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`;
+    const shareText = `${t('share_summary')}:\n\n- ${t('balance')}: Rs ${stats.balance.toLocaleString()}\n- ${t('total_income')}: Rs ${stats.income.toLocaleString()}\n\nManage your finances at fin.swinfosystems.online`;
+
+    try {
+      const pdfFile = getPDFFile(filteredTx, stats, session.user, filterLabel);
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        await navigator.share({
+          files: [pdfFile],
+          title: `Financial Report - ${filterLabel}`,
+          text: shareText,
+        });
+      } else {
+        // Fallback to Email Link
+        window.location.href = generateEmailLink(
+          `${t('financial_report_subject')}: ${filterLabel}`,
+          `${t('share_summary')}:\n\n${t('prev_balance')}: Rs ${stats.carriedBalance.toLocaleString()}\n${t('total_income')}: Rs ${stats.income.toLocaleString()}\n${t('total_expense')}: Rs ${stats.expense.toLocaleString()}\n${t('final_balance')}: Rs ${stats.balance.toLocaleString()}\n\n${t('generated_via')} fin.swinfosystems.online`
+        );
+      }
+    } catch (err) {
+      console.error("Sharing failed", err);
+    }
+  };
+
   // Offline Hook
   const { isOnline, isSyncing } = useOfflineSync(supabase, session.user.id, () => fetchData());
 
@@ -1702,15 +1727,12 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                       >
                         <Download size={16} /> PDF
                       </button>
-                      <a
-                        href={generateEmailLink(
-                          `${t('financial_report_subject')}: ${filterType === 'monthly' ? (filterMonth === 'all' ? t('annual') : monthNames[filterMonth]) : t('custom_filter')}`,
-                          `${t('share_summary')}:\n\n${t('prev_balance')}: Rs ${stats.carriedBalance.toLocaleString()}\n${t('total_income')}: Rs ${stats.income.toLocaleString()}\n${t('total_expense')}: Rs ${stats.expense.toLocaleString()}\n${t('final_balance')}: Rs ${stats.balance.toLocaleString()}\n\n${t('generated_via')} fin.swinfosystems.online`
-                        )}
-                        className="flex-1 lg:flex-none bg-orange-100 text-orange-600 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-orange-200 transition-all"
+                      <button
+                        onClick={handleShare}
+                        className="flex-1 lg:flex-none bg-orange-100 text-orange-600 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-orange-200 transition-all shadow-sm"
                       >
                         <Share2 size={16} /> {t('share')}
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
