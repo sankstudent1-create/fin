@@ -13,7 +13,6 @@ import { CalculatorModal } from './components/Calculators';
 import { AnalyticsDashboard } from './components/Analytics';
 import { generateEmailLink } from './utils/reportGenerator';
 import { getPDFFile, getCalcPDFFile } from './utils/pdfGenerator';
-import { captureCalculatorAsPDF, captureReportAsPDF } from './utils/premiumPdfGenerator';
 
 
 // --- 🟢 CONFIGURATION ---
@@ -266,7 +265,29 @@ const LANG_OPTIONS = [
 // --- 🎨 SYSTEM MANAGER (Styles & Scripts) ---
 const SystemManager = ({ onLoad }) => {
   useEffect(() => {
-    // 1. Google Fonts (Poppins & Mukta for Devanagari support)
+    // 1. Tailwind CSS
+    if (!document.getElementById('tailwind-script')) {
+      const script = document.createElement('script');
+      script.id = 'tailwind-script';
+      script.src = "https://cdn.tailwindcss.com";
+      script.onload = () => {
+        window.tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                orange: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c' }
+              },
+              fontFamily: {
+                sans: ['Poppins', 'Mukta', 'Noto Sans Telugu', 'sans-serif'],
+              }
+            }
+          }
+        };
+      };
+      document.head.appendChild(script);
+    }
+
+    // 2. Google Fonts (Poppins & Mukta for Devanagari support)
     if (!document.getElementById('google-fonts')) {
       const link = document.createElement('link');
       link.id = 'google-fonts';
@@ -309,7 +330,6 @@ const SystemManager = ({ onLoad }) => {
       
       /* --- 📱 SCREEN STYLES (NO-PRINT) --- */
       .print-only { display: none !important; }
-      .pdf-generation-active { display: block !important; position: fixed !important; left: -9999px !important; top: 0 !important; width: 210mm !important; z-index: -9999 !important; }
       .app-avatar { width: 40px; height: 40px; border-radius: 99px; object-fit: cover; }
 
       /* --- 🖨️ CONSOLIDATED PRINT ENGINE --- */
@@ -870,10 +890,10 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
   );
 };
 
-const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang, active }) => {
+const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang }) => {
   const locale = lang === 'en' ? 'en-IN' : lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'te-IN';
   return (
-    <div id="print-root" className={`print-only print-view ${active ? 'pdf-generation-active' : ''}`}>
+    <div id="print-root" className="print-only">
       <div className="pdf-header-classic">
         <div className="header-left">
           <span className="url">fin.swinfosystems.online</span>
@@ -1146,8 +1166,6 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [selectedTool, setSelectedTool] = useState(null);
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [ipInfo, setIpInfo] = useState(null);
 
@@ -1155,13 +1173,9 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     const fetchIp = async () => {
       try {
         const res = await fetch('https://ipapi.co/json/');
-        if (res.status === 429) throw new Error('Too many requests');
         const data = await res.json();
         setIpInfo(data);
-      } catch (err) {
-        console.warn("IP Fetch Error:", err);
-        setIpInfo({ ip: 'Local', city: 'India', region: 'Analytica' });
-      }
+      } catch (err) { console.error("IP Fetch Error:", err); }
     };
     fetchIp();
   }, []);
@@ -1188,144 +1202,55 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     }
   }, [isPrinting]);
 
-  // Handle PDF Download (generates premium PDF file)
-  const handleDownloadPDF = async () => {
-    setIsDownloading(true);
-    const filterLabel = filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`;
-
-    try {
-      // Render print view for PDF generation (not for printing)
-      setIsGeneratingPDF(true);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Generate premium PDF
-      const pdfFile = await captureReportAsPDF(filterLabel);
-
-      // Download the PDF
-      const url = URL.createObjectURL(pdfFile);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = pdfFile.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      // Hide print view
-      setIsGeneratingPDF(false);
-    } catch (error) {
-      console.error('PDF download failed:', error);
-      alert(t('pdf_download_failed') || 'Failed to generate PDF. Please try again.');
-      setIsGeneratingPDF(false);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   const handleShare = async (calcTitle = null, calcData = null, calcResult = null) => {
     setIsSharing(true);
     const isCalc = !!calcTitle;
     const filterLabel = isCalc ? calcTitle : (filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`);
 
-    // Give UI time to show loader
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Give UI time to show loader and stabilize canvas if needed
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     try {
       let shareText = '';
       let pdfFile = null;
 
-      // Trigger print view rendering
-      if (isCalc) {
-        setCalculatorPrintData({ toolName: calcTitle, inputs: calcData, result: calcResult });
-      }
-      setIsGeneratingPDF(true);
-
-      // Wait for print view to render with charts and gradients
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Capture the premium print view as high-quality PDF
       if (isCalc) {
         shareText = `📊 ${calcTitle} Analysis Result\nVerified by Orange Finance: fin.swinfosystems.online`;
-        pdfFile = await captureCalculatorAsPDF(calcTitle);
+        pdfFile = getCalcPDFFile(calcTitle, calcData, calcResult, session.user);
       } else {
         shareText = `📈 Financial Report: ${filterLabel}\nVerified by Orange Finance: fin.swinfosystems.online`;
-        pdfFile = await captureReportAsPDF(filterLabel);
+        pdfFile = getPDFFile(filteredTx, stats, session.user, filterLabel);
       }
 
-      // Hide print view
-      setIsGeneratingPDF(false);
-      setCalculatorPrintData(null);
-
-      // Check if device supports file sharing (mobile devices)
-      const canShareFiles = navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] });
-
-      if (canShareFiles) {
-        // MOBILE: Use native device share with PDF attachment
+      // High-compatibility Share Call
+      if (navigator.share) {
         try {
+          // Construct fresh file object for sharing
+          const filesArray = [pdfFile];
 
           await navigator.share({
-            files: [pdfFile],
+            files: filesArray,
             title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
             text: shareText,
           });
-          console.log('✅ Shared successfully via native share');
         } catch (shareErr) {
-          if (shareErr.name === 'AbortError') {
-            console.log('User cancelled share');
-          } else {
-            console.error('Native share failed:', shareErr);
-            // Fallback to text-only share
-            await navigator.share({
-              title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
-              text: shareText + "\n\nVisit fin.swinfosystems.online to download PDF",
-            });
-          }
+          console.warn("Native file share failed, falling back to basic share", shareErr);
+          // Fallback to text sharing if file sharing fails
+          await navigator.share({
+            title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
+            text: shareText + "\n\nPDF download: fin.swinfosystems.online",
+          });
         }
       } else {
-        // DESKTOP: Download PDF first, then open email with instructions
-        console.log('📧 Desktop mode: Downloading PDF and opening email');
-
-        // Trigger PDF download
-        const url = URL.createObjectURL(pdfFile);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = pdfFile.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Wait a moment for download to start
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Open email with instructions to attach the downloaded PDF
+        // Ultimate fallback to email
         const subject = isCalc ? `${t('calc_subject')}: ${calcTitle}` : `${t('financial_report_subject')}: ${filterLabel}`;
-        const body = `${shareText}\n\n📎 Please attach the PDF file that was just downloaded to your computer.\n\nFile name: ${pdfFile.name}`;
+        const body = `${shareText}\n\nDownload full PDF at fin.swinfosystems.online`;
         window.location.href = generateEmailLink(subject, body);
       }
     } catch (err) {
-      console.error("Sharing failed:", err);
-
-      // Final fallback: just download the PDF
-      try {
-        const pdfFile = isCalc
-          ? getCalcPDFFile(calcTitle, calcData, calcResult, session.user)
-          : getPDFFile(filteredTx, stats, session.user, filterLabel);
-
-        const url = URL.createObjectURL(pdfFile);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = pdfFile.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        alert(t('pdf_downloaded') || 'PDF downloaded! You can now share it manually.');
-      } catch (downloadErr) {
-        console.error("Download failed:", downloadErr);
-        alert(t('share_failed') || 'Sharing failed. Please try again.');
-      }
+      console.error("Deep Sharing failed", err);
+      const subject = isCalc ? `${t('calc_subject')}: ${calcTitle}` : `${t('financial_report_subject')}: ${filterLabel}`;
+      window.location.href = generateEmailLink(subject, "Visit fin.swinfosystems.online to view my report.");
     } finally {
       setIsSharing(false);
     }
@@ -1634,7 +1559,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         ipInfo={ipInfo}
         t={t}
         lang={lang}
-        active={isPrinting || isGeneratingPDF}
+        active={isPrinting}
       />
 
       <aside className="hidden lg:flex w-64 bg-white border-r border-orange-100 flex-col p-6 shadow-sm z-20 no-print">
@@ -1827,12 +1752,12 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
                     <div className="flex gap-2 w-full lg:w-auto">
                       <button
-                        onClick={handleDownloadPDF}
-                        disabled={isDownloading}
-                        className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all disabled:opacity-50"
+                        onClick={() => {
+                          setIsPrinting(true);
+                        }}
+                        className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all"
                       >
-                        {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                        {isDownloading ? t('generating') : 'PDF'}
+                        <Download size={16} /> PDF
                       </button>
                       <button
                         onClick={() => handleShare()}
