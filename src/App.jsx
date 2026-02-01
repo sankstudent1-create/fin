@@ -265,29 +265,7 @@ const LANG_OPTIONS = [
 // --- 🎨 SYSTEM MANAGER (Styles & Scripts) ---
 const SystemManager = ({ onLoad }) => {
   useEffect(() => {
-    // 1. Tailwind CSS
-    if (!document.getElementById('tailwind-script')) {
-      const script = document.createElement('script');
-      script.id = 'tailwind-script';
-      script.src = "https://cdn.tailwindcss.com";
-      script.onload = () => {
-        window.tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                orange: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c' }
-              },
-              fontFamily: {
-                sans: ['Poppins', 'Mukta', 'Noto Sans Telugu', 'sans-serif'],
-              }
-            }
-          }
-        };
-      };
-      document.head.appendChild(script);
-    }
-
-    // 2. Google Fonts (Poppins & Mukta for Devanagari support)
+    // 1. Google Fonts (Poppins & Mukta for Devanagari support)
     if (!document.getElementById('google-fonts')) {
       const link = document.createElement('link');
       link.id = 'google-fonts';
