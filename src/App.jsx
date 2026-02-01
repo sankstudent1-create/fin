@@ -309,6 +309,7 @@ const SystemManager = ({ onLoad }) => {
       
       /* --- 📱 SCREEN STYLES (NO-PRINT) --- */
       .print-only { display: none !important; }
+      .pdf-generation-active { display: block !important; position: fixed !important; left: -9999px !important; top: 0 !important; width: 210mm !important; z-index: -9999 !important; }
       .app-avatar { width: 40px; height: 40px; border-radius: 99px; object-fit: cover; }
 
       /* --- 🖨️ CONSOLIDATED PRINT ENGINE --- */
@@ -869,10 +870,10 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
   );
 };
 
-const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang }) => {
+const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang, active }) => {
   const locale = lang === 'en' ? 'en-IN' : lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'te-IN';
   return (
-    <div id="print-root" className="print-only print-view">
+    <div id="print-root" className={`print-only print-view ${active ? 'pdf-generation-active' : ''}`}>
       <div className="pdf-header-classic">
         <div className="header-left">
           <span className="url">fin.swinfosystems.online</span>
@@ -1154,9 +1155,13 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     const fetchIp = async () => {
       try {
         const res = await fetch('https://ipapi.co/json/');
+        if (res.status === 429) throw new Error('Too many requests');
         const data = await res.json();
         setIpInfo(data);
-      } catch (err) { console.error("IP Fetch Error:", err); }
+      } catch (err) {
+        console.warn("IP Fetch Error:", err);
+        setIpInfo({ ip: 'Local', city: 'India', region: 'Analytica' });
+      }
     };
     fetchIp();
   }, []);
