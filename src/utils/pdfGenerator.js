@@ -100,3 +100,51 @@ export const getPDFFile = (transactions, stats, userProfile, filterLabel) => {
   const blob = doc.output('blob');
   return new File([blob], `Financial_Report_${Date.now()}.pdf`, { type: 'application/pdf' });
 };
+
+export const getCalcPDFFile = (title, data, result, userProfile) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.width;
+  const ORANGE = [249, 115, 22];
+
+  doc.setFillColor(...ORANGE);
+  doc.rect(0, 0, pageWidth, 4, 'F');
+
+  doc.setFontSize(22);
+  doc.setTextColor(...ORANGE);
+  doc.setFont('helvetica', 'bold');
+  doc.text("Orange Finance", 14, 20);
+
+  doc.setFontSize(14);
+  doc.setTextColor(50);
+  doc.text(`${title} Analysis`, 14, 32);
+
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Generated for: ${userProfile?.user_metadata?.full_name || userProfile?.email}`, 14, 40);
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 45);
+
+  doc.autoTable({
+    startY: 55,
+    head: [['Field', 'Value']],
+    body: [
+      ['Investment Amount', `Rs ${parseFloat(data.amount).toLocaleString()}`],
+      ['Duration', `${data.duration} Years`],
+      ['Expected Return', `${data.rate || '7.1'}%`],
+      ['', ''],
+      ['Total Invested', `Rs ${Math.round(result.invested).toLocaleString()}`],
+      ['Wealth Created', `Rs ${Math.round(result.returns).toLocaleString()}`],
+      ['Estimated Tax', `Rs ${Math.round(result.tax).toLocaleString()}`],
+      ['Net Maturity Value', `Rs ${Math.round(result.netTotal).toLocaleString()}`]
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: ORANGE },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 }, 1: { halign: 'right' } }
+  });
+
+  doc.setFontSize(8);
+  doc.setTextColor(150);
+  doc.text('Verified by Orange Finance • fin.swinfosystems.online', pageWidth / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+
+  const blob = doc.output('blob');
+  return new File([blob], `${title.replace(/\s+/g, '_')}_Result.pdf`, { type: 'application/pdf' });
+};

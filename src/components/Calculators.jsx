@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Coins, Lock, ShieldCheck, Percent, RotateCcw, Download, Mail } from 'lucide-react';
+import { TrendingUp, Coins, Lock, ShieldCheck, Percent, RotateCcw, Download, Mail, Share2 } from 'lucide-react';
 import { generateCalculatorPDF, generateEmailLink } from '../utils/reportGenerator';
 
 // --- Calculation Logic ---
@@ -81,7 +81,7 @@ const calculateSimpleInterest = (p, n, r) => {
 
 // --- Component ---
 
-export const CalculatorModal = ({ toolId, onClose, onPrint, t }) => {
+export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, t }) => {
     const [data, setData] = useState({ amount: '', duration: '', rate: '', expense_ratio: '1' });
     const [result, setResult] = useState(null);
     const [showDetailed, setShowDetailed] = useState(false);
@@ -255,15 +255,12 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, t }) => {
                             >
                                 <Download size={14} /> {t('pdf_report')}
                             </button>
-                            <a
-                                href={generateEmailLink(
-                                    `${t('calc_subject')}: ${t(`tool_${toolId}`)}`,
-                                    `${t('calc_share_text')}\n\n${t('invested')}: Rs ${Math.round(result.invested).toLocaleString()}\n${t('wealth_created')}: Rs ${Math.round(result.returns).toLocaleString()}\n${t('final_balance')}: Rs ${Math.round(result.netTotal).toLocaleString()}\n\n${t('generated_via')} fin.swinfosystems.online`
-                                )}
-                                className="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-gray-50"
+                            <button
+                                onClick={() => onShare(t(`tool_${toolId}`), data, result)}
+                                className="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
                             >
-                                <Mail size={14} /> {t('email')}
-                            </a>
+                                <Share2 size={14} /> {t('share')}
+                            </button>
                         </div>
                     </div>
                 )}
