@@ -49,8 +49,8 @@ const TRANSLATIONS = {
     logout: "Log Out", language: "Language",
     tool_sip: "SIP", tool_lumpsum: "Lumpsum", tool_fd: "FD", tool_ppf: "PPF", tool_interest: "Interest",
     cat_food: "Food", cat_shopping: "Shopping", cat_travel: "Travel", cat_bills: "Bills", cat_rent: "Rent",
-    cat_salary: "Salary", cat_freelance: "Freelance",
-    sip_desc: "Equity Mutual Fund (MF)", lumpsum_desc: "One-time MF Investment", fd_desc: "Secure Bank Savings",
+    cat_salary: "Salary", cat_freelance: "Freelance", analysis: "Analysis", report_preview: "Report Preview", download_pdf: "Download PDF", generating: "Generating...",
+    sip_desc: "Equity Mutual Funds (MF)", lumpsum_desc: "One-time MF Investment", fd_desc: "Safe Bank Savings",
     ppf_desc: "Tax-Free Govt Scheme", interest_desc: "Simple Loan Interest",
     monthly_invest: "Monthly Investment (₹)", yearly_invest: "Yearly Investment (₹)", invest_amt: "Investment Amount (₹)",
     time_period: "Time Period (Years)", exp_ratio: "Expense Ratio (%)", return_rate: "Exp. Return Rate (% p.a)",
@@ -107,13 +107,12 @@ const TRANSLATIONS = {
     logout: "बाहेर पडा", language: "भाषा",
     tool_sip: "एसआयपी", tool_lumpsum: "एकरकमी", tool_fd: "मुदत ठेव", tool_ppf: "पीपीएफ", tool_interest: "व्याज",
     cat_food: "जेवण", cat_shopping: "खरेदी", cat_travel: "प्रवास", cat_bills: "बिले", cat_rent: "भाडे",
-    cat_salary: "पगार", cat_freelance: "फ्रिलान्स",
+    cat_salary: "पगार", cat_freelance: "फ्रिलान्स", pdf_report: "अहवाल", report_preview: "अहवाल प्रिव्ह्यू", download_pdf: "PDF डाउनलोड करा", generating: "तयार होत आहे...",
     sip_desc: "इक्विटी म्युच्युअल फंड (MF)", lumpsum_desc: "एकवेळची MF गुंतवणूक", fd_desc: "सुरक्षित बँक बचत",
     ppf_desc: "करमुक्त सरकारी योजना", interest_desc: "साधे कर्ज व्याज",
     monthly_invest: "मासिक गुंतवणूक (₹)", yearly_invest: "वार्षिक गुंतवणूक (₹)", invest_amt: "गुंतवणूक रक्कम (₹)",
     time_period: "कालावधी (वर्षे)", exp_ratio: "खर्च गुणोत्तर (%)", return_rate: "अपेक्षित परतावा दर (% p.a)",
     ppf_info: "PPF अंदाजे ७.१% निश्चित सरकारी दर वापरते", projection: "सांख्यिकी", reset: "रीसेट करा",
-    pdf_report: "अहवाल", est_tax: "अंदाजे कर",
     calc_subject: "अंदाज", calc_share_text: "मी ऑरेंज फायनान्सवर माझ्या गुंतवणुकीच्या परताव्याची गणना केली.",
     analysis_projections: "गुंतवणूक विश्लेषण आणि अंदाज", report_generated: "अहवाल तयार केला",
     verification: "पडताळणी", certified_ledger: "प्रमाणित खाते वही",
@@ -165,13 +164,13 @@ const TRANSLATIONS = {
     logout: "लॉग आउट", language: "भाषा",
     tool_sip: "एसआईपी", tool_lumpsum: "एकमुश्त", tool_fd: "एफडी", tool_ppf: "पीपीएफ", tool_interest: "ब्याज",
     cat_food: "खाना", cat_shopping: "खरीदारी", cat_travel: "यात्रा", cat_bills: "बिल", cat_rent: "किराया",
-    cat_salary: "वेतन", cat_freelance: "फ्रीलांस",
-    sip_desc: "इक्विटी म्यूचुअल फंड (MF)", lumpsum_desc: "एकमुश्त MF निवेश", fd_desc: "सुरक्षित बैंक बचत",
+    cat_salary: "वेतन", cat_freelance: "फ्रीलांस", pdf_report: "रिपोर्ट", report_preview: "रिपोर्ट प्रिव्यू", download_pdf: "PDF डाउनलोड करें", generating: "तैयार हो रहा है...",
+    sip_desc: "इक्विटी म्यूचुअल फंड (MF)", lumpsum_desc: "एक बार का निवेश", fd_desc: "सुरक्षित बैंक बचत",
     ppf_desc: "कर-मुक्त सरकारी योजना", interest_desc: "साधारण ऋण ब्याज",
     monthly_invest: "मासिक निवेश (₹)", yearly_invest: "वार्षिक निवेश (₹)", invest_amt: "निवेश राशि (₹)",
     time_period: "समय अवधि (वर्ष)", exp_ratio: "व्यय अनुपात (%)", return_rate: "अनुमानित रिटर्न दर (% p.a)",
     ppf_info: "PPF लगभग ७.१% निश्चित सरकारी दर का उपयोग करता है", projection: "अनुमान", reset: "रीसेट",
-    pdf_report: "रिपोर्ट", est_tax: "अंदाजित कर",
+    est_tax: "अंदाजित कर",
     calc_subject: "अनुमान", calc_share_text: "मैंने ऑरेंज फाइनेंस पर अपने निवेश रिटर्न की गणना की।",
     analysis_projections: "निवेश विश्लेषण और अनुमान", report_generated: "रिपोर्ट तैयार की गई",
     verification: "सत्यापन", certified_ledger: "प्रमाणित लेजर इंस्टेंस",
@@ -351,13 +350,17 @@ const SystemManager = ({ onLoad }) => {
         #pdf-render-area {
           background: #ffffff !important;
           background-image: 
-            radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.03) 0, transparent 50%), 
-            radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.03) 0, transparent 50%) !important;
+            radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.05) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.05) 0, transparent 50%),
+            linear-gradient(to right, #8080800a 1px, transparent 1px),
+            linear-gradient(to bottom, #8080800a 1px, transparent 1px) !important;
+          background-size: auto, auto, 20px 20px, 20px 20px !important;
           color: #0f172a !important;
           width: 210mm; /* A4 Width */
           margin: 0 auto;
           padding: 20mm !important;
           box-sizing: border-box;
+          position: relative;
         }
 
         /* Selective background restoration for 'boxes' */
@@ -780,7 +783,7 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
   const boxColor = taxInfo.variant === 'blue' ? 'blue' : taxInfo.variant === 'indigo' ? 'indigo' : 'slate';
 
   return (
-    <div className="print-only" style={{ padding: '20px 0' }}>
+    <div className="pdf-container-inner" style={{ padding: '20px 0' }}>
       <div className="mb-4 text-center">
         <div className="inline-block px-4 py-1.5 rounded-full bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest mb-2">{t('analysis_projections')}</div>
         <h2 className="text-3xl font-black text-slate-900 leading-tight">{toolName} {t('analytics')}</h2>
