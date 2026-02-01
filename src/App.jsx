@@ -339,27 +339,37 @@ const SystemManager = ({ onLoad }) => {
         html, body { 
           height: auto !important; 
           overflow: visible !important; 
-          background: #fff !important; 
+          background: #ffffff !important; 
           font-size: 13px !important;
           color: #0f172a !important;
-          zoom: 1; /* Reset zoom for better scale control */
+          zoom: 1;
         }
+
+        /* Kill all site-wide backgrounds/tints for PDF */
+        div, main, section { background-color: transparent !important; background-image: none !important; }
         
-        /* Fix single-page clipping by expanding restricted containers */
-        .flex.h-screen { height: auto !important; overflow: visible !important; display: block !important; }
+        /* Force expanded container to prevent clipping */
+        .flex.h-screen { height: auto !important; overflow: visible !important; display: block !important; background: #ffffff !important; }
         
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         
-        #print-root { width: 100%; max-width: 100%; }
+        #print-root { 
+          width: 100%; 
+          max-width: 100%; 
+          background: #ffffff !important; 
+          position: relative;
+          z-index: 9999;
+        }
 
         .pdf-header-classic {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 2.5rem 0;
+          padding: 2rem 0;
           border-bottom: 4px solid #0f172a;
-          margin-bottom: 3rem;
+          margin-bottom: 2.5rem;
+          page-break-after: avoid;
         }
         
         .header-left .url { font-size: 26px; font-weight: 950; letter-spacing: -0.05em; color: #0f172a; }
@@ -372,8 +382,8 @@ const SystemManager = ({ onLoad }) => {
 
         .report-summary-title { font-size: 24px; font-weight: 950; margin-bottom: 2rem; text-align: center; color: #0f172a; border: none; }
 
-        .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 3rem; }
-        .pdf-card { padding: 1.5rem; border-radius: 2rem; border: 1px solid #f1f5f9; display: flex; flex-direction: column; justify-content: center; background: white; }
+        .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; break-inside: avoid; }
+        .pdf-card { padding: 1.5rem; border-radius: 2rem; border: 1px solid #f1f5f9; display: flex; flex-direction: column; justify-content: center; background: white !important; break-inside: avoid; page-break-inside: avoid; }
         
         .pdf-card-dark { color: white !important; }
         .pdf-card-balance { background: #0f172a !important; color: white !important; border: none; }
@@ -384,23 +394,23 @@ const SystemManager = ({ onLoad }) => {
         .pdf-card-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; color: inherit; opacity: 0.8; }
         .pdf-card-value { font-size: 22px; font-weight: 950; color: inherit; letter-spacing: -0.02em; }
 
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; border-radius: 1rem; overflow: hidden; border: 1px solid #f1f5f9; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; border-radius: 1rem; overflow: hidden; border: 1px solid #f1f5f9; break-inside: auto; }
+        .pdf-table tr { break-inside: avoid; page-break-inside: avoid; }
         .pdf-table th { background: #f8fafc !important; color: #64748b; font-size: 11px; font-weight: 900; padding: 1rem 1.25rem; border-bottom: 2px solid #f1f5f9; text-align: left; text-transform: uppercase; }
         .pdf-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1e293b; font-weight: 700; }
         
-        .pdf-section-title { font-size: 16px; font-weight: 950; margin: 3rem 0 1.5rem; border-left: 5px solid #f97316; padding-left: 1rem; text-transform: uppercase; display: flex; align-items: center; gap: 10px; color: #0f172a; }
+        .pdf-section-title { font-size: 16px; font-weight: 950; margin: 2.5rem 0 1rem; border-left: 5px solid #f97316; padding-left: 1rem; text-transform: uppercase; display: flex; align-items: center; gap: 10px; color: #0f172a; break-after: avoid; }
         
-        /* Analytics Elements */
-        .pdf-chart-box { background: white; border-radius: 2rem; border: 1px solid #f1f5f9; padding: 2rem; }
+        .pdf-chart-box { background: white !important; border-radius: 2rem; border: 1px solid #f1f5f9; padding: 2rem; break-inside: avoid; page-break-inside: avoid; }
         .pdf-pie { width: 110px; height: 110px; border-radius: 50%; display: inline-block; border: 6px solid #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         .category-bullet { width: 10px; height: 10px; border-radius: 4px; display: inline-block; margin-right: 12px; }
         .pdf-bar { width: 100%; border-radius: 8px; display: block; min-height: 4px; }
         
-        .pdf-page-section { page-break-inside: avoid !important; margin-bottom: 2rem; }
-        .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .pdf-page-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 2.5rem; }
+        .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; break-inside: avoid; }
         
-        .pdf-footer { margin-top: 4rem; padding-top: 2rem; border-t: 2px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; }
-        .pdf-footer p { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+        .pdf-footer { margin-top: 3rem; padding-top: 2rem; border-top: 2px solid #f8fafc; display: flex; justify-content: space-between; align-items: flex-start; break-inside: avoid; }
+        .pdf-footer p { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; margin-top: 0; }
       }
     `}</style>
   );
