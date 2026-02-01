@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Coins, Lock, ShieldCheck, Percent, RotateCcw, Download, Mail, Share2 } from 'lucide-react';
+import { TrendingUp, Coins, Lock, ShieldCheck, Percent, RotateCcw, Download, Mail, Share2, Loader2 } from 'lucide-react';
 import { generateCalculatorPDF, generateEmailLink } from '../utils/reportGenerator';
 
 // --- Calculation Logic ---
@@ -81,7 +81,7 @@ const calculateSimpleInterest = (p, n, r) => {
 
 // --- Component ---
 
-export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, t }) => {
+export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, t }) => {
     const [data, setData] = useState({ amount: '', duration: '', rate: '', expense_ratio: '1' });
     const [result, setResult] = useState(null);
     const [showDetailed, setShowDetailed] = useState(false);
@@ -257,9 +257,11 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, t }) => {
                             </button>
                             <button
                                 onClick={() => onShare(t(`tool_${toolId}`), data, result)}
-                                className="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                                disabled={isSharing}
+                                className="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all shadow-sm disabled:opacity-50"
                             >
-                                <Share2 size={14} /> {t('share')}
+                                {isSharing ? <Loader2 size={14} className="animate-spin text-orange-500" /> : <Share2 size={14} />}
+                                {isSharing ? t('generating') : t('share')}
                             </button>
                         </div>
                     </div>

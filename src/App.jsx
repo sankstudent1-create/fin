@@ -1166,6 +1166,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [selectedTool, setSelectedTool] = useState(null);
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [ipInfo, setIpInfo] = useState(null);
 
   useEffect(() => {
@@ -1202,38 +1203,56 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   }, [isPrinting]);
 
   const handleShare = async (calcTitle = null, calcData = null, calcResult = null) => {
+    setIsSharing(true);
     const isCalc = !!calcTitle;
     const filterLabel = isCalc ? calcTitle : (filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`);
 
-    let shareText = '';
-    let pdfFile = null;
+    // Give UI time to show loader and stabilize canvas if needed
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     try {
+      let shareText = '';
+      let pdfFile = null;
+
       if (isCalc) {
-        shareText = `📊 ${calcTitle} Analysis Summary\n\n- ${t('invested')}: ₹${Math.round(calcResult.invested).toLocaleString()}\n- ${t('net_value')}: ₹${Math.round(calcResult.netTotal).toLocaleString()}\n\nVerified by Orange Finance: fin.swinfosystems.online`;
+        shareText = `📊 ${calcTitle} Analysis Result\nVerified by Orange Finance: fin.swinfosystems.online`;
         pdfFile = getCalcPDFFile(calcTitle, calcData, calcResult, session.user);
       } else {
-        shareText = `📈 ${t('financial_report_subject')}: ${filterLabel}\n\n- ${t('total_balance')}: ₹${stats.balance.toLocaleString()}\n- ${t('assets')}: ₹${stats.carriedBalance.toLocaleString()}\n\nVerified by Orange Finance: fin.swinfosystems.online`;
+        shareText = `📈 Financial Report: ${filterLabel}\nVerified by Orange Finance: fin.swinfosystems.online`;
         pdfFile = getPDFFile(filteredTx, stats, session.user, filterLabel);
       }
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-        await navigator.share({
-          files: [pdfFile],
-          title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
-          text: shareText,
-        });
+      // High-compatibility Share Call
+      if (navigator.share) {
+        try {
+          // Construct fresh file object for sharing
+          const filesArray = [pdfFile];
+
+          await navigator.share({
+            files: filesArray,
+            title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
+            text: shareText,
+          });
+        } catch (shareErr) {
+          console.warn("Native file share failed, falling back to basic share", shareErr);
+          // Fallback to text sharing if file sharing fails
+          await navigator.share({
+            title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
+            text: shareText + "\n\nPDF download: fin.swinfosystems.online",
+          });
+        }
       } else {
+        // Ultimate fallback to email
         const subject = isCalc ? `${t('calc_subject')}: ${calcTitle}` : `${t('financial_report_subject')}: ${filterLabel}`;
-        const body = `${shareText}\n\n${t('generated_via')} fin.swinfosystems.online`;
+        const body = `${shareText}\n\nDownload full PDF at fin.swinfosystems.online`;
         window.location.href = generateEmailLink(subject, body);
       }
     } catch (err) {
-      console.error("Sharing failed", err);
-      // Fallback if file construction or sharing fails
+      console.error("Deep Sharing failed", err);
       const subject = isCalc ? `${t('calc_subject')}: ${calcTitle}` : `${t('financial_report_subject')}: ${filterLabel}`;
-      const body = `View my financial update: fin.swinfosystems.online`;
-      window.location.href = generateEmailLink(subject, body);
+      window.location.href = generateEmailLink(subject, "Visit fin.swinfosystems.online to view my report.");
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -1473,13 +1492,12 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
           return d.getMonth() === parseInt(filterMonth) && d.getFullYear() === parseInt(filterYear);
         });
       }
-    } else if (filterType === 'custom' && startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59);
+    } else if (filterType === 'custom') {
       filtered = filtered.filter(tx => {
-        const d = new Date(tx.date);
-        return d >= start && d <= end;
+        const d = new Date(tx.date).setHours(0, 0, 0, 0);
+        const s = new Date(startDate).setHours(0, 0, 0, 0);
+        const e = new Date(endDate).setHours(0, 0, 0, 0);
+        return d >= s && d <= e;
       });
     }
     return filtered;
@@ -1494,9 +1512,9 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         .filter(tx => new Date(tx.date) < firstDayOfMonth)
         .reduce((acc, tx) => acc + (tx.type === 'income' ? tx.amount : -tx.amount), 0);
     } else if (filterType === 'custom' && startDate) {
-      const start = new Date(startDate);
+      const start = new Date(startDate).setHours(0, 0, 0, 0);
       carriedBalance = transactions
-        .filter(tx => new Date(tx.date) < start)
+        .filter(tx => new Date(tx.date).setHours(0, 0, 0, 0) < start)
         .reduce((acc, tx) => acc + (tx.type === 'income' ? tx.amount : -tx.amount), 0);
     }
 
@@ -1573,46 +1591,45 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       <main className="flex-1 overflow-y-auto relative no-print">
         <div className="max-w-5xl mx-auto px-6 py-8 pb-32 lg:pb-8">
 
-          <header className="bg-white/80 backdrop-blur-md border-b border-orange-100 z-50 px-4 lg:px-8 py-4 sticky top-0 no-print">
-            <div className="max-w-7xl mx-auto flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20 rotate-3">
-                  <Wallet size={24} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-orange-800/40 uppercase tracking-[0.2em]">{greeting}</p>
-                  <h2 className="text-base lg:text-lg font-black text-gray-900 truncate max-w-[120px] lg:max-w-none">
-                    {session.user.user_metadata.full_name?.split(' ')[0]}
-                  </h2>
-                </div>
+          <header className="flex justify-between items-center mb-8 no-print">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full border-2 border-orange-200 overflow-hidden cursor-pointer shadow-sm active:scale-95 transition-all" onClick={() => fileInputRef.current.click()}>
+                <img src={avatarUrl} alt="avatar" className="app-avatar w-full h-full object-cover" />
+                <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-orange-800/60 uppercase tracking-widest">{greeting}</p>
+                <h2 className="text-lg font-black text-gray-900 truncate max-w-[150px]">
+                  {session.user.user_metadata.full_name?.split(' ')[0]}
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 my-1">
+                {!isOnline && <div className="flex items-center gap-2 bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse" title="Offline"><WifiOff size={14} /></div>}
+                {isOnline && isSyncing && <div className="flex items-center gap-2 bg-blue-100 text-blue-600 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse" title="Syncing..."><RefreshCw size={14} className="animate-spin" /></div>}
+                {isOnline && !isSyncing && <div className="flex items-center gap-2 bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold" title="Online & Synced"><Cloud size={14} /></div>}
               </div>
 
-              <div className="flex items-center gap-2 z-50">
-                <div className="flex items-center gap-1 my-1">
-                  {!isOnline && <div className="flex items-center gap-2 bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse" title="Offline"><WifiOff size={14} /></div>}
-                  {isOnline && isSyncing && <div className="flex items-center gap-2 bg-blue-100 text-blue-600 px-3 py-1.5 rounded-full text-xs font-bold animate-pulse" title="Syncing..."><RefreshCw size={14} className="animate-spin" /></div>}
-                  {isOnline && !isSyncing && <div className="flex items-center gap-2 bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold" title="Online & Synced"><Cloud size={14} /></div>}
+              {/* Mobile Settings - Language & Logout */}
+              <div className="lg:hidden flex items-center gap-2 ml-1 relative z-[60]">
+                <div className="scale-75 origin-right">
+                  <LanguageSwitcher lang={lang} onLangChange={onLangChange} variant="light" />
                 </div>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="w-9 h-9 flex items-center justify-center bg-rose-50 text-rose-500 rounded-xl active:scale-90 transition-all border border-rose-100"
+                  title={t('logout')}
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
 
-                {/* Mobile Settings - Language & Logout */}
-                <div className="lg:hidden flex items-center gap-2 ml-1 relative z-[60]">
-                  <div className="scale-90 origin-right">
-                    <LanguageSwitcher lang={lang} onLangChange={onLangChange} variant="light" />
-                  </div>
-                  <button
-                    onClick={() => supabase.auth.signOut()}
-                    className="w-9 h-9 flex items-center justify-center bg-rose-50 text-rose-500 rounded-xl active:scale-90 transition-all border border-rose-100"
-                    title={t('logout')}
-                  >
-                    <LogOut size={18} />
-                  </button>
-                </div>
-
-                <div className="hidden lg:flex items-center gap-4">
-                  <button onClick={() => { setEditingTx(null); setShowModal(true); }} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
-                    <Plus size={18} /> {t('add_tx')}
-                  </button>
-                </div>
+              <div className="hidden lg:flex items-center gap-4">
+                <button onClick={() => { setEditingTx(null); setShowModal(true); }} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2 text-sm">
+                  <Plus size={18} /> {t('add_tx')}
+                </button>
               </div>
             </div>
           </header>
@@ -1692,52 +1709,48 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
               </div>
             </div>
           ) : (
-            <div className="animate-fade-in pb-20 space-y-6 lg:space-y-8">
+            <div className="animate-fade-in pb-20 space-y-8">
               {/* Enhanced Filter Section */}
-              <div className="bg-white p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] warm-shadow border border-orange-100/50">
-                <div className="flex flex-col gap-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-xl lg:text-2xl font-black text-gray-900 tracking-tight">{t('financial_reports')}</h2>
-                      <p className="text-[10px] lg:text-xs text-gray-400 font-bold uppercase tracking-widest mt-1 opacity-70">{t('report_desc')}</p>
-                    </div>
+              <div className="bg-white p-6 rounded-[2.5rem] warm-shadow border border-orange-100/50">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                  <div className="mb-4 lg:mb-0">
+                    <h2 className="text-xl lg:text-2xl font-black text-gray-900 tracking-tight">{t('financial_reports')}</h2>
+                    <p className="text-xs font-bold text-gray-400 mt-1 opacity-60 tracking-wide uppercase">{t('report_desc')}</p>
                   </div>
 
-                  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-                    <div className="flex-1 flex flex-col sm:flex-row gap-3">
-                      <div className="bg-orange-50/50 p-1.5 rounded-2xl flex border border-orange-100 flex-1 sm:flex-none">
-                        <button onClick={() => setFilterType('monthly')} className={`flex-1 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterType === 'monthly' ? 'bg-white shadow-sm text-orange-600' : 'text-gray-400'}`}>{t('monthly_filter')}</button>
-                        <button onClick={() => setFilterType('custom')} className={`flex-1 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterType === 'custom' ? 'bg-white shadow-sm text-orange-600' : 'text-gray-400'}`}>{t('custom_filter')}</button>
-                      </div>
-
-                      {filterType === 'monthly' ? (
-                        <div className="flex gap-2 flex-1 sm:flex-none">
-                          <select
-                            value={filterMonth}
-                            onChange={(e) => setFilterMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-                            className="flex-1 sm:w-32 bg-white border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold text-gray-700 outline-none shadow-sm"
-                          >
-                            <option value="all">{t('annual')}</option>
-                            {monthNames.map((m, i) => <option key={m} value={i}>{m}</option>)}
-                          </select>
-                          <select
-                            value={filterYear}
-                            onChange={(e) => setFilterYear(parseInt(e.target.value))}
-                            className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold text-gray-700 outline-none shadow-sm"
-                          >
-                            {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
-                          </select>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm px-4 flex-1 sm:flex-none overflow-x-auto min-w-0">
-                          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-[11px] font-bold text-gray-700 bg-transparent outline-none min-w-[100px]" />
-                          <span className="text-gray-300 font-bold">→</span>
-                          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-[11px] font-bold text-gray-700 bg-transparent outline-none min-w-[100px]" />
-                        </div>
-                      )}
+                  <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <div className="bg-orange-50/50 p-1.5 rounded-2xl flex border border-orange-100">
+                      <button onClick={() => setFilterType('monthly')} className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all ${filterType === 'monthly' ? 'bg-white shadow-md text-orange-600' : 'text-gray-400'}`}>{t('monthly_filter')}</button>
+                      <button onClick={() => setFilterType('custom')} className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all ${filterType === 'custom' ? 'bg-white shadow-md text-orange-600' : 'text-gray-400'}`}>{t('custom_filter')}</button>
                     </div>
 
-                    <div className="flex gap-2">
+                    {filterType === 'monthly' ? (
+                      <div className="flex gap-2">
+                        <select
+                          value={filterMonth}
+                          onChange={(e) => setFilterMonth(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                          className="bg-white border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-black text-gray-700 outline-none shadow-sm"
+                        >
+                          <option value="all">{t('annual')}</option>
+                          {monthNames.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                        </select>
+                        <select
+                          value={filterYear}
+                          onChange={(e) => setFilterYear(parseInt(e.target.value))}
+                          className="bg-white border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-black text-gray-700 outline-none shadow-sm"
+                        >
+                          {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-white p-2.5 rounded-2xl border border-gray-100 shadow-sm px-4">
+                        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-xs font-black text-gray-700 bg-transparent outline-none" />
+                        <span className="text-gray-300 font-black">→</span>
+                        <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-xs font-black text-gray-700 bg-transparent outline-none" />
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 w-full lg:w-auto">
                       <button
                         onClick={() => {
                           setIsPrinting(true);
@@ -1747,10 +1760,12 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                         <Download size={16} /> PDF
                       </button>
                       <button
-                        onClick={handleShare}
+                        onClick={() => handleShare()}
+                        disabled={isSharing}
                         className="flex-1 lg:flex-none bg-orange-100 text-orange-600 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-orange-200 transition-all shadow-sm"
                       >
-                        <Share2 size={16} /> {t('share')}
+                        {isSharing ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
+                        {isSharing ? t('generating') : t('share')}
                       </button>
                     </div>
                   </div>
@@ -1794,7 +1809,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
           </div>
         </div>
 
-        {selectedTool && <CalculatorModal toolId={selectedTool} onClose={() => setSelectedTool(null)} onPrint={handlePrintCalculator} onShare={handleShare} t={t} />}
+        {selectedTool && <CalculatorModal toolId={selectedTool} onClose={() => setSelectedTool(null)} onPrint={handlePrintCalculator} onShare={handleShare} isSharing={isSharing} t={t} />}
       </main>
 
       <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md p-2 rounded-[2rem] shadow-2xl border border-white/50 flex justify-between items-center z-50 max-w-sm mx-auto no-print">
