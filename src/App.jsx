@@ -12,6 +12,7 @@ import {
 import { CalculatorModal } from './components/Calculators';
 import { AnalyticsDashboard } from './components/Analytics';
 import { generateEmailLink } from './utils/reportGenerator';
+import html2pdf from 'html2pdf.js';
 
 
 // --- 🟢 CONFIGURATION ---
@@ -344,8 +345,19 @@ const SystemManager = ({ onLoad }) => {
           font-size: 13px !important;
           color: #0f172a !important;
           zoom: 1;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
+        }
+
+        /* html2pdf specific resets */
+        #pdf-render-area {
+          background: #ffffff !important;
+          background-image: 
+            radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.03) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.03) 0, transparent 50%) !important;
+          color: #0f172a !important;
+          width: 210mm; /* A4 Width */
+          margin: 0 auto;
+          padding: 20mm !important;
+          box-sizing: border-box;
         }
 
         /* Selective background restoration for 'boxes' */
@@ -877,10 +889,10 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
   );
 };
 
-const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang }) => {
+const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang, innerRef }) => {
   const locale = lang === 'en' ? 'en-IN' : lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'te-IN';
   return (
-    <div id="print-root" className="print-only">
+    <div id="pdf-render-area" ref={innerRef} className="bg-white p-10 min-h-screen">
       <div className="pdf-header-classic">
         <div className="header-left">
           <span className="url">fin.swinfosystems.online</span>
@@ -896,22 +908,24 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
       </div>
 
       {calculatorData ? (
-        <CalculatorPrintView data={calculatorData} ipInfo={ipInfo} t={t} lang={lang} />
+        <div className="pdf-animate-entry">
+          <CalculatorPrintView data={calculatorData} ipInfo={ipInfo} t={t} lang={lang} />
+        </div>
       ) : (
         <div className="audit-ledger-container">
           <h3 className="report-summary-title">{t('report_summary')}: {filterLabel}</h3>
 
           <div className="pdf-grid">
-            <div className="pdf-card pdf-card-balance">
-              <p className="pdf-card-title">{t('assets')}</p>
+            <div className="pdf-card pdf-card-balance !bg-[#0f172a] !text-white border-none">
+              <p className="pdf-card-title !text-gray-400">{t('assets')}</p>
               <h2 className="pdf-card-value">₹{(stats.carriedBalance || 0).toLocaleString()}</h2>
             </div>
-            <div className="pdf-card pdf-card-income">
-              <p className="pdf-card-title">{t('earnings')}</p>
+            <div className="pdf-card pdf-card-income !bg-[#065f46] !text-white border-none">
+              <p className="pdf-card-title !text-emerald-200/50">{t('earnings')}</p>
               <h2 className="pdf-card-value">₹{(stats.income || 0).toLocaleString()}</h2>
             </div>
-            <div className="pdf-card pdf-card-expense">
-              <p className="pdf-card-title">{t('spending')}</p>
+            <div className="pdf-card pdf-card-expense !bg-[#7f1d1d] !text-white border-none">
+              <p className="pdf-card-title !text-rose-200/50">{t('spending')}</p>
               <h2 className="pdf-card-value">₹{(stats.expense || 0).toLocaleString()}</h2>
             </div>
           </div>
@@ -967,6 +981,92 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
         <div style={{ textAlign: 'right' }}>
           <p>IP: {ipInfo?.ip || 'Syncing...'}</p>
           <p>{ipInfo?.city || 'India'}, {ipInfo?.region || 'Global'}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ReportPreviewModal = ({ isOpen, onClose, user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang }) => {
+  const pdfRef = useRef(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleDownload = async () => {
+    setIsGenerating(true);
+    const element = pdfRef.current;
+    const opt = {
+      margin: 0,
+      filename: `Report_${new Date().toISOString().split('T')[0]}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true,
+        backgroundColor: '#ffffff'
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    try {
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF generation error:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-10">
+      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in" onClick={onClose} />
+
+      <div className="relative bg-white w-full max-w-5xl h-full flex flex-col rounded-[2.5rem] shadow-2xl overflow-hidden animate-scale-up">
+        {/* Modal Header */}
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+              <FileText size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-gray-900">{t('report_preview')}</h2>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{filterLabel}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDownload}
+              disabled={isGenerating}
+              className="bg-gray-900 text-white px-8 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 hover:bg-gray-800 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+            >
+              {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              {isGenerating ? t('generating') : t('download_pdf')}
+            </button>
+            <button onClick={onClose} className="p-3 bg-gray-50 text-gray-400 rounded-2xl hover:bg-gray-100 transition-all">
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Content - The Scrollable Preview */}
+        <div className="flex-1 overflow-y-auto bg-gray-100 p-8 flex justify-center custom-scrollbar">
+          <div className="shadow-2xl origin-top transition-transform duration-500">
+            <PrintView
+              innerRef={pdfRef}
+              user={user}
+              stats={stats}
+              transactions={transactions}
+              avatarUrl={avatarUrl}
+              filterLabel={filterLabel}
+              calculatorData={calculatorData}
+              ipInfo={ipInfo}
+              t={t}
+              lang={lang}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -1152,6 +1252,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [analysisType, setAnalysisType] = useState('expense'); // expense | income
   const [selectedTool, setSelectedTool] = useState(null);
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
+  const [showReportPreview, setShowReportPreview] = useState(false);
   const [ipInfo, setIpInfo] = useState(null);
 
   useEffect(() => {
@@ -1167,15 +1268,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
   const handlePrintCalculator = (toolName, inputs, result) => {
     setCalculatorPrintData({ toolName, inputs, result });
-    // iOS Safari Fix: Higher delay + reflow trigger
-    setTimeout(() => {
-      window.scrollTo(0, 0); // Force reflow
-      window.print();
-      // Keep state long enough for iOS preview to stay active
-      setTimeout(() => {
-        setCalculatorPrintData(null);
-      }, 800);
-    }, 1500);
+    setShowReportPreview(true);
   };
 
   // Offline Hook
@@ -1472,7 +1565,12 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     <div className="flex h-screen bg-[#fff7ed] text-slate-800 overflow-hidden">
       <HeadManager />
 
-      <PrintView
+      <ReportPreviewModal
+        isOpen={showReportPreview}
+        onClose={() => {
+          setShowReportPreview(false);
+          setCalculatorPrintData(null);
+        }}
         user={session.user}
         stats={stats}
         transactions={filteredTx}
@@ -1673,8 +1771,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                     <div className="flex gap-2 w-full lg:w-auto">
                       <button
                         onClick={() => {
-                          window.scrollTo(0, 0);
-                          setTimeout(() => { window.print(); }, 300);
+                          setShowReportPreview(true);
                         }}
                         className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all"
                       >
