@@ -338,15 +338,18 @@ const SystemManager = ({ onLoad }) => {
         
         html, body { 
           height: auto !important; 
+          min-height: 100% !important;
           overflow: visible !important; 
           background: #ffffff !important; 
           font-size: 13px !important;
           color: #0f172a !important;
           zoom: 1;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
-        /* Kill all site-wide backgrounds/tints for PDF */
-        div, main, section { background-color: transparent !important; background-image: none !important; }
+        /* Target the specific mesh background and page wrappers that cause orange tints */
+        .bg-mesh, section.bg-[#fff7ed], main, .min-h-screen { background: none !important; background-color: #ffffff !important; }
         
         /* Force expanded container to prevent clipping */
         .flex.h-screen { height: auto !important; overflow: visible !important; display: block !important; background: #ffffff !important; }
@@ -401,10 +404,10 @@ const SystemManager = ({ onLoad }) => {
         
         .pdf-section-title { font-size: 16px; font-weight: 950; margin: 2.5rem 0 1rem; border-left: 5px solid #f97316; padding-left: 1rem; text-transform: uppercase; display: flex; align-items: center; gap: 10px; color: #0f172a; break-after: avoid; }
         
-        .pdf-chart-box { background: white !important; border-radius: 2rem; border: 1px solid #f1f5f9; padding: 2rem; break-inside: avoid; page-break-inside: avoid; }
-        .pdf-pie { width: 110px; height: 110px; border-radius: 50%; display: inline-block; border: 6px solid #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        .category-bullet { width: 10px; height: 10px; border-radius: 4px; display: inline-block; margin-right: 12px; }
-        .pdf-bar { width: 100%; border-radius: 8px; display: block; min-height: 4px; }
+        .pdf-chart-box { background: white !important; border-radius: 2rem; border: 1px solid #f1f5f9; padding: 2rem; break-inside: avoid; page-break-inside: avoid; -webkit-print-color-adjust: exact !important; }
+        .pdf-pie { width: 110px; height: 110px; border-radius: 50%; display: inline-block; border: 6px solid #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); -webkit-print-color-adjust: exact !important; }
+        .category-bullet { width: 10px; height: 10px; border-radius: 4px; display: inline-block; margin-right: 12px; -webkit-print-color-adjust: exact !important; }
+        .pdf-bar { width: 100%; border-radius: 8px; display: block; min-height: 4px; -webkit-print-color-adjust: exact !important; }
         
         .pdf-page-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 2.5rem; }
         .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; break-inside: avoid; }
@@ -1170,10 +1173,13 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   // Trigger Calculator Print
   const handlePrintCalculator = (toolName, inputs, result) => {
     setCalculatorPrintData({ toolName, inputs, result });
+    // iOS/Safari Robustness: Increased delay for DOM rendering before print
     setTimeout(() => {
       window.print();
-      setCalculatorPrintData(null);
-    }, 100);
+      // On mobile/iOS, we don't immediately clear data because Safari 
+      // sometimes cancels the print if the state change happens too fast
+      setTimeout(() => setCalculatorPrintData(null), 1000);
+    }, 500);
   };
 
   // Offline Hook
@@ -1671,7 +1677,17 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                     )}
 
                     <div className="flex gap-2 w-full lg:w-auto">
-                      <button onClick={() => window.print()} className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all"><Download size={16} /> PDF</button>
+                      <button
+                        onClick={() => {
+                          // Force a tiny reflow before printing for iOS
+                          const root = document.getElementById('print-root');
+                          if (root) root.style.display = 'block';
+                          setTimeout(() => window.print(), 300);
+                        }}
+                        className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all"
+                      >
+                        <Download size={16} /> PDF
+                      </button>
                       <a
                         href={generateEmailLink(
                           `${t('financial_report_subject')}: ${filterType === 'monthly' ? (filterMonth === 'all' ? t('annual') : monthNames[filterMonth]) : t('custom_filter')}`,
