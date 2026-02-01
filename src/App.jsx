@@ -327,175 +327,66 @@ const SystemManager = ({ onLoad }) => {
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
       
+      /* --- 🖨️ CONSOLIDATED PRINT ENGINE --- */
       @media print {
-        @page { margin: 1cm; size: A4; }
-        html, body { height: auto !important; overflow: visible !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .flex.h-screen { height: auto !important; overflow: visible !important; display: block !important; }
-        .no-print { display: none !important; }
-        .print-only { display: block !important; }
-        
-        #print-root { 
-          width: 100%; 
-          background: #ffffff; 
-          color: #1e293b; 
-          font-family: 'Poppins', 'Mukta', 'Noto Sans Telugu', sans-serif;
-          overflow: visible !important;
-          padding: 0;
-          margin: 0;
-        }
-      }
-
-      /* --- 📱 SCREEN STYLES (NO-PRINT) --- */
-      .print-only { display: none !important; }
-
-      .app-avatar { width: 40px; height: 40px; border-radius: 99px; object-fit: cover; }
-
-      /* --- 🖨️ PRINT STYLES --- */
-      @media print {
-        @page { margin: 1cm; size: A4; }
+        @page { margin: 0.8cm; size: A4; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         
-        html, body { height: auto !important; overflow: visible !important; font-size: 13px !important; background: #fff !important; }
-        .flex.h-screen { height: auto !important; overflow: visible !important; display: block !important; }
+        html, body { 
+          height: auto !important; 
+          overflow: visible !important; 
+          background: #fff !important; 
+          font-size: 15px !important; /* Enhanced readability */
+          zoom: 0.9; /* 90% Scale */
+          color: #0f172a !important;
+        }
+        
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         
         #print-root { 
           width: 100%; 
           background: #ffffff; 
-          color: #0f172a; 
-          font-family: 'Poppins', 'Mukta', 'Noto Sans Telugu', sans-serif;
           padding: 0;
           margin: 0;
         }
 
-        .pdf-page-section { margin-bottom: 45px; width: 100%; border-radius: 24px; }
-        
         .pdf-header-classic {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 30px 0;
-          border-bottom: 4px solid #0f172a;
+          border-bottom: 5px solid #0f172a;
           margin-bottom: 40px;
-          color: #0f172a !important;
-          position: relative;
-        }
-
-        .pdf-header-classic::before {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          left: 0;
-          width: 80px;
-          height: 4px;
-          background: #eab308;
-          z-index: 10;
         }
         
-        .header-left .url { font-size: 20px; font-weight: 950; color: #0f172a !important; letter-spacing: -0.04em; }
-        .header-left .sub-brand { font-size: 10px; font-weight: 800; color: #94a3b8 !important; text-transform: uppercase; letter-spacing: 0.4em; margin-top: 8px; }
+        .header-left .url { font-size: 24px; font-weight: 950; letter-spacing: -0.04em; }
+        .header-left .sub-brand { font-size: 11px; font-weight: 800; color: #64748b !important; text-transform: uppercase; letter-spacing: 0.4em; margin-top: 8px; }
         
         .header-right { display: flex; align-items: center; gap: 20px; }
-        .user-meta-info .name { font-size: 18px; font-weight: 950; color: #0f172a !important; display: block; margin-bottom: 2px; }
-        .user-meta-info .email { font-size: 12px; font-weight: 700; color: #64748b !important; }
-        .header-avatar { width: 60px; height: 60px; border-radius: 20px; border: 2px solid #f8fafc; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .user-meta-info .name { font-size: 20px; font-weight: 950; display: block; }
+        .user-meta-info .email { font-size: 13px; font-weight: 700; color: #64748b !important; }
+        .header-avatar { width: 70px; height: 70px; border-radius: 24px; border: 3px solid #f1f5f9; }
 
-        .report-summary-title {
-          font-size: 28px;
-          font-weight: 900;
-          color: #0f172a;
-          letter-spacing: -0.05em;
-          margin-bottom: 25px;
-          text-align: center;
-        }
+        .report-summary-title { font-size: 32px; font-weight: 900; margin-bottom: 30px; text-align: center; letter-spacing: -0.05em; }
 
         .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 35px; }
-        .pdf-card { 
-          padding: 24px; 
-          border-radius: 32px; 
-          position: relative;
-          color: white;
-          overflow: hidden;
-          box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        }
-
-        .pdf-card::after {
-          content: '';
-          position: absolute;
-          top: -20px;
-          right: -20px;
-          width: 80px;
-          height: 80px;
-          background: rgba(255,255,255,0.1);
-          border-radius: 50%;
-        }
+        .pdf-card { padding: 25px; border-radius: 35px; color: white; position: relative; overflow: hidden; }
+        .pdf-card-balance { background: #0f172a !important; }
+        .pdf-card-income { background: #064e3b !important; }
+        .pdf-card-expense { background: #450a0a !important; }
         
-        .pdf-card-balance { background: #0f172a !important; color: white !important; border: 1px solid rgba(255,255,255,0.1); }
-        .pdf-card-income { background: #064e3b !important; color: white !important; }
-        .pdf-card-expense { background: #450a0a !important; color: white !important; }
+        .pdf-card-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; opacity: 0.8; }
+        .pdf-card-value { font-size: 28px; font-weight: 950; }
 
-        .pdf-card-title { font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; }
-        .pdf-card-value { font-size: 24px; font-weight: 950; color: white; }
-
-        .pdf-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 30px; border: 1px solid #f1f5f9; border-radius: 24px; overflow: hidden; }
-        .pdf-table th { 
-          text-align: left; 
-          color: #475569; 
-          font-size: 11px; 
-          font-weight: 900;
-          text-transform: uppercase; 
-          padding: 18px 20px; 
-          background: #f8fafc !important;
-          border-bottom: 2px solid #e2e8f0;
-        }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 30px; border-radius: 20px; overflow: hidden; outline: 1px solid #e2ebf0; }
+        .pdf-table th { background: #f8fafc !important; color: #475569; font-size: 13px; font-weight: 900; padding: 18px 20px; border-bottom: 2px solid #e2e8f0; text-align: left; }
+        .pdf-table td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #1e293b; font-weight: 600; }
         
-        .pdf-table td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; font-weight: 600; }
-        .pdf-table tr:last-child td { border-bottom: none; }
-        .pdf-table tr:nth-child(even) { background-color: #fbfcff !important; }
-
-        .pdf-pie-container { display: flex; align-items: center; gap: 35px; }
-        .pdf-pie { 
-          width: 120px; 
-          height: 120px; 
-          border-radius: 50%; 
-          display: inline-block;
-          border: 6px solid #ffffff;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        
-        .pdf-bar { 
-          width: 100%; 
-          border-radius: 12px; 
-          display: block;
-          -webkit-print-color-adjust: exact !important; 
-        }
-
-        .pdf-section-title {
-          font-size: 16px;
-          font-weight: 950;
-          color: #1e293b;
-          margin-bottom: 20px;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          padding-left: 12px;
-          border-left: 5px solid #f97316;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
+        .pdf-section-title { font-size: 20px; font-weight: 950; margin: 40px 0 20px; border-left: 6px solid #f97316; padding-left: 15px; text-transform: uppercase; }
         .pdf-page-section, .pdf-grid, .grid-cols-2 { page-break-inside: avoid !important; }
-
-        .category-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 12px 0;
-          border-bottom: 1px dashed #e2e8f0;
-          font-size: 13px;
-          font-weight: 700;
-        }
-        .category-bullet { width: 12px; height: 12px; border-radius: 4px; display: inline-block; margin-right: 12px; }
+        
+        .pdf-pie { width: 130px; height: 130px; border-radius: 50%; display: inline-block; border: 8px solid #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
       }
     `}</style>
   );
@@ -925,26 +816,26 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
 
       {/* Taxation Deep Dive (Moved to End) */}
       <div className="grid grid-cols-2 gap-6 mt-8 items-start page-break-avoid">
-        <div style={{ backgroundColor: boxColor === 'blue' ? '#eff6ff' : boxColor === 'indigo' ? '#eef2ff' : '#f8fafc', borderColor: boxColor === 'blue' ? '#bfdbfe' : boxColor === 'indigo' ? '#c7d2fe' : '#e2e8f0' }} className="p-4 rounded-[1.5rem] border">
-          <h3 className="text-xs font-black text-slate-900 mb-1.5">{taxInfo.title}</h3>
-          <p className="text-[9px] text-slate-600 font-medium leading-relaxed mb-4">{taxInfo.desc}</p>
+        <div style={{ backgroundColor: boxColor === 'blue' ? '#eff6ff' : boxColor === 'indigo' ? '#eef2ff' : '#f8fafc', borderColor: boxColor === 'blue' ? '#bfdbfe' : boxColor === 'indigo' ? '#c7d2fe' : '#e2e8f0' }} className="p-5 rounded-[1.5rem] border shadow-sm">
+          <h3 className="text-sm font-black text-slate-900 mb-2">{taxInfo.title}</h3>
+          <p className="text-[10px] text-slate-600 font-medium leading-relaxed mb-4">{taxInfo.desc}</p>
           <div className="flex gap-2">
-            <div className="flex-1 bg-white p-2 rounded-xl border border-slate-100">
-              <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">{t('est_tax')}</p>
-              <p className="text-sm font-black text-rose-700">₹{(result.tax || 0).toLocaleString()}</p>
+            <div className="flex-1 bg-white p-3 rounded-xl border border-slate-100">
+              <p className="text-[9px] font-bold text-slate-400 uppercase mb-0.5">{t('est_tax')}</p>
+              <p className="text-base font-black text-rose-700">₹{(result.tax || 0).toLocaleString()}</p>
             </div>
             {taxInfo.showExpenseRatio && inputs.expense_ratio && (
-              <div className="flex-1 bg-white p-2 rounded-xl border border-slate-100">
-                <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">{t('exp_ratio').split('(')[0]}</p>
-                <p className="text-sm font-black text-slate-800">{inputs.expense_ratio}%</p>
+              <div className="flex-1 bg-white p-3 rounded-xl border border-slate-100">
+                <p className="text-[9px] font-bold text-slate-400 uppercase mb-0.5">{t('exp_ratio').split('(')[0]}</p>
+                <p className="text-base font-black text-slate-800">{inputs.expense_ratio}%</p>
               </div>
             )}
           </div>
         </div>
 
         <div>
-          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">{t('tax_slab_title')}</h4>
-          <div className="space-y-1.5">
+          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{t('tax_slab_title')}</h4>
+          <div className="space-y-2">
             {[
               { r: "0%", s: `${t('up_to')} ₹3L` },
               { r: "5%", s: "₹3L - ₹7L" },
@@ -952,24 +843,12 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
               { r: "15%", s: "₹10L - ₹12L" },
               { r: "20% - 30% Slab", s: t('above_slab') }
             ].map((row, i) => (
-              <div key={i} className="flex justify-between text-[9px] font-bold border-b border-slate-50 pb-1">
-                <span className="text-slate-500">{row.s}</span>
+              <div key={i} className="flex justify-between text-[11px] font-bold border-b border-slate-100 pb-1.5">
+                <span className="text-slate-500 font-medium">{row.s}</span>
                 <span className="text-slate-900">{row.r}</span>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* PDF Generation Metadata */}
-      <div className="mt-12 pt-6 border-t border-slate-100 flex justify-between items-start text-[8px] text-slate-400 font-bold uppercase tracking-widest">
-        <div>
-          <p>{t('report_generated')}: {new Date().toLocaleString(locale)}</p>
-          <p>{t('verification')}: {t('certified_ledger')}</p>
-        </div>
-        <div className="text-right">
-          <p>IP: {ipInfo?.ip || t('syncing')}</p>
-          <p>{t('approx_location')}: {ipInfo?.city || 'India'}, {ipInfo?.region || 'Global'}</p>
         </div>
       </div>
     </div>
@@ -1051,24 +930,23 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
               </tbody>
             </table>
           </div>
-
-          {/* Report Metadata */}
-          <div className="mt-16 pt-8 border-t border-slate-100 flex justify-between items-start text-[8px] text-slate-400 font-bold uppercase tracking-widest">
-            <div>
-              <p>{t('report_generated')}: {new Date().toLocaleString(locale)}</p>
-              <p>{t('verification')}: {t('certified_ledger')}</p>
-            </div>
-            <div className="text-right">
-              <p>IP: {ipInfo?.ip || t('syncing')}</p>
-              <p>{t('approx_location')}: {ipInfo?.city || 'India'}, {ipInfo?.region || 'Global'}</p>
-            </div>
-          </div>
         </>
       )}
 
+      <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-start text-[9px] text-slate-400 font-bold uppercase tracking-widest page-break-avoid">
+        <div>
+          <p>{t('report_generated')}: {new Date().toLocaleString(locale)}</p>
+          <p>{t('verification')}: {t('certified_ledger')}</p>
+        </div>
+        <div className="text-right">
+          <p>IP: {ipInfo?.ip || t('syncing')}</p>
+          <p>{t('approx_location')}: {ipInfo?.city || 'India'}, {ipInfo?.region || 'Global'}</p>
+        </div>
+      </div>
+
       {/* Universal Sub-Footer */}
-      <div className="mt-20 text-center py-6">
-        <p className="text-[10px] text-slate-300 font-bold uppercase tracking-[0.4em]">{t('official_extract')} • Orange Finance</p>
+      <div className="mt-10 text-center py-6">
+        <p className="text-[11px] text-slate-300 font-extrabold uppercase tracking-[0.4em]">{t('official_extract')} • Orange Finance</p>
       </div>
     </div>
   );
