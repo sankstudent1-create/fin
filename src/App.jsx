@@ -333,66 +333,71 @@ const SystemManager = ({ onLoad }) => {
 
       /* --- 🖨️ CONSOLIDATED PRINT ENGINE --- */
       @media print {
-        @page { margin: 0.8cm; size: A4; }
+        @page { margin: 1cm; size: A4; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         
         html, body { 
           height: auto !important; 
           overflow: visible !important; 
           background: #fff !important; 
-          font-size: 14px !important;
-          zoom: 0.9;
+          font-size: 13px !important;
           color: #0f172a !important;
+          zoom: 0.95;
         }
         
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         
-        #print-root { width: 100%; background: #ffffff; padding: 0; margin: 0; }
+        #print-root { width: 100%; max-width: 100%; }
 
         .pdf-header-classic {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 25px 0;
-          border-bottom: 5px solid #0f172a;
-          margin-bottom: 35px;
+          padding: 2.5rem 0;
+          border-bottom: 4px solid #0f172a;
+          margin-bottom: 3rem;
         }
         
-        .header-left .url { font-size: 24px; font-weight: 950; letter-spacing: -0.04em; }
-        .header-left .sub-brand { font-size: 11px; font-weight: 800; color: #64748b !important; text-transform: uppercase; letter-spacing: 0.4em; border: none; margin-top: 8px; }
+        .header-left .url { font-size: 26px; font-weight: 950; letter-spacing: -0.05em; color: #0f172a; }
+        .header-left .sub-brand { font-size: 10px; font-weight: 800; color: #64748b !important; text-transform: uppercase; letter-spacing: 0.4em; border: none; margin-top: 10px; }
         
-        .header-right { display: flex; align-items: center; gap: 20px; }
-        .user-meta-info .name { font-size: 20px; font-weight: 950; display: block; color: #0f172a; }
-        .user-meta-info .email { font-size: 13px; font-weight: 700; color: #64748b !important; }
-        .header-avatar { width: 70px; height: 70px; border-radius: 20px; border: 3px solid #f1f5f9; }
+        .header-right { display: flex; align-items: center; gap: 24px; text-align: right; }
+        .user-meta-info .name { font-size: 18px; font-weight: 900; display: block; color: #0f172a; margin-bottom: 2px; }
+        .user-meta-info .email { font-size: 12px; font-weight: 700; color: #94a3b8 !important; }
+        .header-avatar { width: 64px; height: 64px; border-radius: 18px; border: 3px solid #f1f5f9; object-fit: cover; }
 
-        .report-summary-title { font-size: 28px; font-weight: 950; margin-bottom: 25px; text-align: center; }
+        .report-summary-title { font-size: 24px; font-weight: 950; margin-bottom: 2rem; text-align: center; color: #0f172a; border: none; }
 
-        .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
-        .pdf-card { padding: 25px; border-radius: 30px; border: 1px solid #e2e8f0; }
+        .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 3rem; }
+        .pdf-card { padding: 1.5rem; border-radius: 2rem; border: 1px solid #f1f5f9; display: flex; flex-direction: column; justify-content: center; background: white; }
+        
         .pdf-card-dark { color: white !important; }
-        .pdf-card-balance { background: #0f172a !important; color: white !important; }
-        .pdf-card-income { background: #064e3b !important; color: white !important; }
-        .pdf-card-expense { background: #450a0a !important; color: white !important; }
+        .pdf-card-balance { background: #0f172a !important; color: white !important; border: none; }
+        .pdf-card-income { background: #065f46 !important; color: white !important; border: none; }
+        .pdf-card-expense { background: #7f1d1d !important; color: white !important; border: none; }
+        .pdf-card-indigo { background: #312e81 !important; color: white !important; border: none; }
         
-        .pdf-card-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; color: inherit; opacity: 0.7; }
-        .pdf-card-value { font-size: 24px; font-weight: 950; color: inherit; }
+        .pdf-card-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; color: inherit; opacity: 0.8; }
+        .pdf-card-value { font-size: 22px; font-weight: 950; color: inherit; letter-spacing: -0.02em; }
 
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 30px; border-radius: 15px; overflow: hidden; outline: 1px solid #e2e8f0; }
-        .pdf-table th { background: #f8fafc !important; color: #475569; font-size: 12px; font-weight: 900; padding: 15px 20px; border-bottom: 2px solid #e2e8f0; text-align: left; }
-        .pdf-table td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; font-weight: 700; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; border-radius: 1rem; overflow: hidden; border: 1px solid #f1f5f9; }
+        .pdf-table th { background: #f8fafc !important; color: #64748b; font-size: 11px; font-weight: 900; padding: 1rem 1.25rem; border-bottom: 2px solid #f1f5f9; text-align: left; text-transform: uppercase; }
+        .pdf-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1e293b; font-weight: 700; }
         
-        .pdf-section-title { font-size: 18px; font-weight: 950; margin: 35px 0 15px; border-left: 6px solid #f97316; padding-left: 15px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
-        .pdf-page-section { page-break-inside: avoid !important; }
-
-        /* Analytics Specifics */
-        .pdf-pie-container { display: flex; align-items: center; gap: 30px; }
-        .pdf-pie { width: 120px; height: 120px; border-radius: 50%; display: inline-block; border: 8px solid #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .category-bullet { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 10px; }
-        .pdf-bar { width: 100%; border-radius: 10px; display: block; }
+        .pdf-section-title { font-size: 16px; font-weight: 950; margin: 3rem 0 1.5rem; border-left: 5px solid #f97316; padding-left: 1rem; text-transform: uppercase; display: flex; align-items: center; gap: 10px; color: #0f172a; }
         
-        .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        /* Analytics Elements */
+        .pdf-chart-box { background: white; border-radius: 2rem; border: 1px solid #f1f5f9; padding: 2rem; }
+        .pdf-pie { width: 110px; height: 110px; border-radius: 50%; display: inline-block; border: 6px solid #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .category-bullet { width: 10px; height: 10px; border-radius: 4px; display: inline-block; margin-right: 12px; }
+        .pdf-bar { width: 100%; border-radius: 8px; display: block; min-height: 4px; }
+        
+        .pdf-page-section { page-break-inside: avoid !important; margin-bottom: 2rem; }
+        .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        
+        .pdf-footer { margin-top: 4rem; padding-top: 2rem; border-t: 2px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; }
+        .pdf-footer p { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
       }
     `}</style>
   );
@@ -638,26 +643,26 @@ const PrintAnalytics = ({ stats, transactions, t }) => {
   return (
     <div className="space-y-10">
       <div className="pdf-page-section">
-        <div className="pdf-card !bg-white !border-slate-100 !py-8">
-          <p className="pdf-card-title text-center !mb-8 !text-slate-400">{t('cashflow_momentum')}</p>
-          <div className="flex items-end justify-center gap-16 h-48 border-b-2 border-slate-100 pb-2">
-            <div className="flex flex-col items-center justify-end h-full w-32 gap-6">
+        <div className="pdf-chart-box">
+          <p className="pdf-card-title text-center !mb-10 !text-slate-400">{t('cashflow_momentum')}</p>
+          <div className="flex items-end justify-center gap-16 h-56 border-b-2 border-slate-50 pb-4">
+            <div className="flex flex-col items-center justify-end h-full w-32">
               <div
-                style={{ height: `${Math.max((stats.income / maxVal) * 100, 5)}% `, backgroundColor: '#059669' }}
-                className="pdf-bar !p-0 shadow-lg shadow-emerald-500/20"
+                style={{ height: `${Math.max((stats.income / maxVal) * 100, 5)}%`, backgroundColor: '#059669' }}
+                className="pdf-bar shadow-xl shadow-emerald-500/10"
               ></div>
-              <div className="text-center">
-                <span className="text-[12px] font-black text-emerald-800 block tracking-widest uppercase">{t('income')}</span>
+              <div className="text-center mt-6">
+                <span className="text-[12px] font-black text-emerald-800 block tracking-widest uppercase mb-1">{t('income')}</span>
                 <span className="text-[11px] font-bold text-slate-400">₹{stats.income.toLocaleString()}</span>
               </div>
             </div>
-            <div className="flex flex-col items-center justify-end h-full w-32 gap-6">
+            <div className="flex flex-col items-center justify-end h-full w-32">
               <div
-                style={{ height: `${Math.max((stats.expense / maxVal) * 100, 5)}% `, backgroundColor: '#e11d48' }}
-                className="pdf-bar !p-0 shadow-lg shadow-rose-500/20"
+                style={{ height: `${Math.max((stats.expense / maxVal) * 100, 5)}%`, backgroundColor: '#e11d48' }}
+                className="pdf-bar shadow-xl shadow-rose-500/10"
               ></div>
-              <div className="text-center">
-                <span className="text-[12px] font-black text-rose-800 block tracking-widest uppercase">{t('expense')}</span>
+              <div className="text-center mt-6">
+                <span className="text-[12px] font-black text-rose-800 block tracking-widest uppercase mb-1">{t('expense')}</span>
                 <span className="text-[11px] font-bold text-slate-400">₹{stats.expense.toLocaleString()}</span>
               </div>
             </div>
@@ -760,17 +765,17 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
       </div>
 
       <div className="pdf-grid mb-6">
-        <div className="relative p-5 rounded-3xl border-2 border-slate-100 bg-white shadow-sm">
-          <p className="pdf-card-title !text-slate-400 !mb-0.5">{t('invested')}</p>
-          <h2 className="text-xl font-black text-slate-800">₹{(result.invested || 0).toLocaleString()}</h2>
+        <div className="pdf-card shadow-sm">
+          <p className="pdf-card-title !text-slate-400 !mb-1">{t('invested')}</p>
+          <h2 className="pdf-card-value !text-slate-800">₹{(result.invested || 0).toLocaleString()}</h2>
         </div>
-        <div className="relative p-5 rounded-3xl border-2 border-emerald-100 bg-emerald-50/20 shadow-sm">
-          <p className="pdf-card-title !text-emerald-700 !mb-0.5">{t('wealth_created')}</p>
-          <h2 className="text-xl font-black text-emerald-700">+₹{(result.returns || 0).toLocaleString()}</h2>
+        <div className="pdf-card border-emerald-100 !bg-emerald-50/10 shadow-sm">
+          <p className="pdf-card-title !text-emerald-700 !mb-1">{t('wealth_created')}</p>
+          <h2 className="pdf-card-value !text-emerald-700">+₹{(result.returns || 0).toLocaleString()}</h2>
         </div>
-        <div className="relative p-5 rounded-3xl !bg-[#312e81] shadow-xl overflow-hidden pdf-card-dark">
-          <p className="pdf-card-title !text-indigo-200/60 !mb-0.5">{t('net_value')}</p>
-          <h2 className="text-xl font-black text-white">₹{(result.netTotal || result.total || 0).toLocaleString()}</h2>
+        <div className="pdf-card pdf-card-indigo shadow-xl">
+          <p className="pdf-card-title !text-indigo-200/60 !mb-1">{t('net_value')}</p>
+          <h2 className="pdf-card-value !text-white">₹{(result.netTotal || result.total || 0).toLocaleString()}</h2>
         </div>
       </div>
 
@@ -882,30 +887,28 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
       {calculatorData ? (
         <CalculatorPrintView data={calculatorData} ipInfo={ipInfo} t={t} lang={lang} />
       ) : (
-        <>
-          <h2 className="report-summary-title">{t('report_summary')}: {filterLabel}</h2>
+        <div className="audit-ledger-container">
+          <h3 className="report-summary-title">{t('report_summary')}: {filterLabel}</h3>
 
           <div className="pdf-grid">
-            <div className="pdf-card pdf-card-balance pdf-card-dark">
+            <div className="pdf-card pdf-card-balance">
               <p className="pdf-card-title">{t('assets')}</p>
               <h2 className="pdf-card-value">₹{(stats.carriedBalance || 0).toLocaleString()}</h2>
             </div>
-            <div className="pdf-card pdf-card-income pdf-card-dark">
+            <div className="pdf-card pdf-card-income">
               <p className="pdf-card-title">{t('earnings')}</p>
               <h2 className="pdf-card-value">₹{(stats.income || 0).toLocaleString()}</h2>
             </div>
-            <div className="pdf-card pdf-card-expense pdf-card-dark">
+            <div className="pdf-card pdf-card-expense">
               <p className="pdf-card-title">{t('spending')}</p>
               <h2 className="pdf-card-value">₹{(stats.expense || 0).toLocaleString()}</h2>
             </div>
           </div>
 
-          <div className="pdf-page-section">
-            <PrintAnalytics stats={stats} transactions={transactions} t={t} />
-          </div>
+          <PrintAnalytics stats={stats} transactions={transactions} t={t} />
 
-          <div className="mt-16">
-            <div className="pdf-section-title">{t('audit_log_title')}</div>
+          <div className="audit-table-section mt-12">
+            <div className="pdf-section-title"><List size={18} className="text-orange-500" /> {t('audit_log_title')}</div>
             <table className="pdf-table">
               <thead>
                 <tr>
@@ -916,43 +919,44 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
                 </tr>
               </thead>
               <tbody>
-                {transactions.map(tx => (
+                {transactions && transactions.length > 0 ? transactions.map(tx => (
                   <tr key={tx.id}>
-                    <td>{tx.date ? new Date(tx.date).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A'}</td>
-                    <td>{tx.title}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{tx.date ? new Date(tx.date).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A'}</td>
+                    <td style={{ fontWeight: '800' }}>{tx.title}</td>
                     <td>
                       <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tx.type === 'income' ? '#064e3b' : '#450a0a' }}></span>
-                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter">
+                        <span className="inline-block w-2.5 h-2.5 rounded-[4px]" style={{ backgroundColor: tx.type === 'income' ? '#059669' : '#e11d48' }}></span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
                           {t(`cat_${tx.category.toLowerCase()}`) !== `cat_${tx.category.toLowerCase()}` ? t(`cat_${tx.category.toLowerCase()}`) : tx.category}
                         </span>
                       </div>
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: '950', color: tx.type === 'income' ? '#064e3b' : '#450a0a' }}>
+                    <td style={{ textAlign: 'right', fontWeight: '950', borderLeft: '1px solid #f8fafc', color: tx.type === 'income' ? '#065f46' : '#991b1b' }}>
                       {tx.type === 'income' ? '+' : '-'}₹{tx.amount.toLocaleString()}
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: '800' }}>{t('no_tx')}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
-        </>
+        </div>
       )}
 
-      <div className="mt-20 pt-8 border-t border-slate-100 flex justify-between items-start text-[9px] text-slate-400 font-bold uppercase tracking-widest page-break-avoid">
+      {/* Unified Footer */}
+      <div className="pdf-footer">
         <div>
           <p>{t('report_generated')}: {new Date().toLocaleString(locale)}</p>
           <p>{t('verification')}: {t('certified_ledger')}</p>
+          <p className="mt-4 !text-slate-300 font-black tracking-[0.3em]">{t('official_extract')} • Orange Finance</p>
         </div>
-        <div className="text-right">
+        <div style={{ textAlign: 'right' }}>
           <p>IP: {ipInfo?.ip || t('syncing')}</p>
           <p>{t('approx_location')}: {ipInfo?.city || 'India'}, {ipInfo?.region || 'Global'}</p>
         </div>
-      </div>
-
-      {/* Universal Sub-Footer */}
-      <div className="mt-10 text-center py-6">
-        <p className="text-[11px] text-slate-300 font-extrabold uppercase tracking-[0.4em]">{t('official_extract')} • Orange Finance</p>
       </div>
     </div>
   );
