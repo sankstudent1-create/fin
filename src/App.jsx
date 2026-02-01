@@ -12,6 +12,7 @@ import {
 import { CalculatorModal } from './components/Calculators';
 import { AnalyticsDashboard } from './components/Analytics';
 import { generateEmailLink } from './utils/reportGenerator';
+import { emailService } from './utils/emailService';
 
 
 // --- 🟢 CONFIGURATION ---
@@ -1299,10 +1300,17 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
           if (!error && data?.[0]) {
             // Replace temp ID with real ID
             setTransactions(prev => prev.map(tx => tx.id === newTx.id ? data[0] : tx));
-          }
-          const cat = categories.find(c => c.name === formData.category);
-          if (cat && cat.id) {
-            await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
+
+            const cat = categories.find(c => c.name === formData.category);
+            if (cat && cat.id) {
+              await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
+            }
+
+            // Branded Email Notification for significant transactions
+            if (txData.amount >= 5000) {
+              emailService.sendTransactionAlert(supabase, session.user, txData)
+                .catch(err => console.error("Notification trigger failed:", err));
+            }
           }
         }
       } catch (e) {
@@ -1316,7 +1324,6 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       let pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
 
       if (editingTx) {
-        // If updating something already in the queue, update it in place
         const existingIdx = pending.findIndex(p => p.data?.id === editingTx.id);
         if (existingIdx > -1) {
           pending[existingIdx].data = { ...pending[existingIdx].data, ...txData, id: editingTx.id };
@@ -1324,7 +1331,6 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
           pending.push({ action, data: payload });
         }
       } else {
-        // Prevent accidental rapid double-insert while offline
         const isDuplicate = pending.some(p =>
           p.action === 'INSERT' &&
           p.data.title === txData.title &&
@@ -1336,7 +1342,6 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
           pending.push({ action, data: payload });
         }
       }
-
       localStorage.setItem(pendingKey, JSON.stringify(pending));
     }
 
