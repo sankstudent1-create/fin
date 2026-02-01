@@ -1145,6 +1145,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [selectedTool, setSelectedTool] = useState(null);
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [ipInfo, setIpInfo] = useState(null);
 
@@ -1180,6 +1181,40 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       return () => clearTimeout(timer);
     }
   }, [isPrinting]);
+
+  // Handle PDF Download (generates premium PDF file)
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    const filterLabel = filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`;
+
+    try {
+      // Render print view
+      setIsPrinting(true);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Generate premium PDF
+      const pdfFile = await captureReportAsPDF(filterLabel);
+
+      // Download the PDF
+      const url = URL.createObjectURL(pdfFile);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pdfFile.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Hide print view
+      setIsPrinting(false);
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      alert(t('pdf_download_failed') || 'Failed to generate PDF. Please try again.');
+      setIsPrinting(false);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handleShare = async (calcTitle = null, calcData = null, calcResult = null) => {
     setIsSharing(true);
@@ -1786,12 +1821,12 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
                     <div className="flex gap-2 w-full lg:w-auto">
                       <button
-                        onClick={() => {
-                          setIsPrinting(true);
-                        }}
-                        className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all"
+                        onClick={handleDownloadPDF}
+                        disabled={isDownloading}
+                        className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all disabled:opacity-50"
                       >
-                        <Download size={16} /> PDF
+                        {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                        {isDownloading ? t('generating') : 'PDF'}
                       </button>
                       <button
                         onClick={() => handleShare()}
