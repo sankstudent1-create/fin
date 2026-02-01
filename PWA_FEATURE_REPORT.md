@@ -4,7 +4,7 @@
   
 
 ### 1. **Offline Functionality**    
-
+D
 **Status:** FULLY WORKING
  
 **Implementation Details:**
