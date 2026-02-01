@@ -1222,35 +1222,76 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         pdfFile = getPDFFile(filteredTx, stats, session.user, filterLabel);
       }
 
-      // High-compatibility Share Call
-      if (navigator.share) {
+      // Check if device supports file sharing (mobile devices)
+      const canShareFiles = navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] });
+
+      if (canShareFiles) {
+        // MOBILE: Use native device share with PDF attachment
         try {
-          // Construct fresh file object for sharing
-          const filesArray = [pdfFile];
 
           await navigator.share({
-            files: filesArray,
+            files: [pdfFile],
             title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
             text: shareText,
           });
+          console.log('✅ Shared successfully via native share');
         } catch (shareErr) {
-          console.warn("Native file share failed, falling back to basic share", shareErr);
-          // Fallback to text sharing if file sharing fails
-          await navigator.share({
-            title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
-            text: shareText + "\n\nPDF download: fin.swinfosystems.online",
-          });
+          if (shareErr.name === 'AbortError') {
+            console.log('User cancelled share');
+          } else {
+            console.error('Native share failed:', shareErr);
+            // Fallback to text-only share
+            await navigator.share({
+              title: isCalc ? `${calcTitle} Result` : `Financial Report - ${filterLabel}`,
+              text: shareText + "\n\nVisit fin.swinfosystems.online to download PDF",
+            });
+          }
         }
       } else {
-        // Ultimate fallback to email
+        // DESKTOP: Download PDF first, then open email with instructions
+        console.log('📧 Desktop mode: Downloading PDF and opening email');
+
+        // Trigger PDF download
+        const url = URL.createObjectURL(pdfFile);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = pdfFile.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Wait a moment for download to start
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Open email with instructions to attach the downloaded PDF
         const subject = isCalc ? `${t('calc_subject')}: ${calcTitle}` : `${t('financial_report_subject')}: ${filterLabel}`;
-        const body = `${shareText}\n\nDownload full PDF at fin.swinfosystems.online`;
+        const body = `${shareText}\n\n📎 Please attach the PDF file that was just downloaded to your computer.\n\nFile name: ${pdfFile.name}`;
         window.location.href = generateEmailLink(subject, body);
       }
     } catch (err) {
-      console.error("Deep Sharing failed", err);
-      const subject = isCalc ? `${t('calc_subject')}: ${calcTitle}` : `${t('financial_report_subject')}: ${filterLabel}`;
-      window.location.href = generateEmailLink(subject, "Visit fin.swinfosystems.online to view my report.");
+      console.error("Sharing failed:", err);
+
+      // Final fallback: just download the PDF
+      try {
+        const pdfFile = isCalc
+          ? getCalcPDFFile(calcTitle, calcData, calcResult, session.user)
+          : getPDFFile(filteredTx, stats, session.user, filterLabel);
+
+        const url = URL.createObjectURL(pdfFile);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = pdfFile.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert(t('pdf_downloaded') || 'PDF downloaded! You can now share it manually.');
+      } catch (downloadErr) {
+        console.error("Download failed:", downloadErr);
+        alert(t('share_failed') || 'Sharing failed. Please try again.');
+      }
     } finally {
       setIsSharing(false);
     }
