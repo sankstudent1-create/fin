@@ -23,7 +23,7 @@ const TRANSLATIONS = {
   en: {
     dashboard: "Dashboard", balance: "Balance", income: "Income", expense: "Expense", add_tx: "Add Transaction",
     categories: "Categories", analytics: "Analytics", settings: "Settings", calculators: "Calculators",
-    tools: "Financial Tools", audit_log: "Audit Log", wealth_created: "Wealth Created", net_value: "Net Maturity Value",
+    tools: "Financial Tools", wealth_created: "Wealth Created", net_value: "Net Maturity Value",
     invested: "Invested", detailed_report: "Detailed Report", calculate: "Calculate", sign_in: "Sign In",
     new_here: "New here?", sign_up: "Sign Up", create_account: "Create Account", full_name: "Full Name",
     email: "Email", password: "Password", save: "Save", summary: "Summary", year_wise: "Year-wise Projection",
@@ -54,7 +54,7 @@ const TRANSLATIONS = {
     monthly_invest: "Monthly Investment (₹)", yearly_invest: "Yearly Investment (₹)", invest_amt: "Investment Amount (₹)",
     time_period: "Time Period (Years)", exp_ratio: "Expense Ratio (%)", return_rate: "Exp. Return Rate (% p.a)",
     ppf_info: "PPF uses fixed Govt rate ~7.1%", projection: "Projection", reset: "Reset",
-    pdf_report: "PDF Report", email: "Email", est_tax: "Est. Tax",
+    pdf_report: "PDF Report", est_tax: "Est. Tax",
     calc_subject: "Projection", calc_share_text: "I calculated my investment return on Orange Finance.",
     analysis_projections: "Investment Analysis & Projections", report_generated: "Report Generated",
     verification: "Verification", certified_ledger: "Certified Ledger Instance",
@@ -81,7 +81,7 @@ const TRANSLATIONS = {
   mr: {
     dashboard: "डॅशबोर्ड", balance: "शिल्लक", income: "उत्पन्न", expense: "खर्च", add_tx: "व्यवहार जोडा",
     categories: "श्रेणी", analytics: "विश्लेषण", settings: "सेटिंग्ज", calculators: "कॅल्क्युलेटर",
-    tools: "आर्थिक साधने", audit_log: "व्यवहार नोंद", wealth_created: "संपत्ती निर्माण", net_value: "एकूण मूल्य",
+    tools: "आर्थिक साधने", wealth_created: "संपत्ती निर्माण", net_value: "एकूण मूल्य",
     invested: "गुंतवणूक", detailed_report: "सविस्तर अहवाल", calculate: "गणना करा", sign_in: "लॉग इन करा",
     new_here: "नवीन आहात का?", sign_up: "नोंदणी करा", create_account: "खाते तयार करा", full_name: "पूर्ण नाव",
     email: "ईमेल", password: "पासवर्ड", save: "जतन करा", summary: "सारांश", year_wise: "वर्षनिहाय अंदाज",
@@ -112,7 +112,7 @@ const TRANSLATIONS = {
     monthly_invest: "मासिक गुंतवणूक (₹)", yearly_invest: "वार्षिक गुंतवणूक (₹)", invest_amt: "गुंतवणूक रक्कम (₹)",
     time_period: "कालावधी (वर्षे)", exp_ratio: "खर्च गुणोत्तर (%)", return_rate: "अपेक्षित परतावा दर (% p.a)",
     ppf_info: "PPF अंदाजे ७.१% निश्चित सरकारी दर वापरते", projection: "सांख्यिकी", reset: "रीसेट करा",
-    pdf_report: "अहवाल", email: "ईमेल", est_tax: "अंदाजे कर",
+    pdf_report: "अहवाल", est_tax: "अंदाजे कर",
     calc_subject: "अंदाज", calc_share_text: "मी ऑरेंज फायनान्सवर माझ्या गुंतवणुकीच्या परताव्याची गणना केली.",
     analysis_projections: "गुंतवणूक विश्लेषण आणि अंदाज", report_generated: "अहवाल तयार केला",
     verification: "पडताळणी", certified_ledger: "प्रमाणित खाते वही",
@@ -139,7 +139,7 @@ const TRANSLATIONS = {
   hi: {
     dashboard: "डैशबोर्ड", balance: "बैलेंस", income: "आय", expense: "व्यय", add_tx: "लेनदेन जोड़ें",
     categories: "श्रेणियाँ", analytics: "विश्लेषण", settings: "सेटिंग्स", calculators: "कैलकुलेटर",
-    tools: "वित्तीय उपकरण", audit_log: "लेनदेन लॉग", wealth_created: "संपदा निर्माण", net_value: "कुल मूल्य",
+    tools: "वित्तीय उपकरण", wealth_created: "संपदा निर्माण", net_value: "कुल मूल्य",
     invested: "निवेश", detailed_report: "विस्तृत रिपोर्ट", calculate: "गणना करें", sign_in: "लॉग इन करें",
     new_here: "क्या आप नए हैं?", sign_up: "साइन अप करें", create_account: "खाता बनाएं", full_name: "पूरा नाम",
     email: "ईमेल", password: "पासवर्ड", save: "सहेजें", summary: "सारांश", year_wise: "वर्षवार अनुमान",
@@ -170,7 +170,7 @@ const TRANSLATIONS = {
     monthly_invest: "मासिक निवेश (₹)", yearly_invest: "वार्षिक निवेश (₹)", invest_amt: "निवेश राशि (₹)",
     time_period: "समय अवधि (वर्ष)", exp_ratio: "व्यय अनुपात (%)", return_rate: "अनुमानित रिटर्न दर (% p.a)",
     ppf_info: "PPF लगभग ७.१% निश्चित सरकारी दर का उपयोग करता है", projection: "अनुमान", reset: "रीसेट",
-    pdf_report: "रिपोर्ट", email: "ईमेल", est_tax: "अंदाजित कर",
+    pdf_report: "रिपोर्ट", est_tax: "अंदाजित कर",
     calc_subject: "अनुमान", calc_share_text: "मैंने ऑरेंज फाइनेंस पर अपने निवेश रिटर्न की गणना की।",
     analysis_projections: "निवेश विश्लेषण और अनुमान", report_generated: "रिपोर्ट तैयार की गई",
     verification: "सत्यापन", certified_ledger: "प्रमाणित लेजर इंस्टेंस",
@@ -197,7 +197,7 @@ const TRANSLATIONS = {
   te: {
     dashboard: "డాష్‌బోర్డ్", balance: "బ్యాలెన్స్", income: "ఆదాయం", expense: "ఖర్చు", add_tx: "లావాదేవీని జోడించు",
     categories: "వర్గాలు", analytics: "విశ్లేషణ", settings: "సెట్టింగ్‌లు", calculators: "క్యాలిక్యులేటర్లు",
-    tools: "ఆర్థిక సాధనాలు", audit_log: "లావాదేవీల జాబితా", wealth_created: "సంపద సృష్టి", net_value: "మొత్తం విలువ",
+    tools: "ఆర్థిక సాధనాలు", wealth_created: "సంపద సృష్టి", net_value: "మొత్తం విలువ",
     invested: "పెట్టుబడి", detailed_report: "వివరణాత్మక నివేదిక", calculate: "లెక్కించు", sign_in: "లాగిన్ అవ్వండి",
     new_here: "కొత్త వారా?", sign_up: "సైన్ అప్ అవ్వండి", create_account: "ఖాతాను సృష్టించు", full_name: "పూర్తి పేరు",
     email: "ఈమెయిల్", password: "పాస్‌వర్డ్", save: "సేవ్ చేయి", summary: "సారాంశం", year_wise: "సంవత్సరాల వారీగా అంచనా",
@@ -228,7 +228,7 @@ const TRANSLATIONS = {
     monthly_invest: "నెలవారీ పెట్టుబడి (₹)", yearly_invest: "వార్షిక పెట్టుబడి (₹)", invest_amt: "పెట్టుబడి మొత్తం (₹)",
     time_period: "సమయం (సంవత్సరాలు)", exp_ratio: "ఖర్చు నిష్పత్తి (%)", return_rate: "ఆశించిన రాబడి రేటు (% p.a)",
     ppf_info: "PPF స్థిర ప్రభుత్వ రేటు ~7.1% ఉపయోగిస్తుంది", projection: "అంచనా", reset: "రీసెట్",
-    pdf_report: "నివేదిక", email: "ఈమెయిల్", est_tax: "అంచనా పన్ను",
+    pdf_report: "నివేదిక", est_tax: "అంచనా పన్ను",
     calc_subject: "అంచనా", calc_share_text: "నేను ఆరెంజ్ ఫైనాన్స్‌లో నా పెట్టుబడి రాబడిని లెక్కించాను.",
     analysis_projections: "పెట్టుబడి విశ్లేషణ మరియు అంచనాలు", report_generated: "నివేదిక రూపొందించబడింది",
     verification: "ధృవీకరణ", certified_ledger: "ధృవీకరించబడిన లెడ్జర్ ఉదాహరణ",
@@ -327,6 +327,10 @@ const SystemManager = ({ onLoad }) => {
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
       
+      /* --- 📱 SCREEN STYLES (NO-PRINT) --- */
+      .print-only { display: none !important; }
+      .app-avatar { width: 40px; height: 40px; border-radius: 99px; object-fit: cover; }
+
       /* --- 🖨️ CONSOLIDATED PRINT ENGINE --- */
       @media print {
         @page { margin: 0.8cm; size: A4; }
