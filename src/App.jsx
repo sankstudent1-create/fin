@@ -12,7 +12,6 @@ import {
 import { CalculatorModal } from './components/Calculators';
 import { AnalyticsDashboard } from './components/Analytics';
 import { generateEmailLink } from './utils/reportGenerator';
-import { emailService } from './utils/emailService';
 
 
 // --- 🟢 CONFIGURATION ---
@@ -345,6 +344,8 @@ const SystemManager = ({ onLoad }) => {
           font-size: 13px !important;
           color: #0f172a !important;
           zoom: 1;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         /* Selective background restoration for 'boxes' */
@@ -876,10 +877,10 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
   );
 };
 
-const FullReportPrintView = ({ user, stats, transactions, avatarUrl, filterLabel, ipInfo, t, lang }) => {
+const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang }) => {
   const locale = lang === 'en' ? 'en-IN' : lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'te-IN';
   return (
-    <div className="pdf-container">
+    <div id="print-root" className="print-only">
       <div className="pdf-header-classic">
         <div className="header-left">
           <span className="url">fin.swinfosystems.online</span>
@@ -894,64 +895,69 @@ const FullReportPrintView = ({ user, stats, transactions, avatarUrl, filterLabel
         </div>
       </div>
 
-      <div className="audit-ledger-container">
-        <h3 className="report-summary-title">{t('report_summary')}: {filterLabel}</h3>
+      {calculatorData ? (
+        <CalculatorPrintView data={calculatorData} ipInfo={ipInfo} t={t} lang={lang} />
+      ) : (
+        <div className="audit-ledger-container">
+          <h3 className="report-summary-title">{t('report_summary')}: {filterLabel}</h3>
 
-        <div className="pdf-grid">
-          <div className="pdf-card pdf-card-balance">
-            <p className="pdf-card-title">{t('assets')}</p>
-            <h2 className="pdf-card-value">₹{(stats.carriedBalance || 0).toLocaleString()}</h2>
+          <div className="pdf-grid">
+            <div className="pdf-card pdf-card-balance">
+              <p className="pdf-card-title">{t('assets')}</p>
+              <h2 className="pdf-card-value">₹{(stats.carriedBalance || 0).toLocaleString()}</h2>
+            </div>
+            <div className="pdf-card pdf-card-income">
+              <p className="pdf-card-title">{t('earnings')}</p>
+              <h2 className="pdf-card-value">₹{(stats.income || 0).toLocaleString()}</h2>
+            </div>
+            <div className="pdf-card pdf-card-expense">
+              <p className="pdf-card-title">{t('spending')}</p>
+              <h2 className="pdf-card-value">₹{(stats.expense || 0).toLocaleString()}</h2>
+            </div>
           </div>
-          <div className="pdf-card pdf-card-income">
-            <p className="pdf-card-title">{t('earnings')}</p>
-            <h2 className="pdf-card-value">₹{(stats.income || 0).toLocaleString()}</h2>
-          </div>
-          <div className="pdf-card pdf-card-expense">
-            <p className="pdf-card-title">{t('spending')}</p>
-            <h2 className="pdf-card-value">₹{(stats.expense || 0).toLocaleString()}</h2>
-          </div>
-        </div>
 
-        <PrintAnalytics stats={stats} transactions={transactions} t={t} />
+          <PrintAnalytics stats={stats} transactions={transactions} t={t} />
 
-        <div className="audit-table-section mt-12">
-          <div className="pdf-section-title"><List size={18} className="text-orange-500" /> {t('audit_log_title')}</div>
-          <table className="pdf-table">
-            <thead>
-              <tr>
-                <th>{t('date')}</th>
-                <th>{t('description')}</th>
-                <th>{t('category')}</th>
-                <th style={{ textAlign: 'right' }}>{t('amount')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions && transactions.length > 0 ? transactions.map(tx => (
-                <tr key={tx.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{tx.date ? new Date(tx.date).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A'}</td>
-                  <td style={{ fontWeight: '800' }}>{tx.title}</td>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-2.5 h-2.5 rounded-[4px]" style={{ backgroundColor: tx.type === 'income' ? '#059669' : '#e11d48' }}></span>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-                        {t(`cat_${tx.category.toLowerCase()}`) !== `cat_${tx.category.toLowerCase()}` ? t(`cat_${tx.category.toLowerCase()}`) : tx.category}
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: '950', borderLeft: '1px solid #f8fafc', color: tx.type === 'income' ? '#065f46' : '#991b1b' }}>
-                    {tx.type === 'income' ? '+' : '-'}₹{tx.amount.toLocaleString()}
-                  </td>
-                </tr>
-              )) : (
+          <div className="audit-table-section mt-12">
+            <div className="pdf-section-title"><List size={18} className="text-orange-500" /> {t('audit_log_title')}</div>
+            <table className="pdf-table">
+              <thead>
                 <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: '800' }}>{t('no_tx')}</td>
+                  <th>{t('date')}</th>
+                  <th>{t('description')}</th>
+                  <th>{t('category')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('amount')}</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {transactions && transactions.length > 0 ? transactions.map(tx => (
+                  <tr key={tx.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{tx.date ? new Date(tx.date).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'N/A'}</td>
+                    <td style={{ fontWeight: '800' }}>{tx.title}</td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block w-2.5 h-2.5 rounded-[4px]" style={{ backgroundColor: tx.type === 'income' ? '#059669' : '#e11d48' }}></span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                          {t(`cat_${tx.category.toLowerCase()}`) !== `cat_${tx.category.toLowerCase()}` ? t(`cat_${tx.category.toLowerCase()}`) : tx.category}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: '950', borderLeft: '1px solid #f8fafc', color: tx.type === 'income' ? '#065f46' : '#991b1b' }}>
+                      {tx.type === 'income' ? '+' : '-'}₹{tx.amount.toLocaleString()}
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: '800' }}>{t('no_tx')}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
+      {/* Unified Footer */}
       <div className="pdf-footer">
         <div>
           <p>{t('report_generated')}: {new Date().toLocaleString()}</p>
@@ -1146,7 +1152,6 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [analysisType, setAnalysisType] = useState('expense'); // expense | income
   const [selectedTool, setSelectedTool] = useState(null);
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
-  const [printState, setPrintState] = useState(null); // 'full' | 'calculator' | null
   const [ipInfo, setIpInfo] = useState(null);
 
   useEffect(() => {
@@ -1160,25 +1165,17 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     fetchIp();
   }, []);
 
-  // State-Driven Print Engine (iOS Fix)
-  useEffect(() => {
-    if (printState) {
-      const timer = setTimeout(() => {
-        window.print();
-        // Give iOS extra time to keep the preview alive before clearing state
-        const clearTimer = setTimeout(() => {
-          setPrintState(null);
-          setCalculatorPrintData(null);
-        }, 1200);
-        return () => clearTimeout(clearTimer);
-      }, 1200); // Higher delay for iOS Safari rendering
-      return () => clearTimeout(timer);
-    }
-  }, [printState]);
-
   const handlePrintCalculator = (toolName, inputs, result) => {
     setCalculatorPrintData({ toolName, inputs, result });
-    setPrintState('calculator');
+    // iOS Safari Fix: Higher delay + reflow trigger
+    setTimeout(() => {
+      window.scrollTo(0, 0); // Force reflow
+      window.print();
+      // Keep state long enough for iOS preview to stay active
+      setTimeout(() => {
+        setCalculatorPrintData(null);
+      }, 800);
+    }, 1500);
   };
 
   // Offline Hook
@@ -1304,12 +1301,6 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
             const cat = categories.find(c => c.name === formData.category);
             if (cat && cat.id) {
               await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
-            }
-
-            // Branded Email Notification for significant transactions
-            if (txData.amount >= 5000) {
-              emailService.sendTransactionAlert(supabase, session.user, txData)
-                .catch(err => console.error("Notification trigger failed:", err));
             }
           }
         }
@@ -1481,24 +1472,17 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     <div className="flex h-screen bg-[#fff7ed] text-slate-800 overflow-hidden">
       <HeadManager />
 
-      {printState === 'calculator' && calculatorPrintData ? (
-        <div id="print-root-calculator" className="print-only">
-          <CalculatorPrintView data={calculatorPrintData} ipInfo={ipInfo} t={t} lang={lang} />
-        </div>
-      ) : printState === 'full' ? (
-        <div id="print-root-full" className="print-only">
-          <FullReportPrintView
-            user={session.user}
-            stats={stats}
-            transactions={filteredTx}
-            avatarUrl={avatarUrl}
-            filterLabel={filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`}
-            ipInfo={ipInfo}
-            t={t}
-            lang={lang}
-          />
-        </div>
-      ) : null}
+      <PrintView
+        user={session.user}
+        stats={stats}
+        transactions={filteredTx}
+        avatarUrl={avatarUrl}
+        filterLabel={filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`}
+        calculatorData={calculatorPrintData}
+        ipInfo={ipInfo}
+        t={t}
+        lang={lang}
+      />
 
       <aside className="hidden lg:flex w-64 bg-white border-r border-orange-100 flex-col p-6 shadow-sm z-20 no-print">
         <div className="flex items-center gap-3 mb-10">
@@ -1689,7 +1673,8 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                     <div className="flex gap-2 w-full lg:w-auto">
                       <button
                         onClick={() => {
-                          setPrintState('full');
+                          window.scrollTo(0, 0);
+                          setTimeout(() => { window.print(); }, 300);
                         }}
                         className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all"
                       >
