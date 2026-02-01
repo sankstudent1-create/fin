@@ -344,21 +344,33 @@ const SystemManager = ({ onLoad }) => {
           font-size: 13px !important;
           color: #0f172a !important;
           zoom: 1;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
         }
 
+        /* Target specific app-level mesh/tints without killing card colors */
+        .bg-mesh, section.bg-[#fff7ed], main, #root > div { background: none !important; background-color: #ffffff !important; }
+        
+        /* Expansion for Safari/iOS to prevent clipping */
+        .flex.h-screen { height: auto !important; min-height: 100% !important; overflow: visible !important; display: block !important; background: #ffffff !important; }
+
         /* Selective background restoration for 'boxes' */
-        .pdf-card-balance { background-color: #0f172a !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .pdf-card-income { background-color: #065f46 !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .pdf-card-expense { background-color: #7f1d1d !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .pdf-card-indigo { background-color: #312e81 !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .pdf-card-balance { background: #0f172a !important; color: white !important; border: none; }
+        .pdf-card-income { background: #065f46 !important; color: white !important; border: none; }
+        .pdf-card-expense { background: #7f1d1d !important; color: white !important; border: none; }
+        .pdf-card-indigo { background: #312e81 !important; color: white !important; border: none; }
         
         .pdf-chart-box { background-color: #ffffff !important; border: 1px solid #f1f5f9; border-radius: 2rem; padding: 2rem; break-inside: avoid; -webkit-print-color-adjust: exact !important; }
         .pdf-pie, .pdf-bar, .category-bullet { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
         .no-print { display: none !important; }
         .print-only { display: block !important; }
+        
+        #print-root { 
+          width: 100%; 
+          max-width: 100%; 
+          background: #ffffff !important; 
+          position: relative;
+          z-index: 9999;
+        }
         
         .pdf-header-classic {
           display: flex;
