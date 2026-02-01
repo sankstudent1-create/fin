@@ -12,7 +12,6 @@ import {
 import { CalculatorModal } from './components/Calculators';
 import { AnalyticsDashboard } from './components/Analytics';
 import { generateEmailLink } from './utils/reportGenerator';
-import html2pdf from 'html2pdf.js';
 
 
 // --- 🟢 CONFIGURATION ---
@@ -49,8 +48,8 @@ const TRANSLATIONS = {
     logout: "Log Out", language: "Language",
     tool_sip: "SIP", tool_lumpsum: "Lumpsum", tool_fd: "FD", tool_ppf: "PPF", tool_interest: "Interest",
     cat_food: "Food", cat_shopping: "Shopping", cat_travel: "Travel", cat_bills: "Bills", cat_rent: "Rent",
-    cat_salary: "Salary", cat_freelance: "Freelance", analysis: "Analysis", report_preview: "Report Preview", download_pdf: "Download PDF", generating: "Generating...",
-    sip_desc: "Equity Mutual Funds (MF)", lumpsum_desc: "One-time MF Investment", fd_desc: "Safe Bank Savings",
+    cat_salary: "Salary", cat_freelance: "Freelance",
+    sip_desc: "Equity Mutual Fund (MF)", lumpsum_desc: "One-time MF Investment", fd_desc: "Secure Bank Savings",
     ppf_desc: "Tax-Free Govt Scheme", interest_desc: "Simple Loan Interest",
     monthly_invest: "Monthly Investment (₹)", yearly_invest: "Yearly Investment (₹)", invest_amt: "Investment Amount (₹)",
     time_period: "Time Period (Years)", exp_ratio: "Expense Ratio (%)", return_rate: "Exp. Return Rate (% p.a)",
@@ -107,12 +106,13 @@ const TRANSLATIONS = {
     logout: "बाहेर पडा", language: "भाषा",
     tool_sip: "एसआयपी", tool_lumpsum: "एकरकमी", tool_fd: "मुदत ठेव", tool_ppf: "पीपीएफ", tool_interest: "व्याज",
     cat_food: "जेवण", cat_shopping: "खरेदी", cat_travel: "प्रवास", cat_bills: "बिले", cat_rent: "भाडे",
-    cat_salary: "पगार", cat_freelance: "फ्रिलान्स", pdf_report: "अहवाल", report_preview: "अहवाल प्रिव्ह्यू", download_pdf: "PDF डाउनलोड करा", generating: "तयार होत आहे...",
+    cat_salary: "पगार", cat_freelance: "फ्रिलान्स",
     sip_desc: "इक्विटी म्युच्युअल फंड (MF)", lumpsum_desc: "एकवेळची MF गुंतवणूक", fd_desc: "सुरक्षित बँक बचत",
     ppf_desc: "करमुक्त सरकारी योजना", interest_desc: "साधे कर्ज व्याज",
     monthly_invest: "मासिक गुंतवणूक (₹)", yearly_invest: "वार्षिक गुंतवणूक (₹)", invest_amt: "गुंतवणूक रक्कम (₹)",
     time_period: "कालावधी (वर्षे)", exp_ratio: "खर्च गुणोत्तर (%)", return_rate: "अपेक्षित परतावा दर (% p.a)",
     ppf_info: "PPF अंदाजे ७.१% निश्चित सरकारी दर वापरते", projection: "सांख्यिकी", reset: "रीसेट करा",
+    pdf_report: "अहवाल", est_tax: "अंदाजे कर",
     calc_subject: "अंदाज", calc_share_text: "मी ऑरेंज फायनान्सवर माझ्या गुंतवणुकीच्या परताव्याची गणना केली.",
     analysis_projections: "गुंतवणूक विश्लेषण आणि अंदाज", report_generated: "अहवाल तयार केला",
     verification: "पडताळणी", certified_ledger: "प्रमाणित खाते वही",
@@ -164,13 +164,13 @@ const TRANSLATIONS = {
     logout: "लॉग आउट", language: "भाषा",
     tool_sip: "एसआईपी", tool_lumpsum: "एकमुश्त", tool_fd: "एफडी", tool_ppf: "पीपीएफ", tool_interest: "ब्याज",
     cat_food: "खाना", cat_shopping: "खरीदारी", cat_travel: "यात्रा", cat_bills: "बिल", cat_rent: "किराया",
-    cat_salary: "वेतन", cat_freelance: "फ्रीलांस", pdf_report: "रिपोर्ट", report_preview: "रिपोर्ट प्रिव्यू", download_pdf: "PDF डाउनलोड करें", generating: "तैयार हो रहा है...",
-    sip_desc: "इक्विटी म्यूचुअल फंड (MF)", lumpsum_desc: "एक बार का निवेश", fd_desc: "सुरक्षित बैंक बचत",
+    cat_salary: "वेतन", cat_freelance: "फ्रीलांस",
+    sip_desc: "इक्विटी म्यूचुअल फंड (MF)", lumpsum_desc: "एकमुश्त MF निवेश", fd_desc: "सुरक्षित बैंक बचत",
     ppf_desc: "कर-मुक्त सरकारी योजना", interest_desc: "साधारण ऋण ब्याज",
     monthly_invest: "मासिक निवेश (₹)", yearly_invest: "वार्षिक निवेश (₹)", invest_amt: "निवेश राशि (₹)",
     time_period: "समय अवधि (वर्ष)", exp_ratio: "व्यय अनुपात (%)", return_rate: "अनुमानित रिटर्न दर (% p.a)",
     ppf_info: "PPF लगभग ७.१% निश्चित सरकारी दर का उपयोग करता है", projection: "अनुमान", reset: "रीसेट",
-    est_tax: "अंदाजित कर",
+    pdf_report: "रिपोर्ट", est_tax: "अंदाजित कर",
     calc_subject: "अनुमान", calc_share_text: "मैंने ऑरेंज फाइनेंस पर अपने निवेश रिटर्न की गणना की।",
     analysis_projections: "निवेश विश्लेषण और अनुमान", report_generated: "रिपोर्ट तैयार की गई",
     verification: "सत्यापन", certified_ledger: "प्रमाणित लेजर इंस्टेंस",
@@ -344,30 +344,15 @@ const SystemManager = ({ onLoad }) => {
           font-size: 13px !important;
           color: #0f172a !important;
           zoom: 1;
-        }
-
-        /* html2pdf specific resets */
-        #pdf-render-area {
-          background: #ffffff !important;
-          background-image: 
-            radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.05) 0, transparent 50%), 
-            radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.05) 0, transparent 50%),
-            linear-gradient(to right, #8080800a 1px, transparent 1px),
-            linear-gradient(to bottom, #8080800a 1px, transparent 1px) !important;
-          background-size: auto, auto, 20px 20px, 20px 20px !important;
-          color: #0f172a !important;
-          width: 210mm; /* A4 Width */
-          margin: 0 auto;
-          padding: 20mm !important;
-          box-sizing: border-box;
-          position: relative;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         /* Selective background restoration for 'boxes' */
-        .pdf-card-balance { background-color: #0f172a !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; }
-        .pdf-card-income { background-color: #065f46 !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; }
-        .pdf-card-expense { background-color: #7f1d1d !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; }
-        .pdf-card-indigo { background-color: #312e81 !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; }
+        .pdf-card-balance { background-color: #0f172a !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .pdf-card-income { background-color: #065f46 !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .pdf-card-expense { background-color: #7f1d1d !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .pdf-card-indigo { background-color: #312e81 !important; color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         
         .pdf-chart-box { background-color: #ffffff !important; border: 1px solid #f1f5f9; border-radius: 2rem; padding: 2rem; break-inside: avoid; -webkit-print-color-adjust: exact !important; }
         .pdf-pie, .pdf-bar, .category-bullet { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -783,7 +768,7 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
   const boxColor = taxInfo.variant === 'blue' ? 'blue' : taxInfo.variant === 'indigo' ? 'indigo' : 'slate';
 
   return (
-    <div className="pdf-container-inner" style={{ padding: '20px 0' }}>
+    <div className="print-only" style={{ padding: '20px 0' }}>
       <div className="mb-4 text-center">
         <div className="inline-block px-4 py-1.5 rounded-full bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest mb-2">{t('analysis_projections')}</div>
         <h2 className="text-3xl font-black text-slate-900 leading-tight">{toolName} {t('analytics')}</h2>
@@ -892,10 +877,10 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
   );
 };
 
-const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang, innerRef }) => {
+const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang }) => {
   const locale = lang === 'en' ? 'en-IN' : lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'te-IN';
   return (
-    <div id="pdf-render-area" ref={innerRef} className="bg-white p-10 min-h-screen">
+    <div id="print-root" className="print-only">
       <div className="pdf-header-classic">
         <div className="header-left">
           <span className="url">fin.swinfosystems.online</span>
@@ -911,24 +896,22 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
       </div>
 
       {calculatorData ? (
-        <div className="pdf-animate-entry">
-          <CalculatorPrintView data={calculatorData} ipInfo={ipInfo} t={t} lang={lang} />
-        </div>
+        <CalculatorPrintView data={calculatorData} ipInfo={ipInfo} t={t} lang={lang} />
       ) : (
         <div className="audit-ledger-container">
           <h3 className="report-summary-title">{t('report_summary')}: {filterLabel}</h3>
 
           <div className="pdf-grid">
-            <div className="pdf-card pdf-card-balance !bg-[#0f172a] !text-white border-none">
-              <p className="pdf-card-title !text-gray-400">{t('assets')}</p>
+            <div className="pdf-card pdf-card-balance">
+              <p className="pdf-card-title">{t('assets')}</p>
               <h2 className="pdf-card-value">₹{(stats.carriedBalance || 0).toLocaleString()}</h2>
             </div>
-            <div className="pdf-card pdf-card-income !bg-[#065f46] !text-white border-none">
-              <p className="pdf-card-title !text-emerald-200/50">{t('earnings')}</p>
+            <div className="pdf-card pdf-card-income">
+              <p className="pdf-card-title">{t('earnings')}</p>
               <h2 className="pdf-card-value">₹{(stats.income || 0).toLocaleString()}</h2>
             </div>
-            <div className="pdf-card pdf-card-expense !bg-[#7f1d1d] !text-white border-none">
-              <p className="pdf-card-title !text-rose-200/50">{t('spending')}</p>
+            <div className="pdf-card pdf-card-expense">
+              <p className="pdf-card-title">{t('spending')}</p>
               <h2 className="pdf-card-value">₹{(stats.expense || 0).toLocaleString()}</h2>
             </div>
           </div>
@@ -984,92 +967,6 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
         <div style={{ textAlign: 'right' }}>
           <p>IP: {ipInfo?.ip || 'Syncing...'}</p>
           <p>{ipInfo?.city || 'India'}, {ipInfo?.region || 'Global'}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ReportPreviewModal = ({ isOpen, onClose, user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang }) => {
-  const pdfRef = useRef(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleDownload = async () => {
-    setIsGenerating(true);
-    const element = pdfRef.current;
-    const opt = {
-      margin: 0,
-      filename: `Report_${new Date().toISOString().split('T')[0]}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        letterRendering: true,
-        backgroundColor: '#ffffff'
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    try {
-      await html2pdf().set(opt).from(element).save();
-    } catch (err) {
-      console.error("PDF generation error:", err);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-10">
-      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in" onClick={onClose} />
-
-      <div className="relative bg-white w-full max-w-5xl h-full flex flex-col rounded-[2.5rem] shadow-2xl overflow-hidden animate-scale-up">
-        {/* Modal Header */}
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
-              <FileText size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-gray-900">{t('report_preview')}</h2>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{filterLabel}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleDownload}
-              disabled={isGenerating}
-              className="bg-gray-900 text-white px-8 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 hover:bg-gray-800 transition-all shadow-xl active:scale-95 disabled:opacity-50"
-            >
-              {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-              {isGenerating ? t('generating') : t('download_pdf')}
-            </button>
-            <button onClick={onClose} className="p-3 bg-gray-50 text-gray-400 rounded-2xl hover:bg-gray-100 transition-all">
-              <X size={24} />
-            </button>
-          </div>
-        </div>
-
-        {/* Modal Content - The Scrollable Preview */}
-        <div className="flex-1 overflow-y-auto bg-gray-100 p-8 flex justify-center custom-scrollbar">
-          <div className="shadow-2xl origin-top transition-transform duration-500">
-            <PrintView
-              innerRef={pdfRef}
-              user={user}
-              stats={stats}
-              transactions={transactions}
-              avatarUrl={avatarUrl}
-              filterLabel={filterLabel}
-              calculatorData={calculatorData}
-              ipInfo={ipInfo}
-              t={t}
-              lang={lang}
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -1255,7 +1152,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [analysisType, setAnalysisType] = useState('expense'); // expense | income
   const [selectedTool, setSelectedTool] = useState(null);
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
-  const [showReportPreview, setShowReportPreview] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [ipInfo, setIpInfo] = useState(null);
 
   useEffect(() => {
@@ -1271,8 +1168,25 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
   const handlePrintCalculator = (toolName, inputs, result) => {
     setCalculatorPrintData({ toolName, inputs, result });
-    setShowReportPreview(true);
+    setIsPrinting(true);
   };
+
+  // State-Driven Print Engine
+  useEffect(() => {
+    if (isPrinting) {
+      window.scrollTo(0, 0); // Force reflow pulse
+      const timer = setTimeout(() => {
+        window.print();
+        // Keep state long enough for OS preview to stay active
+        const clearTimer = setTimeout(() => {
+          setIsPrinting(false);
+          setCalculatorPrintData(null);
+        }, 1500);
+        return () => clearTimeout(clearTimer);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrinting]);
 
   // Offline Hook
   const { isOnline, isSyncing } = useOfflineSync(supabase, session.user.id, () => fetchData());
@@ -1568,12 +1482,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     <div className="flex h-screen bg-[#fff7ed] text-slate-800 overflow-hidden">
       <HeadManager />
 
-      <ReportPreviewModal
-        isOpen={showReportPreview}
-        onClose={() => {
-          setShowReportPreview(false);
-          setCalculatorPrintData(null);
-        }}
+      <PrintView
         user={session.user}
         stats={stats}
         transactions={filteredTx}
@@ -1583,6 +1492,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         ipInfo={ipInfo}
         t={t}
         lang={lang}
+        active={isPrinting}
       />
 
       <aside className="hidden lg:flex w-64 bg-white border-r border-orange-100 flex-col p-6 shadow-sm z-20 no-print">
@@ -1774,7 +1684,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                     <div className="flex gap-2 w-full lg:w-auto">
                       <button
                         onClick={() => {
-                          setShowReportPreview(true);
+                          setIsPrinting(true);
                         }}
                         className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all"
                       >
