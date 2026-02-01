@@ -340,57 +340,59 @@ const SystemManager = ({ onLoad }) => {
           height: auto !important; 
           overflow: visible !important; 
           background: #fff !important; 
-          font-size: 15px !important; /* Enhanced readability */
-          zoom: 0.9; /* 90% Scale */
+          font-size: 14px !important;
+          zoom: 0.9;
           color: #0f172a !important;
         }
         
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         
-        #print-root { 
-          width: 100%; 
-          background: #ffffff; 
-          padding: 0;
-          margin: 0;
-        }
+        #print-root { width: 100%; background: #ffffff; padding: 0; margin: 0; }
 
         .pdf-header-classic {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 30px 0;
+          padding: 25px 0;
           border-bottom: 5px solid #0f172a;
-          margin-bottom: 40px;
+          margin-bottom: 35px;
         }
         
         .header-left .url { font-size: 24px; font-weight: 950; letter-spacing: -0.04em; }
-        .header-left .sub-brand { font-size: 11px; font-weight: 800; color: #64748b !important; text-transform: uppercase; letter-spacing: 0.4em; margin-top: 8px; }
+        .header-left .sub-brand { font-size: 11px; font-weight: 800; color: #64748b !important; text-transform: uppercase; letter-spacing: 0.4em; border: none; margin-top: 8px; }
         
         .header-right { display: flex; align-items: center; gap: 20px; }
-        .user-meta-info .name { font-size: 20px; font-weight: 950; display: block; }
+        .user-meta-info .name { font-size: 20px; font-weight: 950; display: block; color: #0f172a; }
         .user-meta-info .email { font-size: 13px; font-weight: 700; color: #64748b !important; }
-        .header-avatar { width: 70px; height: 70px; border-radius: 24px; border: 3px solid #f1f5f9; }
+        .header-avatar { width: 70px; height: 70px; border-radius: 20px; border: 3px solid #f1f5f9; }
 
-        .report-summary-title { font-size: 32px; font-weight: 900; margin-bottom: 30px; text-align: center; letter-spacing: -0.05em; }
+        .report-summary-title { font-size: 28px; font-weight: 950; margin-bottom: 25px; text-align: center; }
 
-        .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 35px; }
-        .pdf-card { padding: 25px; border-radius: 35px; color: white; position: relative; overflow: hidden; }
-        .pdf-card-balance { background: #0f172a !important; }
-        .pdf-card-income { background: #064e3b !important; }
-        .pdf-card-expense { background: #450a0a !important; }
+        .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .pdf-card { padding: 25px; border-radius: 30px; border: 1px solid #e2e8f0; }
+        .pdf-card-dark { color: white !important; }
+        .pdf-card-balance { background: #0f172a !important; color: white !important; }
+        .pdf-card-income { background: #064e3b !important; color: white !important; }
+        .pdf-card-expense { background: #450a0a !important; color: white !important; }
         
-        .pdf-card-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; opacity: 0.8; }
-        .pdf-card-value { font-size: 28px; font-weight: 950; }
+        .pdf-card-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; color: inherit; opacity: 0.7; }
+        .pdf-card-value { font-size: 24px; font-weight: 950; color: inherit; }
 
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 30px; border-radius: 20px; overflow: hidden; outline: 1px solid #e2ebf0; }
-        .pdf-table th { background: #f8fafc !important; color: #475569; font-size: 13px; font-weight: 900; padding: 18px 20px; border-bottom: 2px solid #e2e8f0; text-align: left; }
-        .pdf-table td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #1e293b; font-weight: 600; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 30px; border-radius: 15px; overflow: hidden; outline: 1px solid #e2e8f0; }
+        .pdf-table th { background: #f8fafc !important; color: #475569; font-size: 12px; font-weight: 900; padding: 15px 20px; border-bottom: 2px solid #e2e8f0; text-align: left; }
+        .pdf-table td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #1e293b; font-weight: 700; }
         
-        .pdf-section-title { font-size: 20px; font-weight: 950; margin: 40px 0 20px; border-left: 6px solid #f97316; padding-left: 15px; text-transform: uppercase; }
-        .pdf-page-section, .pdf-grid, .grid-cols-2 { page-break-inside: avoid !important; }
+        .pdf-section-title { font-size: 18px; font-weight: 950; margin: 35px 0 15px; border-left: 6px solid #f97316; padding-left: 15px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+        .pdf-page-section { page-break-inside: avoid !important; }
+
+        /* Analytics Specifics */
+        .pdf-pie-container { display: flex; align-items: center; gap: 30px; }
+        .pdf-pie { width: 120px; height: 120px; border-radius: 50%; display: inline-block; border: 8px solid #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .category-bullet { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 10px; }
+        .pdf-bar { width: 100%; border-radius: 10px; display: block; }
         
-        .pdf-pie { width: 130px; height: 130px; border-radius: 50%; display: inline-block; border: 8px solid #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
       }
     `}</style>
   );
@@ -636,8 +638,8 @@ const PrintAnalytics = ({ stats, transactions, t }) => {
   return (
     <div className="space-y-10">
       <div className="pdf-page-section">
-        <div className="pdf-card !bg-orange-50/20 border-orange-100 !py-6">
-          <p className="pdf-card-title text-center mb-6">{t('cashflow_momentum')}</p>
+        <div className="pdf-card !bg-white !border-slate-100 !py-8">
+          <p className="pdf-card-title text-center !mb-8 !text-slate-400">{t('cashflow_momentum')}</p>
           <div className="flex items-end justify-center gap-16 h-48 border-b-2 border-slate-100 pb-2">
             <div className="flex flex-col items-center justify-end h-full w-32 gap-6">
               <div
@@ -758,15 +760,15 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
       </div>
 
       <div className="pdf-grid mb-6">
-        <div className="relative p-5 rounded-3xl border-2 border-slate-100 bg-white">
+        <div className="relative p-5 rounded-3xl border-2 border-slate-100 bg-white shadow-sm">
           <p className="pdf-card-title !text-slate-400 !mb-0.5">{t('invested')}</p>
-          <h2 className="text-xl font-black text-slate-900">₹{(result.invested || 0).toLocaleString()}</h2>
+          <h2 className="text-xl font-black text-slate-800">₹{(result.invested || 0).toLocaleString()}</h2>
         </div>
-        <div className="relative p-5 rounded-3xl border-2 border-emerald-100 bg-emerald-50/20">
+        <div className="relative p-5 rounded-3xl border-2 border-emerald-100 bg-emerald-50/20 shadow-sm">
           <p className="pdf-card-title !text-emerald-700 !mb-0.5">{t('wealth_created')}</p>
           <h2 className="text-xl font-black text-emerald-700">+₹{(result.returns || 0).toLocaleString()}</h2>
         </div>
-        <div className="relative p-5 rounded-3xl !bg-[#0f172a] shadow-xl overflow-hidden">
+        <div className="relative p-5 rounded-3xl !bg-[#312e81] shadow-xl overflow-hidden pdf-card-dark">
           <p className="pdf-card-title !text-indigo-200/60 !mb-0.5">{t('net_value')}</p>
           <h2 className="text-xl font-black text-white">₹{(result.netTotal || result.total || 0).toLocaleString()}</h2>
         </div>
@@ -884,15 +886,15 @@ const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculat
           <h2 className="report-summary-title">{t('report_summary')}: {filterLabel}</h2>
 
           <div className="pdf-grid">
-            <div className="pdf-card pdf-card-balance">
+            <div className="pdf-card pdf-card-balance pdf-card-dark">
               <p className="pdf-card-title">{t('assets')}</p>
               <h2 className="pdf-card-value">₹{(stats.carriedBalance || 0).toLocaleString()}</h2>
             </div>
-            <div className="pdf-card pdf-card-income">
+            <div className="pdf-card pdf-card-income pdf-card-dark">
               <p className="pdf-card-title">{t('earnings')}</p>
               <h2 className="pdf-card-value">₹{(stats.income || 0).toLocaleString()}</h2>
             </div>
-            <div className="pdf-card pdf-card-expense">
+            <div className="pdf-card pdf-card-expense pdf-card-dark">
               <p className="pdf-card-title">{t('spending')}</p>
               <h2 className="pdf-card-value">₹{(stats.expense || 0).toLocaleString()}</h2>
             </div>
