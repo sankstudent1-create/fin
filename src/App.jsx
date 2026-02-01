@@ -1090,7 +1090,7 @@ const AuthScreen = ({ supabase, lang, t, onLangChange }) => {
     <div className="min-h-screen bg-mesh flex items-center justify-center p-6 animate-fade-in no-print">
       <div className="bg-white/90 backdrop-blur-xl p-8 rounded-[2.5rem] w-full max-w-sm warm-shadow-lg border border-white/50 animate-slide-up relative">
         <div className="absolute -top-12 left-0 right-0 flex justify-center">
-          <LanguageSwitcher lang={lang} onLangChange={onLangChange} up={true} />
+          <LanguageSwitcher lang={lang} onLangChange={onLangChange} up={false} />
         </div>
         <div className="text-center mb-8">
           <div className="w-20 h-20 bg-gradient-to-tr from-orange-500 to-rose-500 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-orange-500/30 transform -rotate-6">
