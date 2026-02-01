@@ -872,7 +872,7 @@ const CalculatorPrintView = ({ data, ipInfo, t, lang }) => {
 const PrintView = ({ user, stats, transactions, avatarUrl, filterLabel, calculatorData, ipInfo, t, lang }) => {
   const locale = lang === 'en' ? 'en-IN' : lang === 'mr' ? 'mr-IN' : lang === 'hi' ? 'hi-IN' : 'te-IN';
   return (
-    <div id="print-root" className="print-only">
+    <div id="print-root" className="print-only print-view">
       <div className="pdf-header-classic">
         <div className="header-left">
           <span className="url">fin.swinfosystems.online</span>
@@ -1145,6 +1145,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [selectedTool, setSelectedTool] = useState(null);
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [ipInfo, setIpInfo] = useState(null);
@@ -1188,8 +1189,8 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     const filterLabel = filterType === 'monthly' ? (filterMonth === 'all' ? t('all_time') : `${monthNames[filterMonth]} ${filterYear}`) : `${startDate} ${t('to')} ${endDate}`;
 
     try {
-      // Render print view
-      setIsPrinting(true);
+      // Render print view for PDF generation (not for printing)
+      setIsGeneratingPDF(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       // Generate premium PDF
@@ -1206,11 +1207,11 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       URL.revokeObjectURL(url);
 
       // Hide print view
-      setIsPrinting(false);
+      setIsGeneratingPDF(false);
     } catch (error) {
       console.error('PDF download failed:', error);
       alert(t('pdf_download_failed') || 'Failed to generate PDF. Please try again.');
-      setIsPrinting(false);
+      setIsGeneratingPDF(false);
     } finally {
       setIsDownloading(false);
     }
@@ -1232,7 +1233,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       if (isCalc) {
         setCalculatorPrintData({ toolName: calcTitle, inputs: calcData, result: calcResult });
       }
-      setIsPrinting(true);
+      setIsGeneratingPDF(true);
 
       // Wait for print view to render with charts and gradients
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -1247,7 +1248,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       }
 
       // Hide print view
-      setIsPrinting(false);
+      setIsGeneratingPDF(false);
       setCalculatorPrintData(null);
 
       // Check if device supports file sharing (mobile devices)
@@ -1628,7 +1629,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         ipInfo={ipInfo}
         t={t}
         lang={lang}
-        active={isPrinting}
+        active={isPrinting || isGeneratingPDF}
       />
 
       <aside className="hidden lg:flex w-64 bg-white border-r border-orange-100 flex-col p-6 shadow-sm z-20 no-print">
