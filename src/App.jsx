@@ -7,7 +7,7 @@ import {
   PieChart, List, ChevronRight, Lock, Mail, User, LogOut, Sparkles,
   TrendingUp, Percent, ShieldCheck, Coins, Download, AlertCircle, Loader2, Trash2, Camera,
   WifiOff, RefreshCw, LayoutDashboard, FileText, Edit2, Globe, Tag, Baby,
-  Smile, Filter, ChevronDown, Share2, Cloud
+  Smile, Filter, ChevronDown, Share2, Cloud, Bell, Volume2, Info, CheckCircle2
 } from 'lucide-react';
 import { CalculatorModal } from './components/Calculators';
 import { AnalyticsDashboard } from './components/Analytics';
@@ -1094,19 +1094,31 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [ipInfo, setIpInfo] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem('sound_enabled') !== 'false');
+  const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('notif_enabled') !== 'false');
+
+  const showToast = (msg, type = 'success') => {
+    if (!notifEnabled) return;
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+  };
 
   const playSuccessSound = () => {
+    if (!soundEnabled) return;
     try {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
-      audio.volume = 0.5;
+      audio.volume = 0.8;
       audio.play().catch(() => { });
     } catch (e) { }
   };
 
   const playErrorSound = () => {
+    if (!soundEnabled) return;
     try {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
-      audio.volume = 0.4;
+      audio.volume = 0.7;
       audio.play().catch(() => { });
     } catch (e) { }
   };
@@ -1320,6 +1332,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         if (editingTx) {
           const { error } = await supabase.from('transactions').update(txData).eq('id', editingTx.id);
           if (error) throw error;
+          showToast(t('action_success'));
         } else {
           const { data, error } = await supabase.from('transactions').insert([txData]).select();
           if (error) throw error;
@@ -1329,11 +1342,13 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
             if (cat && cat.id) {
               await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
             }
+            showToast(t('action_success'));
           }
         }
       } catch (e) {
         console.error("Save error:", e);
         playErrorSound();
+        showToast("Error saving transaction", "error");
         fetchData();
       }
     } else {
@@ -1381,9 +1396,11 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       try {
         const { error } = await supabase.from('transactions').delete().eq('id', id);
         if (error) throw error;
+        showToast(t('action_success'));
       } catch (e) {
         console.error("Delete error:", e);
         playErrorSound();
+        showToast("Error deleting", "error");
         fetchData();
       }
     } else {
@@ -1803,6 +1820,57 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                       </button>
                     </div>
                   </div>
+
+                  <div className="p-6 bg-white rounded-3xl border border-gray-100 warm-shadow">
+                    <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
+                      <Sparkles size={18} className="text-orange-500" /> Interaction
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                            <Volume2 size={20} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">Enable Sound</p>
+                            <p className="text-[10px] text-gray-400 font-medium">Play sounds on actions</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const newState = !soundEnabled;
+                            setSoundEnabled(newState);
+                            localStorage.setItem('sound_enabled', newState);
+                          }}
+                          className={`w-12 h-6 rounded-full transition-colors relative ${soundEnabled ? 'bg-orange-500' : 'bg-gray-200'}`}
+                        >
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${soundEnabled ? 'left-7' : 'left-1'}`} />
+                        </button>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                            <Bell size={20} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">Action Notifications</p>
+                            <p className="text-[10px] text-gray-400 font-medium">Show popups for success</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const newState = !notifEnabled;
+                            setNotifEnabled(newState);
+                            localStorage.setItem('notif_enabled', newState);
+                          }}
+                          className={`w-12 h-6 rounded-full transition-colors relative ${notifEnabled ? 'bg-orange-500' : 'bg-gray-200'}`}
+                        >
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${notifEnabled ? 'left-7' : 'left-1'}`} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1826,6 +1894,16 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         <button onClick={() => setActiveTab('settings')} className={`flex-1 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors ${activeTab === 'settings' ? 'bg-orange-50 text-orange-600' : 'text-gray-400'}`}><List size={20} /></button>
         <button onClick={() => supabase.auth.signOut()} className="flex-1 py-3.5 rounded-2xl flex items-center justify-center text-rose-400"><LogOut size={20} /></button>
       </nav>
+
+      {/* Action Toasts */}
+      <div className="fixed top-24 right-6 z-[100] space-y-3 pointer-events-none">
+        {toasts.map(toast => (
+          <div key={toast.id} className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-toast ${toast.type === 'error' ? 'bg-rose-500 text-white' : 'bg-gray-900 text-white'}`}>
+            {toast.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} className="text-orange-400" />}
+            <span className="text-xs font-black uppercase tracking-widest">{toast.msg}</span>
+          </div>
+        ))}
+      </div>
 
       {
         showModal && (

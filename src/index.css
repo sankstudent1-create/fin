@@ -95,7 +95,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         radial-gradient(at 0% 50%, hsla(355, 100%, 93%, 1) 0px, transparent 50%);
 }
 
-/* --- 🖨️ CONSOLIDATED PRINT ENGINE --- */
+.print-only {
+    display: none;
+}
+
 @media print {
     @page {
         margin: 1cm;
@@ -149,4 +152,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         position: relative;
         z-index: 9999;
     }
+}
+
+/* Toast Animation */
+@keyframes toastIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-toast {
+    animation: toastIn 0.3s ease-out forwards;
 }
