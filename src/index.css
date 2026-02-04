@@ -149,24 +149,141 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         width: 100%;
         max-width: 100%;
         background: #ffffff !important;
-        position: relative;
-        z-index: 9999;
+        padding: 1cm;
+    }
+
+    /* Premium PDF Styles */
+    .pdf-header-classic {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 4px solid #f97316;
+        padding-bottom: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .pdf-header-classic .header-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 1.5rem;
+        object-fit: cover;
+    }
+
+    .pdf-header-classic .url {
+        font-size: 1.25rem;
+        font-weight: 900;
+        color: #0f172a;
+    }
+
+    .pdf-header-classic .sub-brand {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        color: #94a3b8;
+        font-weight: 800;
+    }
+
+    .pdf-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .pdf-card {
+        padding: 1.5rem;
+        border-radius: 2rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .pdf-card-title {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+    }
+
+    .pdf-card-value {
+        font-size: 2rem;
+        font-weight: 950;
+        color: #0f172a;
+        margin-top: 5px;
+    }
+
+    .pdf-card-balance {
+        border-left: 8px solid #f97316;
+    }
+
+    .pdf-card-income {
+        border-left: 8px solid #059669;
+    }
+
+    .pdf-card-expense {
+        border-left: 8px solid #e11d48;
+    }
+
+    .pdf-section-title {
+        font-size: 1.25rem;
+        font-weight: 900;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #1e293b;
+        border-bottom: 2px solid #f1f5f9;
+        padding-bottom: 10px;
+    }
+
+    .pdf-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .pdf-table th {
+        text-align: left;
+        padding: 1rem;
+        font-size: 10px;
+        text-transform: uppercase;
+        color: #94a3b8;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .pdf-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 12px;
+        color: #334155;
+    }
+
+    .pdf-footer {
+        margin-top: 4rem;
+        padding-top: 2rem;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        color: #94a3b8;
     }
 }
 
 /* Toast Animation */
 @keyframes toastIn {
     from {
-        transform: translateX(100%);
+        transform: scale(0.9) translateY(40px);
         opacity: 0;
     }
 
     to {
-        transform: translateX(0);
+        transform: scale(1) translateY(0);
         opacity: 1;
     }
 }
 
 .animate-toast {
-    animation: toastIn 0.3s ease-out forwards;
+    animation: toastIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    min-height: 100px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }

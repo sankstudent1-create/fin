@@ -81,9 +81,10 @@ const TRANSLATIONS = {
     up_to: "Up to", above_slab: "Above",
     manage_storage: "Manage Storage", clear_cache: "Clear Cache", storage_desc: "Manage your local data and sync state",
     cache_cleared: "Cache cleared successfully", action_success: "Success!",
-    support_us: "Support Orange Finance", support_desc: "We are a free project. Your donation helps us stay alive!",
-    donate: "Donate", skip_continue: "Skip & Continue", select_amount: "Select Amount",
-    payment_failed: "Payment failed. Please try again or skip.", have_an_account: "Have an account?"
+    payment_failed: "Payment failed. Please try again or skip.", have_an_account: "Have an account?",
+    toast_duration: "Popup Duration", sound_duration: "Sound Duration", sec: "sec",
+    change_sound: "Change Sound", sound_default: "Standard", sound_modern: "Modern",
+    sound_soft: "Soft", interaction: "Interaction"
   },
   mr: {
     dashboard: "डॅशबोर्ड", balance: "शिल्लक", income: "उत्पन्न", expense: "खर्च", add_tx: "व्यवहार जोडा",
@@ -146,7 +147,10 @@ const TRANSLATIONS = {
     cache_cleared: "कॅशे यशस्वीरित्या साफ झाला", action_success: "यशस्वी!",
     support_us: "ऑरेंज फायनान्सला सहकार्य करा", support_desc: "आम्ही एक विनामूल्य प्रकल्प आहोत. तुमची देणगी आम्हाला चालू राहण्यास मदत करते!",
     donate: "देणगी द्या", skip_continue: "पुढील पहा", select_amount: "रक्कम निवडा",
-    payment_failed: "पेमेंट अयशस्वी. कृपया पुन्हा प्रयत्न करा किंवा वगळा.", have_an_account: "आधीच खाते आहे का?"
+    payment_failed: "पेमेंट अयशस्वी. कृपया पुन्हा प्रयत्न करा किंवा वगळा.", have_an_account: "आधीच खाते आहे का?",
+    toast_duration: "पॉपअप कालावधी", sound_duration: "आवाज कालावधी", sec: "सेकंद",
+    change_sound: "आवाज बदला", sound_default: "प्रमाणित", sound_modern: "आधुनिक",
+    sound_soft: "सौम्य", interaction: "संवाद"
   },
   hi: {
     dashboard: "डैशबोर्ड", balance: "बैलेंस", income: "आय", expense: "व्यय", add_tx: "लेनदेन जोड़ें",
@@ -209,7 +213,10 @@ const TRANSLATIONS = {
     cache_cleared: "कैश सफलतापुर्वक साफ किया गया", action_success: "सफल!",
     support_us: "ऑरेंज फाइनेंस का समर्थन करें", support_desc: "हम एक मुफ्त परियोजना हैं। आपका दान हमें जीवित रहने में मदद करता है!",
     donate: "दान दें", skip_continue: "आगे बढ़ें", select_amount: "राशि चुनें",
-    payment_failed: "भुगतान विफल रहा। कृपया पुनः प्रयास करें या छोड़ दें।", have_an_account: "क्या आपके पास पहले से खाता है?"
+    payment_failed: "भुगतान विफल रहा। कृपया पुनः प्रयास करें या छोड़ दें।", have_an_account: "क्या आपके पास पहले से खाता है?",
+    toast_duration: "पॉपअप अवधि", sound_duration: "ध्वनि अवधि", sec: "सेकंड",
+    change_sound: "ध्वनि बदलें", sound_default: "मानक", sound_modern: "आधुनिक",
+    sound_soft: "कोमल", interaction: "इंटरेक्शन"
   },
   te: {
     dashboard: "డాష్‌బోర్డ్", balance: "బ్యాలెన్స్", income: "ఆదాయం", expense: "ఖర్చు", add_tx: "లావాదేవీని జోడించు",
@@ -1093,10 +1100,18 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [ipInfo, setIpInfo] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem('sound_enabled') !== 'false');
   const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('notif_enabled') !== 'false');
+  const [toastDuration, setToastDuration] = useState(parseInt(localStorage.getItem('toast_duration') || '4'));
+  const [soundDuration, setSoundDuration] = useState(parseInt(localStorage.getItem('sound_duration') || '4'));
+  const [selectedSound, setSelectedSound] = useState(localStorage.getItem('selected_sound') || 'standard');
+
+  const SOUNDS = {
+    standard: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
+    modern: 'https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3',
+    soft: 'https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3'
+  };
 
   const showToast = (tx, type = 'success') => {
     if (!notifEnabled) return;
@@ -1106,15 +1121,19 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       : (typeof tx === 'string' ? tx : "Error occurred");
 
     setToasts(prev => [...prev, { id, msg, type, details: tx }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), toastDuration * 1000);
   };
 
   const playSuccessSound = () => {
     if (!soundEnabled) return;
     try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+      const audio = new Audio(SOUNDS[selectedSound] || SOUNDS.standard);
       audio.volume = 0.9;
       audio.play().catch(() => { });
+      setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }, soundDuration * 1000);
     } catch (e) { }
   };
 
@@ -1828,9 +1847,9 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
                   <div className="p-6 bg-white rounded-3xl border border-gray-100 warm-shadow">
                     <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
-                      <Sparkles size={18} className="text-orange-500" /> Interaction
+                      <Sparkles size={18} className="text-orange-500" /> {t('interaction')}
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
@@ -1838,7 +1857,6 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                           </div>
                           <div>
                             <p className="text-sm font-bold text-gray-800">Enable Sound</p>
-                            <p className="text-[10px] text-gray-400 font-medium">Play sounds on actions</p>
                           </div>
                         </div>
                         <button
@@ -1853,14 +1871,53 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                         </button>
                       </div>
 
-                      <div className="flex justify-between items-center">
+                      {soundEnabled && (
+                        <div className="space-y-4 pt-2 border-t border-gray-50">
+                          <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">{t('change_sound')}</p>
+                            <div className="flex gap-2">
+                              {Object.keys(SOUNDS).map(s => (
+                                <button
+                                  key={s}
+                                  onClick={() => {
+                                    setSelectedSound(s);
+                                    localStorage.setItem('selected_sound', s);
+                                    const a = new Audio(SOUNDS[s]);
+                                    a.volume = 0.5;
+                                    a.play();
+                                  }}
+                                  className={`flex-1 py-2 rounded-xl text-[10px] font-bold border transition-all ${selectedSound === s ? 'bg-orange-500 text-white border-orange-500' : 'bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100'}`}
+                                >
+                                  {t(`sound_${s}`)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-2">
+                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('sound_duration')}</p>
+                              <span className="text-[10px] font-black text-orange-600">{soundDuration}{t('sec')}</span>
+                            </div>
+                            <input
+                              type="range" min="1" max="10" value={soundDuration}
+                              onChange={(e) => {
+                                const v = parseInt(e.target.value);
+                                setSoundDuration(v);
+                                localStorage.setItem('sound_duration', v);
+                              }}
+                              className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center pt-2">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
                             <Bell size={20} />
                           </div>
                           <div>
                             <p className="text-sm font-bold text-gray-800">Action Notifications</p>
-                            <p className="text-[10px] text-gray-400 font-medium">Show popups for success</p>
                           </div>
                         </div>
                         <button
@@ -1874,6 +1931,24 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                           <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${notifEnabled ? 'left-7' : 'left-1'}`} />
                         </button>
                       </div>
+
+                      {notifEnabled && (
+                        <div className="pt-2 border-t border-gray-50">
+                          <div className="flex justify-between mb-2">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('toast_duration')}</p>
+                            <span className="text-[10px] font-black text-orange-600">{toastDuration}{t('sec')}</span>
+                          </div>
+                          <input
+                            type="range" min="2" max="15" value={toastDuration}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value);
+                              setToastDuration(v);
+                              localStorage.setItem('toast_duration', v);
+                            }}
+                            className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
