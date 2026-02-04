@@ -1980,16 +1980,16 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         <button onClick={() => supabase.auth.signOut()} className="flex-1 py-3.5 rounded-2xl flex items-center justify-center text-rose-400"><LogOut size={20} /></button>
       </nav>
 
-      {/* Action Toasts */}
-      <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center z-[100] pointer-events-none">
+      {/* Action Toasts (UPI Style) */}
+      <div className="upi-toast-container no-print">
         {toasts.map(toast => (
-          <div key={toast.id} className={`w-[85%] max-w-sm flex items-center gap-4 px-6 py-5 rounded-[2.5rem] shadow-2xl animate-toast ${toast.type === 'error' ? 'bg-rose-500 text-white' : 'bg-gray-900 border border-white/10 text-white'}`}>
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${toast.type === 'error' ? 'bg-white/20' : 'bg-orange-500 shadow-lg shadow-orange-500/30'}`}>
+          <div key={toast.id} className="upi-toast animate-fade-in">
+            <div className={`upi-toast-icon ${toast.type === 'error' ? 'error' : ''}`}>
               {toast.type === 'error' ? <AlertCircle size={24} /> : <CheckCircle2 size={24} />}
             </div>
-            <div className="flex-1">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{toast.type === 'error' ? 'Error' : 'Success'}</p>
-              <p className="text-sm font-black tracking-tight">{toast.msg}</p>
+            <div className="upi-toast-content">
+              <p className="upi-toast-title">{toast.msg}</p>
+              <p className="upi-toast-sub">{toast.type === 'error' ? 'Failed' : 'Success'}</p>
             </div>
           </div>
         ))}
