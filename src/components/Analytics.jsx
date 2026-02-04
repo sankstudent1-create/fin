@@ -25,7 +25,7 @@ export const AnalyticsDashboard = ({ transactions, categories, showOnly = null, 
         });
     };
 
-    // 2. Prepare Data for Pie Chart (Expense by Category)
+    // 2. Prepare Data for Expense Pie Chart
     const processDataForPie = () => {
         const expenses = transactions.filter(t => t.type === 'expense');
         const grouped = {};
@@ -39,9 +39,25 @@ export const AnalyticsDashboard = ({ transactions, categories, showOnly = null, 
         })).sort((a, b) => b.value - a.value).slice(0, 6);
     };
 
+    // 3. Prepare Data for Income Pie Chart
+    const processDataForIncomePie = () => {
+        const income = transactions.filter(t => t.type === 'income');
+        const grouped = {};
+        income.forEach(t => {
+            grouped[t.category] = (grouped[t.category] || 0) + t.amount;
+        });
+
+        return Object.keys(grouped).map(k => ({
+            name: k,
+            value: grouped[k]
+        })).sort((a, b) => b.value - a.value).slice(0, 6);
+    };
+
     const barData = processDataForBar();
     const pieData = processDataForPie();
-    const COLORS = ['#064e3b', '#450a0a', '#0d7488', '#eab308', '#312e81', '#1e293b'];
+    const incomePieData = processDataForIncomePie();
+    const COLORS = ['#064e3b', '#065f46', '#0d9488', '#2dd4bf', '#99f6e4', '#ccfbf1'];
+    const EXPENSE_COLORS = ['#450a0a', '#991b1b', '#dc2626', '#f87171', '#fca5a5', '#fee2e2'];
 
     const TrendSection = (
         <div className="w-full h-full flex flex-col">
@@ -68,10 +84,58 @@ export const AnalyticsDashboard = ({ transactions, categories, showOnly = null, 
         </div>
     );
 
+    const IncomePieSection = (
+        <div className="w-full h-full flex flex-col">
+            <div className="mb-6">
+                <h4 className="text-xl font-bold text-gray-900">{t('income_segmentation')}</h4>
+                <p className="text-xs text-gray-400">{t('top_categories')}</p>
+            </div>
+            <div className="flex-1 min-h-[300px] w-full flex items-center justify-center">
+                {incomePieData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={incomePieData}
+                                innerRadius="60%"
+                                outerRadius="80%"
+                                paddingAngle={8}
+                                dataKey="value"
+                                stroke="none"
+                            >
+                                {incomePieData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip
+                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                            />
+                            <Legend
+                                verticalAlign="bottom"
+                                align="center"
+                                iconType="circle"
+                                iconSize={8}
+                                wrapperStyle={{ paddingTop: '20px' }}
+                                formatter={(val) => <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider ml-1">{val}</span>}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="flex flex-col items-center gap-3 text-gray-300">
+                        <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center">
+                            <PieChart size={32} />
+                        </div>
+                        <p className="text-sm font-medium">{t('no_tx')}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
     const PieSection = (
         <div className="w-full h-full flex flex-col">
             <div className="mb-6">
-                <h4 className="text-xl font-bold text-gray-900">{t('expense_split')}</h4>
+                <h4 className="text-xl font-bold text-gray-900">{t('expense_segmentation')}</h4>
                 <p className="text-xs text-gray-400">{t('top_categories')}</p>
             </div>
             <div className="flex-1 min-h-[300px] w-full flex items-center justify-center">
@@ -87,7 +151,7 @@ export const AnalyticsDashboard = ({ transactions, categories, showOnly = null, 
                                 stroke="none"
                             >
                                 {pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    <Cell key={`cell-${index}`} fill={EXPENSE_COLORS[index % EXPENSE_COLORS.length]} />
                                 ))}
                             </Pie>
                             <Tooltip
@@ -118,14 +182,20 @@ export const AnalyticsDashboard = ({ transactions, categories, showOnly = null, 
 
     if (showOnly === 'trend') return TrendSection;
     if (showOnly === 'pie') return PieSection;
+    if (showOnly === 'income_pie') return IncomePieSection;
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-8">
             <div className="bg-white p-8 rounded-[2.5rem] border border-orange-50 warm-shadow">
                 {TrendSection}
             </div>
-            <div className="bg-white p-8 rounded-[2.5rem] border border-orange-50 warm-shadow">
-                {PieSection}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white p-8 rounded-[2.5rem] border border-orange-50 warm-shadow">
+                    {IncomePieSection}
+                </div>
+                <div className="bg-white p-8 rounded-[2.5rem] border border-orange-50 warm-shadow">
+                    {PieSection}
+                </div>
             </div>
         </div>
     );

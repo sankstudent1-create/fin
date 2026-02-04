@@ -18,6 +18,7 @@ import { getPDFFile, getCalcPDFFile } from './utils/pdfGenerator';
 // --- 🟢 CONFIGURATION ---
 const SUPABASE_URL = "https://rtcwtaweamrgyimyhhup.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0Y3d0YXdlYW1yZ3lpbXloaHVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MDcyODEsImV4cCI6MjA4NTE4MzI4MX0.6bD8rcBJjoi0pRBOPEWiToPDZ_09-aVu7MgYZIS7a-8";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- 🌍 TRANSLATIONS ---
 const TRANSLATIONS = {
@@ -77,7 +78,12 @@ const TRANSLATIONS = {
     term_slab_rates: "Slab Rates", term_tds: "10% TDS", term_interest_income: "Interest Income",
     term_80c: "80C Exempt", term_tax_free_maturity: "Tax-Free Maturity", term_zero_tax: "Zero Tax",
     term_income_slab: "Income Slab", term_local_tax: "Local Tax", term_projections: "Projections",
-    up_to: "Up to", above_slab: "Above"
+    up_to: "Up to", above_slab: "Above",
+    manage_storage: "Manage Storage", clear_cache: "Clear Cache", storage_desc: "Manage your local data and sync state",
+    cache_cleared: "Cache cleared successfully", action_success: "Success!",
+    support_us: "Support Orange Finance", support_desc: "We are a free project. Your donation helps us stay alive!",
+    donate: "Donate", skip_continue: "Skip & Continue", select_amount: "Select Amount",
+    payment_failed: "Payment failed. Please try again or skip.", have_an_account: "Have an account?"
   },
   mr: {
     dashboard: "डॅशबोर्ड", balance: "शिल्लक", income: "उत्पन्न", expense: "खर्च", add_tx: "व्यवहार जोडा",
@@ -135,7 +141,12 @@ const TRANSLATIONS = {
     term_slab_rates: "स्लॅब दर", term_tds: "१०% TDS", term_interest_income: "व्याज उत्पन्न",
     term_80c: "80C सवलत", term_tax_free_maturity: "करमुक्त परिपक्वता", term_zero_tax: "शून्य कर",
     term_income_slab: "उत्पन्न स्लॅब", term_local_tax: "स्थानिक कर", term_projections: "सांख्यिकी",
-    up_to: "पर्यंत", above_slab: "किंवा अधिक"
+    up_to: "पर्यंत", above_slab: "किंवा अधिक",
+    manage_storage: "स्टोरेज व्यवस्थापित करा", clear_cache: "कॅशे साफ करा", storage_desc: "तुमचा स्थानिक डेटा आणि सिंक स्थिती व्यवस्थापित करा",
+    cache_cleared: "कॅशे यशस्वीरित्या साफ झाला", action_success: "यशस्वी!",
+    support_us: "ऑरेंज फायनान्सला सहकार्य करा", support_desc: "आम्ही एक विनामूल्य प्रकल्प आहोत. तुमची देणगी आम्हाला चालू राहण्यास मदत करते!",
+    donate: "देणगी द्या", skip_continue: "पुढील पहा", select_amount: "रक्कम निवडा",
+    payment_failed: "पेमेंट अयशस्वी. कृपया पुन्हा प्रयत्न करा किंवा वगळा.", have_an_account: "आधीच खाते आहे का?"
   },
   hi: {
     dashboard: "डैशबोर्ड", balance: "बैलेंस", income: "आय", expense: "व्यय", add_tx: "लेनदेन जोड़ें",
@@ -193,7 +204,12 @@ const TRANSLATIONS = {
     term_slab_rates: "स्लैब दरें", term_tds: "10% TDS", term_interest_income: "ब्याज आय",
     term_80c: "80C छूट", term_tax_free_maturity: "कर-मुक्त परिपक्वता", term_zero_tax: "शून्य कर",
     term_income_slab: "आय स्लैब", term_local_tax: "स्थानीय कर", term_projections: "अनुमान",
-    up_to: "तक", above_slab: "से अधिक"
+    up_to: "तक", above_slab: "से अधिक",
+    manage_storage: "स्टोरेज प्रबंधित करें", clear_cache: "कैश साफ करें", storage_desc: "अपने स्थानीय डेटा और सिंक स्थिति को प्रबंधित करें",
+    cache_cleared: "कैश सफलतापुर्वक साफ किया गया", action_success: "सफल!",
+    support_us: "ऑरेंज फाइनेंस का समर्थन करें", support_desc: "हम एक मुफ्त परियोजना हैं। आपका दान हमें जीवित रहने में मदद करता है!",
+    donate: "दान दें", skip_continue: "आगे बढ़ें", select_amount: "राशि चुनें",
+    payment_failed: "भुगतान विफल रहा। कृपया पुनः प्रयास करें या छोड़ दें।", have_an_account: "क्या आपके पास पहले से खाता है?"
   },
   te: {
     dashboard: "డాష్‌బోర్డ్", balance: "బ్యాలెన్స్", income: "ఆదాయం", expense: "ఖర్చు", add_tx: "లావాదేవీని జోడించు",
@@ -262,171 +278,7 @@ const LANG_OPTIONS = [
   { code: 'te', label: 'Telugu', native: 'తెలుగు' }
 ];
 
-// --- 🎨 SYSTEM MANAGER (Styles & Scripts) ---
-const SystemManager = ({ onLoad }) => {
-  useEffect(() => {
-    // 1. Tailwind CSS
-    if (!document.getElementById('tailwind-script')) {
-      const script = document.createElement('script');
-      script.id = 'tailwind-script';
-      script.src = "https://cdn.tailwindcss.com";
-      script.onload = () => {
-        window.tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                orange: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c' }
-              },
-              fontFamily: {
-                sans: ['Poppins', 'Mukta', 'Noto Sans Telugu', 'sans-serif'],
-              }
-            }
-          }
-        };
-      };
-      document.head.appendChild(script);
-    }
-
-    // 2. Google Fonts (Poppins & Mukta for Devanagari support)
-    if (!document.getElementById('google-fonts')) {
-      const link = document.createElement('link');
-      link.id = 'google-fonts';
-      link.rel = 'stylesheet';
-      link.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Mukta:wght@300;400;500;600;700;800&family=Noto+Sans+Telugu:wght@300;400;500;600;700;800&display=swap";
-      document.head.appendChild(link);
-    }
-
-    // 3. Supabase
-    if (!window.supabase) {
-      const script = document.createElement('script');
-      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-      script.async = true;
-      script.onload = () => {
-        const { createClient } = window.supabase;
-        const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        onLoad(client);
-      };
-      document.body.appendChild(script);
-    } else {
-      const { createClient } = window.supabase;
-      const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      onLoad(client);
-    }
-
-
-
-  }, []);
-
-  return (
-    <style>{`
-      body { font-family: 'Poppins', 'Mukta', 'Noto Sans Telugu', sans-serif; background-color: #fff7ed; color: #431407; -webkit-tap-highlight-color: transparent; }
-      .bg-mesh { background-color: #ff9a9e; background-image: radial-gradient(at 40% 20%, hsla(28,100%,74%,1) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(355,100%,93%,1) 0px, transparent 50%); }
-      .warm-shadow { box-shadow: 0 8px 30px rgba(234, 88, 12, 0.12); }
-      .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.6); }
-      .hide-scrollbar::-webkit-scrollbar { display: none; }
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
-      
-      /* --- 📱 SCREEN STYLES (NO-PRINT) --- */
-      .print-only { display: none !important; }
-      .app-avatar { width: 40px; height: 40px; border-radius: 99px; object-fit: cover; }
-
-      /* --- 🖨️ CONSOLIDATED PRINT ENGINE --- */
-      @media print {
-        @page { margin: 1cm; size: A4; }
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        
-        html, body { 
-          height: auto !important; 
-          min-height: 100% !important;
-          overflow: visible !important; 
-          background: #ffffff !important; 
-          font-size: 13px !important;
-          color: #0f172a !important;
-          zoom: 1;
-        }
-
-        /* Target specific app-level mesh/tints without killing card colors */
-        .bg-mesh, section.bg-[#fff7ed], main, #root > div { background: none !important; background-color: #ffffff !important; }
-        
-        /* Expansion for Safari/iOS to prevent clipping */
-        .flex.h-screen { height: auto !important; min-height: 100% !important; overflow: visible !important; display: block !important; background: #ffffff !important; }
-
-        /* Selective background restoration for 'boxes' */
-        .pdf-card-balance { background: #0f172a !important; color: white !important; border: none; }
-        .pdf-card-income { background: #065f46 !important; color: white !important; border: none; }
-        .pdf-card-expense { background: #7f1d1d !important; color: white !important; border: none; }
-        .pdf-card-indigo { background: #312e81 !important; color: white !important; border: none; }
-        
-        .pdf-chart-box { background-color: #ffffff !important; border: 1px solid #f1f5f9; border-radius: 2rem; padding: 2rem; break-inside: avoid; -webkit-print-color-adjust: exact !important; }
-        .pdf-pie, .pdf-bar, .category-bullet { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-        .no-print { display: none !important; }
-        .print-only { display: block !important; }
-        
-        #print-root { 
-          width: 100%; 
-          max-width: 100%; 
-          background: #ffffff !important; 
-          position: relative;
-          z-index: 9999;
-        }
-        
-        .pdf-header-classic {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 2.5rem 0;
-          border-bottom: 5px solid #0f172a;
-          margin-bottom: 2.5rem;
-          page-break-after: avoid;
-        }
-        
-        .header-left .url { font-size: 26px; font-weight: 950; letter-spacing: -0.05em; color: #0f172a; }
-        .header-left .sub-brand { font-size: 10px; font-weight: 800; color: #64748b !important; text-transform: uppercase; letter-spacing: 0.4em; border: none; margin-top: 10px; }
-        
-        .header-right { display: flex; align-items: center; gap: 24px; text-align: right; }
-        .user-meta-info .name { font-size: 18px; font-weight: 900; display: block; color: #0f172a; margin-bottom: 2px; }
-        .user-meta-info .email { font-size: 12px; font-weight: 700; color: #94a3b8 !important; }
-        .header-avatar { width: 64px; height: 64px; border-radius: 18px; border: 3px solid #f1f5f9; object-fit: cover; }
-
-        .report-summary-title { font-size: 24px; font-weight: 950; margin-bottom: 2rem; text-align: center; color: #0f172a; border: none; }
-
-        .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; break-inside: avoid; }
-        .pdf-card { padding: 1.5rem; border-radius: 2rem; border: 1px solid #f1f5f9; display: flex; flex-direction: column; justify-content: center; background: white !important; break-inside: avoid; page-break-inside: avoid; }
-        
-        .pdf-card-dark { color: white !important; }
-        .pdf-card-balance { background: #0f172a !important; color: white !important; border: none; }
-        .pdf-card-income { background: #065f46 !important; color: white !important; border: none; }
-        .pdf-card-expense { background: #7f1d1d !important; color: white !important; border: none; }
-        .pdf-card-indigo { background: #312e81 !important; color: white !important; border: none; }
-        
-        .pdf-card-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; color: inherit; opacity: 0.8; }
-        .pdf-card-value { font-size: 22px; font-weight: 950; color: inherit; letter-spacing: -0.02em; }
-
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; border-radius: 1rem; overflow: hidden; border: 1px solid #f1f5f9; break-inside: auto; }
-        .pdf-table tr { break-inside: avoid; page-break-inside: avoid; }
-        .pdf-table th { background: #f8fafc !important; color: #64748b; font-size: 11px; font-weight: 900; padding: 1rem 1.25rem; border-bottom: 2px solid #f1f5f9; text-align: left; text-transform: uppercase; }
-        .pdf-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1e293b; font-weight: 700; }
-        
-        .pdf-section-title { font-size: 16px; font-weight: 950; margin: 2.5rem 0 1rem; border-left: 5px solid #f97316; padding-left: 1rem; text-transform: uppercase; display: flex; align-items: center; gap: 10px; color: #0f172a; break-after: avoid; }
-        
-        .pdf-chart-box { background: white !important; border-radius: 2rem; border: 1px solid #f1f5f9; padding: 2rem; break-inside: avoid; page-break-inside: avoid; -webkit-print-color-adjust: exact !important; }
-        .pdf-pie { width: 110px; height: 110px; border-radius: 50%; display: inline-block; border: 6px solid #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); -webkit-print-color-adjust: exact !important; }
-        .category-bullet { width: 10px; height: 10px; border-radius: 4px; display: inline-block; margin-right: 12px; -webkit-print-color-adjust: exact !important; }
-        .pdf-bar { width: 100%; border-radius: 8px; display: block; min-height: 4px; -webkit-print-color-adjust: exact !important; }
-        
-        .pdf-page-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 2.5rem; }
-        .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; break-inside: avoid; }
-        
-        .pdf-footer { margin-top: 3rem; padding-top: 2rem; border-top: 2px solid #f8fafc; display: flex; justify-content: space-between; align-items: flex-start; break-inside: avoid; }
-        .pdf-footer p { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; margin-top: 0; }
-      }
-    `}</style>
-  );
-};
-
+// --- Config ---
 // --- Config ---
 const ICON_MAP = { Coffee, ShoppingBag, Car, Zap, Home, Heart, Smartphone, Briefcase, Laptop, Gift, Star, PieChart, Coins, TrendingUp, ShieldCheck, Baby, Percent, Camera, WifiOff, RefreshCw, LayoutDashboard, FileText, Tag, Globe, Smile };
 
@@ -478,7 +330,7 @@ const useOfflineSync = (supabase, userId, onSyncComplete) => {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 3000);
-          await fetch(`https://www.google.com/favicon.ico?cb=${Date.now()}`, {
+          await fetch(`${SUPABASE_URL}/rest/v1/`, {
             mode: 'no-cors',
             signal: controller.signal,
             cache: 'no-store'
@@ -504,66 +356,70 @@ const useOfflineSync = (supabase, userId, onSyncComplete) => {
     const syncData = async () => {
       if (!userId || !supabase || globalSyncLock) return;
 
-      const pendingKey = `pending_tx_${userId}`;
+      const txPendingKey = `pending_tx_${userId}`;
+      const catPendingKey = `pending_cat_${userId}`;
       const lockKey = `sync_lock_${userId}`;
 
-      const getQueue = () => JSON.parse(localStorage.getItem(pendingKey) || '[]');
-      if (getQueue().length === 0) return;
+      const getTxQueue = () => JSON.parse(localStorage.getItem(txPendingKey) || '[]');
+      const getCatQueue = () => JSON.parse(localStorage.getItem(catPendingKey) || '[]');
 
-      // CROSS-TAB LOCK: Check if another tab is already syncing
+      if (getTxQueue().length === 0 && getCatQueue().length === 0) return;
+
+      // CROSS-TAB LOCK
       const lastSyncTime = parseInt(localStorage.getItem(lockKey) || '0');
-      if (Date.now() - lastSyncTime < 10000) return; // Wait 10s before taking over
+      if (Date.now() - lastSyncTime < 10000) return;
 
       globalSyncLock = true;
       if (isMounted.current) setIsSyncing(true);
       const tempIdMap = {};
 
-      // Heartbeat for the lock to keep other tabs away
       const lockHeartbeat = setInterval(() => {
         localStorage.setItem(lockKey, Date.now().toString());
       }, 3000);
 
       try {
+        // 1. Sync Categories First (Transactions depend on them)
         while (true) {
-          const queue = getQueue();
+          const queue = getCatQueue();
           if (queue.length === 0) break;
-
-          // PAUSE if we are offline
-          if (!navigator.onLine || !isOnline) {
-            await new Promise(resolve => {
-              const check = setInterval(() => {
-                if (navigator.onLine && isOnline) {
-                  clearInterval(check);
-                  resolve();
-                }
-              }, 1000);
-            });
-          }
+          if (!navigator.onLine || !isOnline) break;
 
           const action = queue[0];
           try {
-            // Deduplication Check: Before inserting, check if it already exists in DB
-            // (Only for inserts to avoid race condition duplicates)
+            const { id: tempId, ...dataToInsert } = action.data;
+            const { data, error } = await supabase.from('categories').insert([dataToInsert]).select();
+
+            const latestQueue = getCatQueue();
+            latestQueue.shift();
+            localStorage.setItem(catPendingKey, JSON.stringify(latestQueue));
+          } catch (e) { break; }
+        }
+
+        // 2. Sync Transactions
+        while (true) {
+          const queue = getTxQueue();
+          if (queue.length === 0) break;
+          if (!navigator.onLine || !isOnline) break;
+
+          const action = queue[0];
+          try {
             if (action.action === 'INSERT') {
               const { data: existing } = await supabase.from('transactions').select('id').match({
                 title: action.data.title,
                 amount: action.data.amount,
                 user_id: userId
-              }).gte('date', new Date(Date.now() - 30000).toISOString()).limit(1);
+              }).gte('date', new Date(Date.now() - 60000).toISOString()).limit(1);
 
               if (existing && existing.length > 0) {
-                console.log("Skipping duplicate sync item");
-                const latestQueue = getQueue();
+                const latestQueue = getTxQueue();
                 latestQueue.shift();
-                localStorage.setItem(pendingKey, JSON.stringify(latestQueue));
+                localStorage.setItem(txPendingKey, JSON.stringify(latestQueue));
                 continue;
               }
 
               const { id: tempId, ...dataToInsert } = action.data;
               const { data, error } = await supabase.from('transactions').insert([dataToInsert]).select();
-              if (!error && data?.[0] && tempId) {
-                tempIdMap[tempId] = data[0].id;
-              }
+              if (!error && data?.[0] && tempId) tempIdMap[tempId] = data[0].id;
             } else if (action.action === 'DELETE') {
               const targetId = tempIdMap[action.id] || action.id;
               await supabase.from('transactions').delete().eq('id', targetId);
@@ -573,15 +429,10 @@ const useOfflineSync = (supabase, userId, onSyncComplete) => {
               await supabase.from('transactions').update(updates).eq('id', targetId);
             }
 
-            // Success: Remove item and proceed
-            const latestQueue = getQueue();
+            const latestQueue = getTxQueue();
             latestQueue.shift();
-            localStorage.setItem(pendingKey, JSON.stringify(latestQueue));
-          } catch (e) {
-            console.error("Sync Item Error:", e);
-            if (e.message?.includes('fetch')) continue;
-            break;
-          }
+            localStorage.setItem(txPendingKey, JSON.stringify(latestQueue));
+          } catch (e) { break; }
         }
       } catch (err) {
         console.error("Global Sync Error:", err);
@@ -591,7 +442,7 @@ const useOfflineSync = (supabase, userId, onSyncComplete) => {
         globalSyncLock = false;
         if (isMounted.current) {
           setIsSyncing(false);
-          if (getQueue().length === 0 && onSyncComplete) onSyncComplete();
+          if (getTxQueue().length === 0 && getCatQueue().length === 0 && onSyncComplete) onSyncComplete();
         }
       }
     };
@@ -603,35 +454,7 @@ const useOfflineSync = (supabase, userId, onSyncComplete) => {
 
 // --- 🛠️ HEAD MANAGER (PWA - META ONLY) ---
 // Note: Manifest is handled by the physical file now. We only inject meta tags.
-const HeadManager = () => {
-  useEffect(() => {
-    document.title = "Orange Finance | Swinfosystems";
-
-    // 1. Force PWA Scaling Limits
-    let metaViewport = document.querySelector('meta[name="viewport"]');
-    if (!metaViewport) {
-      metaViewport = document.createElement('meta');
-      metaViewport.name = "viewport";
-      document.head.appendChild(metaViewport);
-    }
-    metaViewport.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no";
-
-    // 2. Favicon (Explicitly point to root file to avoid conflict)
-    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-    link.type = 'image/x-icon';
-    link.rel = 'icon';
-    link.href = '/favicon.ico';
-    document.head.appendChild(link);
-
-    // 3. Apple Meta
-    const appleMeta = document.createElement('meta');
-    appleMeta.name = "apple-mobile-web-app-capable";
-    appleMeta.content = "yes";
-    document.head.appendChild(appleMeta);
-
-  }, []);
-  return null;
-};
+// 
 
 // --- 📊 COMPONENTS ---
 // --- 📊 COMPONENTS (REMOVED REDUNDANT TRENDBARCHART) ---
@@ -1036,7 +859,6 @@ const LanguageSwitcher = ({ lang, onLangChange, variant = 'light', up = false })
 };
 
 export default function App() {
-  const [supabase, setSupabase] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState(localStorage.getItem('app_lang') || 'en');
@@ -1048,25 +870,34 @@ export default function App() {
     localStorage.setItem('app_lang', l);
   };
 
-  const handleSystemLoad = (client) => {
-    setSupabase(client);
-    client.auth.getSession().then(({ data: { session } }) => { setSession(session); setLoading(false); });
-    client.auth.onAuthStateChange((_event, session) => { setSession(session); setLoading(false); });
-  };
+  useEffect(() => {
+    // Initial fetch of session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
 
-  return (
-    <>
-      <SystemManager onLoad={handleSystemLoad} />
-      {(loading || !supabase) ? (
-        <div className="min-h-screen flex items-center justify-center bg-orange-50 text-orange-500"><Loader2 className="animate-spin" size={40} /></div>
-      ) : (
-        !session ? (
-          <AuthScreen supabase={supabase} lang={lang} t={t} onLangChange={handleLangChange} />
-        ) : (
-          <Dashboard session={session} supabase={supabase} lang={lang} t={t} onLangChange={handleLangChange} />
-        )
-      )}
-    </>
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-orange-50 text-orange-500">
+        <Loader2 className="animate-spin" size={40} />
+      </div>
+    );
+  }
+
+  return !session ? (
+    <AuthScreen supabase={supabase} lang={lang} t={t} onLangChange={handleLangChange} />
+  ) : (
+    <Dashboard session={session} supabase={supabase} lang={lang} t={t} onLangChange={handleLangChange} />
   );
 }
 
@@ -1078,21 +909,116 @@ const AuthScreen = ({ supabase, lang, t, onLangChange }) => {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showDonationStep, setShowDonationStep] = useState(false);
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    if (isLogin) {
+      setLoading(true);
+      setError('');
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } catch (err) { setError(err.message); } finally { setLoading(false); }
+    } else {
+      setShowDonationStep(true);
+    }
+  };
+
+  const startDonation = async (amount) => {
     setLoading(true);
     setError('');
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
-        if (error) throw error;
-      }
-    } catch (err) { setError(err.message); } finally { setLoading(false); }
+      const response = await fetch('/api/razorpay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+
+      if (!response.ok) throw new Error("Failed to create order");
+      const order = await response.json();
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YourKey',
+        amount: order.amount,
+        currency: order.currency,
+        name: "Orange Finance",
+        description: "One-time donation",
+        order_id: order.id,
+        handler: async () => {
+          await completeSignUp();
+        },
+        prefill: { email, name: fullName },
+        theme: { color: "#f97316" },
+        modal: {
+          ondismiss: () => setLoading(false)
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error(err);
+      setError(t('payment_failed'));
+      setLoading(false);
+    }
   };
+
+  const completeSignUp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } }
+      });
+      if (error) throw error;
+    } catch (err) {
+      setError(err.message);
+      setShowDonationStep(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showDonationStep) {
+    return (
+      <div className="min-h-screen bg-mesh flex items-center justify-center p-6 animate-fade-in no-print">
+        <div className="bg-white/90 backdrop-blur-xl p-8 rounded-[2.5rem] w-full max-w-sm warm-shadow-lg border border-white/50 animate-slide-up text-center">
+          <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+            <Heart size={32} />
+          </div>
+          <h2 className="text-xl font-black text-gray-900 mb-2">{t('support_us')}</h2>
+          <p className="text-gray-500 text-xs mb-6 px-4">{t('support_desc')}</p>
+
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {[50, 100, 200, 500].map(amt => (
+              <button
+                key={amt}
+                onClick={() => startDonation(amt)}
+                disabled={loading}
+                className="py-3 bg-white border border-orange-100 rounded-xl font-bold text-gray-700 hover:bg-orange-50 hover:border-orange-200 transition-all active:scale-95 disabled:opacity-50"
+              >
+                ₹{amt}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={completeSignUp}
+              disabled={loading}
+              className="w-full text-gray-400 font-bold text-xs py-2 hover:text-gray-600 transition-colors"
+            >
+              {loading ? <Loader2 className="animate-spin mx-auto" size={16} /> : t('skip_continue')}
+            </button>
+          </div>
+          {error && <div className="mt-4 text-rose-500 font-bold text-[10px]">{error}</div>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-mesh flex items-center justify-center p-6 animate-fade-in no-print">
@@ -1112,7 +1038,7 @@ const AuthScreen = ({ supabase, lang, t, onLangChange }) => {
           {!isLogin && (
             <div className="bg-gray-50 px-4 py-3 rounded-2xl border border-gray-100 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-100 transition-all">
               <label className="block text-[10px] font-bold text-gray-400 uppercase">{t('full_name')}</label>
-              <input value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-transparent outline-none font-semibold text-gray-800" placeholder="John Doe" required />
+              <input value={fullName} onChange={e => setFullName(e.target.value)} className="w-full bg-transparent outline-none font-semibold text-gray-800" placeholder="John Doe" required={!isLogin} />
             </div>
           )}
           <div className="bg-gray-50 px-4 py-3 rounded-2xl border border-gray-100 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-100 transition-all">
@@ -1128,7 +1054,7 @@ const AuthScreen = ({ supabase, lang, t, onLangChange }) => {
           </button>
         </form>
         <p className="text-center mt-6 text-sm text-gray-500">
-          {isLogin ? t('new_here') + " " : t('have_an_account') + " "}
+          {isLogin ? (t('new_here') + " ") : (t('have_an_account') + " ")}
           <button onClick={() => setIsLogin(!isLogin)} className="text-orange-600 font-bold hover:underline">{isLogin ? t('sign_up') : t('sign_in')}</button>
         </p>
       </div>
@@ -1168,6 +1094,32 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [ipInfo, setIpInfo] = useState(null);
+
+  const playSuccessSound = () => {
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(() => { });
+    } catch (e) { }
+  };
+
+  const playErrorSound = () => {
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
+      audio.volume = 0.4;
+      audio.play().catch(() => { });
+    } catch (e) { }
+  };
+
+  const handleClearCache = () => {
+    if (!confirm(t('delete_confirm'))) return;
+    const keys = Object.keys(localStorage);
+    keys.forEach(k => {
+      if (k.includes(session.user.id)) localStorage.removeItem(k);
+    });
+    alert(t('cache_cleared'));
+    window.location.reload();
+  };
 
   useEffect(() => {
     const fetchIp = async () => {
@@ -1279,7 +1231,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     const cacheKeyTx = `cached_tx_${session.user.id}`;
     const cacheKeyCat = `cached_cat_${session.user.id}`;
 
-    // Load from cache first
+    // Load from cache first (Instant UI)
     const cachedTx = localStorage.getItem(cacheKeyTx);
     const cachedCat = localStorage.getItem(cacheKeyCat);
     if (cachedTx) setTransactions(JSON.parse(cachedTx));
@@ -1287,10 +1239,15 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
     if (!isOnline) { setLoading(false); return; }
 
-    // Fetch Fresh
+    // Fetch Fresh with Timeout to prevent indefinite spinning
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
     try {
-      const { data: txData } = await supabase.from('transactions').select('*').order('date', { ascending: false });
-      const { data: catData } = await supabase.from('categories').select('*').order('usage_count', { ascending: false });
+      const { data: txData, error: txError } = await supabase.from('transactions').select('*').order('date', { ascending: false }).abortSignal(controller.signal);
+      const { data: catData, error: catError } = await supabase.from('categories').select('*').order('usage_count', { ascending: false }).abortSignal(controller.signal);
+
+      clearTimeout(timeoutId);
 
       if (txData) {
         const pendingKey = `pending_tx_${session.user.id}`;
@@ -1300,41 +1257,32 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         const pendingDeletes = pending.filter(a => a.action === 'DELETE').map(a => a.id);
 
         let merged = [...txData];
-
-        // 1. Apply Deletes
-        if (pendingDeletes.length > 0) {
-          merged = merged.filter(tx => !pendingDeletes.includes(tx.id));
-        }
-
-        // 2. Apply Updates (Replace existing records with their latest pending local versions)
+        if (pendingDeletes.length > 0) merged = merged.filter(tx => !pendingDeletes.includes(tx.id));
         if (pendingUpdates.length > 0) {
           merged = merged.map(tx => {
-            const updatesForTx = pendingUpdates.filter(u => u.id === tx.id);
-            const latestUpdate = updatesForTx.length > 0 ? updatesForTx[updatesForTx.length - 1] : null;
+            const latestUpdate = pendingUpdates.filter(u => u.id === tx.id).pop();
             return latestUpdate ? { ...tx, ...latestUpdate } : tx;
           });
         }
-
-        // 3. Apply Inserts (Prepend new records, avoiding duplicates if they just synced)
-        // Fuzzy matching: if an entry has same title, amount and very close date, ignore the pending insert
         if (pendingInserts.length > 0) {
-          const newInserts = pendingInserts.filter(pi => !merged.some(m => {
-            const sameId = m.id === pi.id;
-            const sameContent = m.title === pi.title && m.amount === pi.amount;
-            const closeTime = Math.abs(new Date(m.date) - new Date(pi.date)) < 5000;
-            return sameId || (sameContent && closeTime);
-          }));
+          const newInserts = pendingInserts.filter(pi => !merged.some(m => m.id === pi.id || (m.title === pi.title && m.amount === pi.amount && Math.abs(new Date(m.date) - new Date(pi.date)) < 10000)));
           merged = [...newInserts, ...merged];
         }
-
         setTransactions(merged);
+        localStorage.setItem(cacheKeyTx, JSON.stringify(merged));
       }
+
       if (catData && catData.length > 0) {
         const customCats = catData.filter(c => !DEFAULT_CATEGORIES.some(d => d.name === c.name));
         const mergedCats = [...DEFAULT_CATEGORIES, ...customCats];
         setCategories(mergedCats);
+        localStorage.setItem(cacheKeyCat, JSON.stringify(customCats));
       }
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e) {
+      console.error("Fetch failed, using cache:", e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -1365,17 +1313,18 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     } else {
       setTransactions(prev => [newTx, ...prev]);
     }
+    playSuccessSound();
 
     if (isOnline) {
       try {
         if (editingTx) {
-          await supabase.from('transactions').update(txData).eq('id', editingTx.id);
+          const { error } = await supabase.from('transactions').update(txData).eq('id', editingTx.id);
+          if (error) throw error;
         } else {
           const { data, error } = await supabase.from('transactions').insert([txData]).select();
-          if (!error && data?.[0]) {
-            // Replace temp ID with real ID
+          if (error) throw error;
+          if (data?.[0]) {
             setTransactions(prev => prev.map(tx => tx.id === newTx.id ? data[0] : tx));
-
             const cat = categories.find(c => c.name === formData.category);
             if (cat && cat.id) {
               await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
@@ -1384,7 +1333,8 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         }
       } catch (e) {
         console.error("Save error:", e);
-        fetchData(); // Rollback on error
+        playErrorSound();
+        fetchData();
       }
     } else {
       const action = editingTx ? 'UPDATE' : 'INSERT';
@@ -1400,24 +1350,15 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
           pending.push({ action, data: payload });
         }
       } else {
-        const isDuplicate = pending.some(p =>
-          p.action === 'INSERT' &&
-          p.data.title === txData.title &&
-          p.data.amount === txData.amount &&
-          (Date.now() - new Date(p.data.date).getTime() < 2000)
-        );
-
-        if (!isDuplicate) {
-          pending.push({ action, data: payload });
-        }
+        pending.push({ action, data: payload });
       }
       localStorage.setItem(pendingKey, JSON.stringify(pending));
     }
 
     setShowModal(false);
-    setEditingTx(null);
-    setIsSaving(false);
     setFormData({ title: '', amount: '', category: 'Food', type: 'expense' });
+    setIsSaving(false);
+    setEditingTx(null);
   };
 
   const handleEditClick = (tx) => {
@@ -1434,8 +1375,17 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     setTransactions(newTxList);
     localStorage.setItem(`cached_tx_${session.user.id}`, JSON.stringify(newTxList));
 
+    playSuccessSound();
+
     if (isOnline) {
-      await supabase.from('transactions').delete().eq('id', id);
+      try {
+        const { error } = await supabase.from('transactions').delete().eq('id', id);
+        if (error) throw error;
+      } catch (e) {
+        console.error("Delete error:", e);
+        playErrorSound();
+        fetchData();
+      }
     } else {
       const pendingKey = `pending_tx_${session.user.id}`;
       const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
@@ -1446,22 +1396,44 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
   // --- 🏷️ CATEGORIES ---
   const handleSaveCategory = async () => {
-    if (!catForm.name) return;
+    if (!catForm.name || isSaving) return;
+    setIsSaving(true);
+
+    const catData = {
+      user_id: session.user.id,
+      name: catForm.name,
+      type: catForm.type,
+      icon_key: catForm.icon_key,
+      usage_count: 0,
+      isEmoji: catForm.isEmoji
+    };
+
+    const tempId = `temp-cat-${Date.now()}`;
+    const newCat = { ...catData, id: tempId };
+
+    // Optimistic Update
+    setCategories(prev => [...prev, newCat]);
+    playSuccessSound();
+
     if (isOnline) {
-      await supabase.from('categories').insert([{
-        user_id: session.user.id,
-        name: catForm.name,
-        type: catForm.type,
-        icon_key: catForm.icon_key,
-        usage_count: 0,
-        isEmoji: catForm.isEmoji
-      }]);
+      try {
+        const { data, error } = await supabase.from('categories').insert([catData]).select();
+        if (!error && data?.[0]) {
+          setCategories(prev => prev.map(c => c.id === tempId ? data[0] : c));
+        }
+      } catch (e) {
+        console.error("Save category error:", e);
+      }
     } else {
-      alert(t('connect_internet'));
-      return;
+      const pendingKey = `pending_cat_${session.user.id}`;
+      let pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+      pending.push({ action: 'INSERT', data: newCat });
+      localStorage.setItem(pendingKey, JSON.stringify(pending));
     }
+
     setShowCatModal(false);
     setCatForm({ name: '', icon_key: 'Star', type: 'expense', isEmoji: false });
+    setIsSaving(false);
   };
 
   // --- 🖼️ AVATAR ---
@@ -1547,7 +1519,6 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
   return (
     <div className="flex h-screen bg-[#fff7ed] text-slate-800 overflow-hidden">
-      <HeadManager />
 
       <PrintView
         user={session.user}
@@ -1575,6 +1546,9 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
           </button>
           <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reports' ? 'bg-orange-50 text-orange-600 font-bold' : 'text-gray-500 hover:bg-gray-50'}`}>
             <PieChart size={20} /> {t('analytics')}
+          </button>
+          <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-orange-50 text-orange-600 font-bold' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <List size={20} /> {t('settings')}
           </button>
         </nav>
         <div className="mt-auto pt-6 border-t border-orange-50">
@@ -1708,7 +1682,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'reports' ? (
             <div className="animate-fade-in pb-20 space-y-8">
               {/* Enhanced Filter Section */}
               <div className="bg-white p-6 rounded-[2.5rem] warm-shadow border border-orange-100/50">
@@ -1752,9 +1726,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
                     <div className="flex gap-2 w-full lg:w-auto">
                       <button
-                        onClick={() => {
-                          setIsPrinting(true);
-                        }}
+                        onClick={() => setIsPrinting(true)}
                         className="flex-1 lg:flex-none bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-gray-800 transition-all"
                       >
                         <Download size={16} /> PDF
@@ -1774,30 +1746,63 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
               {/* Dashboard Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                <div className="bg-white p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] warm-shadow border border-gray-50 group hover:border-orange-200 transition-all">
+                <div className="bg-white p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] warm-shadow border border-gray-50">
                   <p className="text-[9px] lg:text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1.5 lg:mb-2">{t('prev_balance')}</p>
                   <p className="text-2xl lg:text-3xl font-black text-gray-800">₹{stats.carriedBalance.toLocaleString()}</p>
                 </div>
-                <div className="bg-emerald-50/30 p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] border border-emerald-100/50 group hover:bg-emerald-50 transition-all">
+                <div className="bg-emerald-50/30 p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] border border-emerald-100/50">
                   <p className="text-[9px] lg:text-[10px] text-emerald-600 font-bold uppercase tracking-widest mb-1.5 lg:mb-2">{t('total_income')}</p>
                   <p className="text-2xl lg:text-3xl font-black text-emerald-700">₹{stats.income.toLocaleString()}</p>
                 </div>
-                <div className="bg-rose-50/30 p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] border border-red-100/50 group hover:bg-rose-50 transition-all">
+                <div className="bg-rose-50/30 p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] border border-red-100/50">
                   <p className="text-[9px] lg:text-[10px] text-red-600 font-bold uppercase tracking-widest mb-1.5 lg:mb-2">{t('total_expense')}</p>
                   <p className="text-2xl lg:text-3xl font-black text-red-700">₹{stats.expense.toLocaleString()}</p>
                 </div>
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] shadow-xl hover:scale-[1.02] transition-all">
+                <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-5 lg:p-6 rounded-[2rem] lg:rounded-[2.5rem] shadow-xl">
                   <p className="text-[9px] lg:text-[10px] text-orange-400 font-bold uppercase tracking-widest mb-1.5 lg:mb-2">{t('final_balance')}</p>
                   <p className="text-2xl lg:text-3xl font-black text-white">₹{stats.balance.toLocaleString()}</p>
                 </div>
               </div>
 
-              <div className="xl:grid xl:grid-cols-2 xl:gap-8 space-y-8 xl:space-y-0">
-                <div className="bg-white p-6 md:p-8 rounded-[2.5rem] warm-shadow border border-orange-50 overflow-hidden h-[450px]">
-                  <AnalyticsDashboard transactions={filteredTx} categories={categories} showOnly="trend" t={t} />
+              <div className="space-y-8">
+                <div className="bg-white p-6 md:p-8 rounded-[2.5rem] warm-shadow border border-orange-50 overflow-hidden">
+                  <AnalyticsDashboard transactions={filteredTx} categories={categories} t={t} />
                 </div>
-                <div className="bg-white p-6 md:p-8 rounded-[2.5rem] warm-shadow border border-orange-50 overflow-hidden h-[450px]">
-                  <AnalyticsDashboard transactions={filteredTx} categories={categories} showOnly="pie" t={t} />
+              </div>
+            </div>
+          ) : (
+            <div className="animate-fade-in pb-20 space-y-8">
+              <div className="bg-white p-8 rounded-[2.5rem] warm-shadow border border-orange-100/50">
+                <h2 className="text-2xl font-black text-gray-900 mb-6">{t('settings')}</h2>
+
+                <div className="space-y-6">
+                  <div className="p-6 bg-orange-50/50 rounded-3xl border border-orange-100">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-orange-600 shadow-sm">
+                        <ShieldCheck size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">{t('manage_storage')}</h3>
+                        <p className="text-xs text-gray-500">{t('storage_desc')}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm p-3 bg-white rounded-xl">
+                        <span className="text-gray-500 font-bold">Local Transactions</span>
+                        <span className="font-black text-orange-600">{transactions.length} items</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm p-3 bg-white rounded-xl border border-blue-50">
+                        <span className="text-blue-600/70 font-bold">Unsynced Items</span>
+                        <span className="font-black text-blue-600">
+                          {JSON.parse(localStorage.getItem(`pending_tx_${session.user.id}`) || '[]').length +
+                            JSON.parse(localStorage.getItem(`pending_cat_${session.user.id}`) || '[]').length} items
+                        </span>
+                      </div>
+                      <button onClick={handleClearCache} className="w-full py-3 px-4 bg-rose-50 text-rose-600 font-bold rounded-xl hover:bg-rose-100 transition-colors flex items-center justify-center gap-2">
+                        <Trash2 size={16} /> {t('clear_cache')}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1810,124 +1815,130 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         </div>
 
         {selectedTool && <CalculatorModal toolId={selectedTool} onClose={() => setSelectedTool(null)} onPrint={handlePrintCalculator} onShare={handleShare} isSharing={isSharing} t={t} />}
-      </main>
+      </main >
 
       <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md p-2 rounded-[2rem] shadow-2xl border border-white/50 flex justify-between items-center z-50 max-w-sm mx-auto no-print">
         <button onClick={() => setActiveTab('home')} className={`flex-1 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors ${activeTab === 'home' ? 'bg-orange-50 text-orange-600' : 'text-gray-400'}`}><LayoutDashboard size={20} /></button>
-        <div className="relative -top-8">
+        <button onClick={() => setActiveTab('reports')} className={`flex-1 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors ${activeTab === 'reports' ? 'bg-orange-50 text-orange-600' : 'text-gray-400'}`}><PieChart size={20} /></button>
+        <div className="relative -top-8 mx-2">
           <button onClick={() => { setEditingTx(null); setShowModal(true); }} className="w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/20 hover:scale-105 active:scale-95 transition-all border-4 border-white"><Plus size={28} /></button>
         </div>
-        <button onClick={() => setActiveTab('reports')} className={`flex-1 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors ${activeTab === 'reports' ? 'bg-orange-50 text-orange-600' : 'text-gray-400'}`}><PieChart size={20} /></button>
+        <button onClick={() => setActiveTab('settings')} className={`flex-1 py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors ${activeTab === 'settings' ? 'bg-orange-50 text-orange-600' : 'text-gray-400'}`}><List size={20} /></button>
+        <button onClick={() => supabase.auth.signOut()} className="flex-1 py-3.5 rounded-2xl flex items-center justify-center text-rose-400"><LogOut size={20} /></button>
       </nav>
 
-      {showModal && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center no-print px-4">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-          <div className="relative w-full max-w-md bg-white rounded-t-[2.5rem] p-8 animate-slide-up h-[85vh] flex flex-col shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{editingTx ? t('edit_tx') : t('add_transaction')}</h2>
-              <button onClick={() => setShowModal(false)} className="bg-gray-50 p-2 rounded-full"><X size={20} /></button>
-            </div>
-            <div className="flex bg-gray-50 p-1.5 rounded-2xl mb-6">
-              {['expense', 'income'].map(type => (
-                <button key={type} onClick={() => setFormData({ ...formData, type })} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${formData.type === type ? 'bg-white shadow text-gray-900' : 'text-gray-400'}`}>{t(type)}</button>
-              ))}
-            </div>
-            <div className="flex-1 overflow-y-auto hide-scrollbar space-y-6">
-              <div className="text-center">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('amount')}</label>
-                <div className="flex justify-center items-center gap-2 mt-2">
-                  <span className="text-3xl text-gray-300 font-bold">₹</span>
-                  <input type="number" value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })} className="text-5xl font-extrabold text-gray-900 w-40 text-center outline-none" placeholder="0" autoFocus />
-                </div>
+      {
+        showModal && (
+          <div className="fixed inset-0 z-[60] flex items-end justify-center no-print px-4">
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+            <div className="relative w-full max-w-md bg-white rounded-t-[2.5rem] p-8 animate-slide-up h-[85vh] flex flex-col shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">{editingTx ? t('edit_tx') : t('add_transaction')}</h2>
+                <button onClick={() => setShowModal(false)} className="bg-gray-50 p-2 rounded-full"><X size={20} /></button>
               </div>
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('category')}</label>
-                  <button onClick={() => setShowCatModal(true)} className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded">+ {t('custom')}</button>
-                </div>
-                <div className="grid grid-cols-4 gap-3">
-                  {sortedCategories.filter(c => c.type === formData.type).slice(0, 8).map(cat => {
-                    const Icon = ICON_MAP[cat.icon_key] || Star;
-                    return (
-                      <button key={cat.name} onClick={() => setFormData({ ...formData, category: cat.name })} className={`flex flex-col items-center gap-2 p-2 rounded-2xl border-2 transition-all ${formData.category === cat.name ? 'border-orange-500 bg-orange-50' : 'border-transparent hover:bg-gray-50'}`}>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.category === cat.name ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
-                          {cat.isEmoji ? cat.icon_key : <Icon size={18} />}
-                        </div>
-                        <span className="text-[10px] font-bold text-gray-500 truncate w-full text-center">
-                          {t(`cat_${cat.name.toLowerCase()}`) !== `cat_${cat.name.toLowerCase()}` ? t(`cat_${cat.name.toLowerCase()}`) : cat.name}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
+              <div className="flex bg-gray-50 p-1.5 rounded-2xl mb-6">
+                {['expense', 'income'].map(type => (
+                  <button key={type} onClick={() => setFormData({ ...formData, type })} className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${formData.type === type ? 'bg-white shadow text-gray-900' : 'text-gray-400'}`}>{t(type)}</button>
+                ))}
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">{t('note')}</label>
-                <input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-gray-800 outline-none focus:ring-2 focus:ring-orange-100" placeholder="e.g. Dinner" />
-              </div>
-              <button
-                onClick={handleSaveTx}
-                disabled={isSaving}
-                className="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isSaving ? <Loader2 className="animate-spin" size={20} /> : (editingTx ? t('update_tx') : t('save_tx'))}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCatModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center no-print p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCatModal(false)}></div>
-          <div className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl animate-fade-in">
-            <h3 className="text-xl font-bold mb-4">{t('new_category')}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase">{t('name')}</label>
-                <input autoFocus value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} className="w-full border-b-2 border-orange-100 py-2 font-bold text-lg outline-none focus:border-orange-500" placeholder="e.g. Gym" />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase">Icon</label>
-                  <button onClick={() => setCatForm(prev => ({ ...prev, isEmoji: !prev.isEmoji }))} className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                    {catForm.isEmoji ? 'Switch to Icons' : 'Switch to Emojis'}
-                  </button>
-                </div>
-
-                {catForm.isEmoji ? (
-                  <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                    <input
-                      type="text"
-                      placeholder="Type an emoji"
-                      className="w-full bg-transparent outline-none text-center text-2xl"
-                      maxLength={2}
-                      value={catForm.icon_key}
-                      onChange={(e) => setCatForm({ ...catForm, icon_key: e.target.value })}
-                    />
+              <div className="flex-1 overflow-y-auto hide-scrollbar space-y-6">
+                <div className="text-center">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('amount')}</label>
+                  <div className="flex justify-center items-center gap-2 mt-2">
+                    <span className="text-3xl text-gray-300 font-bold">₹</span>
+                    <input type="number" value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })} className="text-5xl font-extrabold text-gray-900 w-40 text-center outline-none" placeholder="0" autoFocus />
                   </div>
-                ) : (
-                  <div className="flex gap-3 overflow-x-auto pb-2">
-                    {Object.keys(ICON_MAP).map(key => {
-                      const Icon = ICON_MAP[key];
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('category')}</label>
+                    <button onClick={() => setShowCatModal(true)} className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded">+ {t('custom')}</button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    {sortedCategories.filter(c => c.type === formData.type).slice(0, 8).map(cat => {
+                      const Icon = ICON_MAP[cat.icon_key] || Star;
                       return (
-                        <button key={key} onClick={() => setCatForm({ ...catForm, icon_key: key })} className={`p-2 rounded-xl border ${catForm.icon_key === key ? 'bg-orange-500 text-white border-orange-500' : 'border-gray-200 text-gray-500'}`}><Icon size={18} /></button>
+                        <button key={cat.name} onClick={() => setFormData({ ...formData, category: cat.name })} className={`flex flex-col items-center gap-2 p-2 rounded-2xl border-2 transition-all ${formData.category === cat.name ? 'border-orange-500 bg-orange-50' : 'border-transparent hover:bg-gray-50'}`}>
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.category === cat.name ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                            {cat.isEmoji ? cat.icon_key : <Icon size={18} />}
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-500 truncate w-full text-center">
+                            {t(`cat_${cat.name.toLowerCase()}`) !== `cat_${cat.name.toLowerCase()}` ? t(`cat_${cat.name.toLowerCase()}`) : cat.name}
+                          </span>
+                        </button>
                       )
                     })}
                   </div>
-                )}
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">{t('note')}</label>
+                  <input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-gray-50 p-4 rounded-2xl font-bold text-gray-800 outline-none focus:ring-2 focus:ring-orange-100" placeholder="e.g. Dinner" />
+                </div>
+                <button
+                  onClick={handleSaveTx}
+                  disabled={isSaving}
+                  className="w-full bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="animate-spin" size={20} /> : (editingTx ? t('update_tx') : t('save_tx'))}
+                </button>
               </div>
-              <div className="flex gap-2">
-                {['expense', 'income'].map(type => (
-                  <button key={type} onClick={() => setCatForm({ ...catForm, type })} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase border ${catForm.type === type ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{t(type)}</button>
-                ))}
-              </div>
-              <button onClick={handleSaveCategory} className="w-full bg-orange-500 text-white font-bold py-3 rounded-xl shadow-lg mt-2 tracking-wide">{t('create_category')}</button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+
+      {
+        showCatModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center no-print p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCatModal(false)}></div>
+            <div className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl animate-fade-in">
+              <h3 className="text-xl font-bold mb-4">{t('new_category')}</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase">{t('name')}</label>
+                  <input autoFocus value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} className="w-full border-b-2 border-orange-100 py-2 font-bold text-lg outline-none focus:border-orange-500" placeholder="e.g. Gym" />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Icon</label>
+                    <button onClick={() => setCatForm(prev => ({ ...prev, isEmoji: !prev.isEmoji }))} className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                      {catForm.isEmoji ? 'Switch to Icons' : 'Switch to Emojis'}
+                    </button>
+                  </div>
+
+                  {catForm.isEmoji ? (
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                      <input
+                        type="text"
+                        placeholder="Type an emoji"
+                        className="w-full bg-transparent outline-none text-center text-2xl"
+                        maxLength={2}
+                        value={catForm.icon_key}
+                        onChange={(e) => setCatForm({ ...catForm, icon_key: e.target.value })}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                      {Object.keys(ICON_MAP).map(key => {
+                        const Icon = ICON_MAP[key];
+                        return (
+                          <button key={key} onClick={() => setCatForm({ ...catForm, icon_key: key })} className={`p-2 rounded-xl border ${catForm.icon_key === key ? 'bg-orange-500 text-white border-orange-500' : 'border-gray-200 text-gray-500'}`}><Icon size={18} /></button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {['expense', 'income'].map(type => (
+                    <button key={type} onClick={() => setCatForm({ ...catForm, type })} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase border ${catForm.type === type ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{t(type)}</button>
+                  ))}
+                </div>
+                <button onClick={handleSaveCategory} className="w-full bg-orange-500 text-white font-bold py-3 rounded-xl shadow-lg mt-2 tracking-wide">{t('create_category')}</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 }
