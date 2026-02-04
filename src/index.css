@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Mukta:wght@300;400;500;600;700;800&family=Noto+Sans+Telugu:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800\u0026family=Mukta:wght@300;400;500;600;700;800\u0026family=Noto+Sans+Telugu:wght@300;400;500;600;700;800\u0026display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -70,7 +70,7 @@
     animation: slideUp 0.5s ease-out forwards;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator {
+input[type=\"date\"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
     filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(358deg) brightness(101%) contrast(105%);
 }
@@ -96,7 +96,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .print-only {
-    display: none;
+    display: none !important;
 }
 
 @media print {
@@ -113,28 +113,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     html,
     body {
         height: auto !important;
-        min-height: 100% !important;
-        overflow: visible !important;
         background: #ffffff !important;
         font-size: 13px !important;
         color: #0f172a !important;
-        zoom: 1;
-    }
-
-    .bg-mesh,
-    section.bg-[#fff7ed],
-    main,
-    #root>div {
-        background: none !important;
-        background-color: #ffffff !important;
-    }
-
-    .flex.h-screen {
-        height: auto !important;
-        min-height: 100% !important;
-        overflow: visible !important;
-        display: block !important;
-        background: #ffffff !important;
     }
 
     .no-print {
@@ -150,128 +131,125 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         max-width: 100%;
         background: #ffffff !important;
         padding: 1cm;
+        display: block !important;
     }
 
     /* Premium PDF Styles */
     .pdf-header-classic {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 4px solid #f97316;
-        padding-bottom: 2rem;
-        margin-bottom: 3rem;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        border-bottom: 4px solid #f97316 !important;
+        padding-bottom: 2rem !important;
+        margin-bottom: 3rem !important;
     }
 
     .pdf-header-classic .header-avatar {
-        width: 60px;
-        height: 60px;
-        border-radius: 1.5rem;
-        object-fit: cover;
+        width: 60px !important;
+        height: 60px !important;
+        border-radius: 1.5rem !important;
     }
 
     .pdf-header-classic .url {
-        font-size: 1.25rem;
-        font-weight: 900;
-        color: #0f172a;
+        font-size: 1.25rem !important;
+        font-weight: 900 !important;
+        color: #0f172a !important;
     }
 
     .pdf-header-classic .sub-brand {
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 4px;
-        color: #94a3b8;
-        font-weight: 800;
+        font-size: 10px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 4px !important;
+        color: #94a3b8 !important;
+        font-weight: 800 !important;
     }
 
     .pdf-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        margin-bottom: 3rem;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 1.5rem !important;
+        margin-bottom: 3rem !important;
     }
 
     .pdf-card {
-        padding: 1.5rem;
-        border-radius: 2rem;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        padding: 1.5rem !important;
+        border-radius: 2rem !important;
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
     }
 
     .pdf-card-title {
-        font-size: 10px;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: #64748b;
-        margin-bottom: 0.5rem;
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        color: #64748b !important;
     }
 
     .pdf-card-value {
-        font-size: 2rem;
-        font-weight: 950;
-        color: #0f172a;
-        margin-top: 5px;
+        font-size: 2rem !important;
+        font-weight: 950 !important;
+        color: #0f172a !important;
+        margin-top: 5px !important;
     }
 
     .pdf-card-balance {
-        border-left: 8px solid #f97316;
+        border-left: 8px solid #f97316 !important;
     }
 
     .pdf-card-income {
-        border-left: 8px solid #059669;
+        border-left: 8px solid #059669 !important;
     }
 
     .pdf-card-expense {
-        border-left: 8px solid #e11d48;
+        border-left: 8px solid #e11d48 !important;
     }
 
     .pdf-section-title {
-        font-size: 1.25rem;
-        font-weight: 900;
-        margin-bottom: 2rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        color: #1e293b;
-        border-bottom: 2px solid #f1f5f9;
-        padding-bottom: 10px;
+        font-size: 1.25rem !important;
+        font-weight: 900 !important;
+        margin-bottom: 2rem !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        color: #1e293b !important;
+        border-bottom: 2px solid #f1f5f9 !important;
+        padding-bottom: 10px !important;
     }
 
     .pdf-table {
-        width: 100%;
-        border-collapse: collapse;
+        width: 100% !important;
+        border-collapse: collapse !important;
     }
 
     .pdf-table th {
-        text-align: left;
-        padding: 1rem;
-        font-size: 10px;
-        text-transform: uppercase;
-        color: #94a3b8;
-        border-bottom: 2px solid #f1f5f9;
+        text-align: left !important;
+        padding: 1rem !important;
+        font-size: 10px !important;
+        color: #94a3b8 !important;
+        border-bottom: 2px solid #f1f5f9 !important;
     }
 
     .pdf-table td {
-        padding: 1rem;
-        border-bottom: 1px solid #f1f5f9;
-        font-size: 12px;
-        color: #334155;
+        padding: 1rem !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        font-size: 12px !important;
     }
 
     .pdf-footer {
-        margin-top: 4rem;
-        padding-top: 2rem;
-        border-top: 1px solid #f1f5f9;
-        display: flex;
-        justify-content: space-between;
-        font-size: 9px;
-        color: #94a3b8;
+        margin-top: 4rem !important;
+        padding-top: 2rem !important;
+        border-top: 1px solid #f1f5f9 !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        font-size: 9px !important;
+        color: #94a3b8 !important;
     }
 }
 
 /* Toast Animation */
 @keyframes toastIn {
     from {
-        transform: scale(0.9) translateY(40px);
+        transform: scale(0.9) translateY(60px);
         opacity: 0;
     }
 
@@ -283,7 +261,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .animate-toast {
     animation: toastIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    min-height: 100px;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    min-height: 140px !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    padding: 2rem !important;
 }

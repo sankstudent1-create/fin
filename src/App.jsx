@@ -1100,6 +1100,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [calculatorPrintData, setCalculatorPrintData] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [ipInfo, setIpInfo] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem('sound_enabled') !== 'false');
   const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('notif_enabled') !== 'false');
@@ -1160,9 +1161,13 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
     const fetchIp = async () => {
       try {
         const res = await fetch('https://ipapi.co/json/');
+        if (!res.ok) throw new Error('IP fetch failed');
         const data = await res.json();
         setIpInfo(data);
-      } catch (err) { console.error("IP Fetch Error:", err); }
+      } catch (err) {
+        console.error("IP Fetch Error:", err);
+        setIpInfo({ ip: "Analytica", city: "Local", region: "India" });
+      }
     };
     fetchIp();
   }, []);
