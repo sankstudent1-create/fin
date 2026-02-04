@@ -1098,18 +1098,22 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem('sound_enabled') !== 'false');
   const [notifEnabled, setNotifEnabled] = useState(localStorage.getItem('notif_enabled') !== 'false');
 
-  const showToast = (msg, type = 'success') => {
+  const showToast = (tx, type = 'success') => {
     if (!notifEnabled) return;
     const id = Date.now();
-    setToasts(prev => [...prev, { id, msg, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+    const msg = type === 'success'
+      ? (tx ? `${tx.title}: ₹${tx.amount}` : t('action_success'))
+      : (typeof tx === 'string' ? tx : "Error occurred");
+
+    setToasts(prev => [...prev, { id, msg, type, details: tx }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
 
   const playSuccessSound = () => {
     if (!soundEnabled) return;
     try {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
-      audio.volume = 0.8;
+      audio.volume = 0.9;
       audio.play().catch(() => { });
     } catch (e) { }
   };
@@ -1332,7 +1336,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
         if (editingTx) {
           const { error } = await supabase.from('transactions').update(txData).eq('id', editingTx.id);
           if (error) throw error;
-          showToast(t('action_success'));
+          showToast(txData);
         } else {
           const { data, error } = await supabase.from('transactions').insert([txData]).select();
           if (error) throw error;
@@ -1342,7 +1346,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
             if (cat && cat.id) {
               await supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
             }
-            showToast(t('action_success'));
+            showToast(data[0]);
           }
         }
       } catch (e) {
@@ -1394,9 +1398,10 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
     if (isOnline) {
       try {
+        const txToDelete = transactions.find(t => t.id === id);
         const { error } = await supabase.from('transactions').delete().eq('id', id);
         if (error) throw error;
-        showToast(t('action_success'));
+        showToast(txToDelete ? `${txToDelete.title} deleted` : t('action_success'));
       } catch (e) {
         console.error("Delete error:", e);
         playErrorSound();
@@ -1896,11 +1901,16 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
       </nav>
 
       {/* Action Toasts */}
-      <div className="fixed top-24 right-6 z-[100] space-y-3 pointer-events-none">
+      <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center z-[100] pointer-events-none">
         {toasts.map(toast => (
-          <div key={toast.id} className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-toast ${toast.type === 'error' ? 'bg-rose-500 text-white' : 'bg-gray-900 text-white'}`}>
-            {toast.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} className="text-orange-400" />}
-            <span className="text-xs font-black uppercase tracking-widest">{toast.msg}</span>
+          <div key={toast.id} className={`w-[85%] max-w-sm flex items-center gap-4 px-6 py-5 rounded-[2.5rem] shadow-2xl animate-toast ${toast.type === 'error' ? 'bg-rose-500 text-white' : 'bg-gray-900 border border-white/10 text-white'}`}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${toast.type === 'error' ? 'bg-white/20' : 'bg-orange-500 shadow-lg shadow-orange-500/30'}`}>
+              {toast.type === 'error' ? <AlertCircle size={24} /> : <CheckCircle2 size={24} />}
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{toast.type === 'error' ? 'Error' : 'Success'}</p>
+              <p className="text-sm font-black tracking-tight">{toast.msg}</p>
+            </div>
           </div>
         ))}
       </div>
