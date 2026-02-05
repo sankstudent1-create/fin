@@ -15,10 +15,191 @@ import { generateEmailLink } from './utils/reportGenerator';
 import { getPDFFile, getCalcPDFFile } from './utils/pdfGenerator';
 
 
-// --- 🟢 CONFIGURATION ---
-const SUPABASE_URL = "https://rtcwtaweamrgyimyhhup.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0Y3d0YXdlYW1yZ3lpbXloaHVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MDcyODEsImV4cCI6MjA4NTE4MzI4MX0.6bD8rcBJjoi0pRBOPEWiToPDZ_09-aVu7MgYZIS7a-8";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// --- 🎨 SYSTEM MANAGER (Styles & Scripts) ---
+const SystemManager = ({ onLoad }) => {
+  useEffect(() => {
+    // 1. Google Fonts (Poppins & Mukta for Devanagari support)
+    if (!document.getElementById('google-fonts')) {
+      const link = document.createElement('link');
+      link.id = 'google-fonts';
+      link.rel = 'stylesheet';
+      link.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Mukta:wght@300;400;500;600;700;800&family=Noto+Sans+Telugu:wght@300;400;500;600;700;800&display=swap";
+      document.head.appendChild(link);
+    }
+
+    onLoad(supabase);
+  }, []);
+
+  return (
+    <style>{`
+      body { font-family: 'Poppins', 'Mukta', 'Noto Sans Telugu', sans-serif; background-color: #fff7ed; color: #431407; -webkit-tap-highlight-color: transparent; }
+      .bg-mesh { background-color: #ff9a9e; background-image: radial-gradient(at 40% 20%, hsla(28,100%,74%,1) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(189,100%,56%,1) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(355,100%,93%,1) 0px, transparent 50%); }
+      .warm-shadow { box-shadow: 0 8px 30px rgba(234, 88, 12, 0.12); }
+      .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.6); }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
+      
+      /* --- 📱 SCREEN STYLES (NO-PRINT) --- */
+      .print-only { display: none !important; }
+      .app-avatar { width: 40px; height: 40px; border-radius: 99px; object-fit: cover; }
+
+      /* --- 🖨️ CONSOLIDATED PRINT ENGINE --- */
+      @media print {
+        @page { margin: 1cm; size: A4; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        
+        html, body { 
+          height: auto !important; 
+          min-height: 100% !important;
+          overflow: visible !important; 
+          background: #ffffff !important; 
+          font-size: 13px !important;
+          color: #0f172a !important;
+          zoom: 1;
+        }
+
+        .bg-mesh, section.bg-[#fff7ed], main, #root > div { background: none !important; background-color: #ffffff !important; }
+        .flex.h-screen { height: auto !important; min-height: 100% !important; overflow: visible !important; display: block !important; background: #ffffff !important; }
+
+        .pdf-card-balance { background: #0f172a !important; color: white !important; border: none; }
+        .pdf-card-income { background: #065f46 !important; color: white !important; border: none; }
+        .pdf-card-expense { background: #7f1d1d !important; color: white !important; border: none; }
+        .pdf-card-indigo { background: #312e81 !important; color: white !important; border: none; }
+        
+        .pdf-chart-box { background-color: #ffffff !important; border: 1px solid #f1f5f9; border-radius: 2rem; padding: 2rem; break-inside: avoid; -webkit-print-color-adjust: exact !important; }
+        .pdf-pie, .pdf-bar, .category-bullet { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+        .no-print { display: none !important; }
+        .print-only { display: block !important; }
+        
+        #print-root { 
+          width: 100%; 
+          max-width: 100%; 
+          background: #ffffff !important; 
+          position: relative;
+          z-index: 9999;
+        }
+        
+        .pdf-header-classic {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 2.5rem 0;
+          border-bottom: 5px solid #0f172a;
+          margin-bottom: 2.5rem;
+          page-break-after: avoid;
+        }
+        
+        .header-left .url { font-size: 26px; font-weight: 950; letter-spacing: -0.05em; color: #0f172a; }
+        .header-left .sub-brand { font-size: 10px; font-weight: 800; color: #64748b !important; text-transform: uppercase; letter-spacing: 0.4em; border: none; margin-top: 10px; }
+        
+        .header-right { display: flex; align-items: center; gap: 24px; text-align: right; }
+        .user-meta-info .name { font-size: 18px; font-weight: 900; display: block; color: #0f172a; margin-bottom: 2px; }
+        .user-meta-info .email { font-size: 12px; font-weight: 700; color: #94a3b8 !important; }
+        .header-avatar { width: 64px; height: 64px; border-radius: 18px; border: 3px solid #f1f5f9; object-fit: cover; }
+
+        .report-summary-title { font-size: 24px; font-weight: 950; margin-bottom: 2rem; text-align: center; color: #0f172a; border: none; }
+
+        .pdf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; break-inside: avoid; }
+        .pdf-card { padding: 1.5rem; border-radius: 2rem; border: 1px solid #f1f5f9; display: flex; flex-direction: column; justify-content: center; background: white !important; break-inside: avoid; page-break-inside: avoid; }
+        
+        .pdf-card-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.5rem; color: inherit; opacity: 0.8; }
+        .pdf-card-value { font-size: 22px; font-weight: 950; color: inherit; letter-spacing: -0.02em; }
+
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; border-radius: 1rem; overflow: hidden; border: 1px solid #f1f5f9; break-inside: auto; }
+        .pdf-table tr { break-inside: avoid; page-break-inside: avoid; }
+        .pdf-table th { background: #f8fafc !important; color: #64748b; font-size: 11px; font-weight: 900; padding: 1rem 1.25rem; border-bottom: 2px solid #f1f5f9; text-align: left; text-transform: uppercase; }
+        .pdf-table td { padding: 1rem 1.25rem; border-bottom: 1px solid #f8fafc; font-size: 13px; color: #1e293b; font-weight: 700; }
+        
+        .pdf-section-title { font-size: 16px; font-weight: 950; margin: 2.5rem 0 1rem; border-left: 5px solid #f97316; padding-left: 1rem; text-transform: uppercase; display: flex; align-items: center; gap: 10px; color: #0f172a; break-after: avoid; }
+        
+        .pdf-chart-box { background: white !important; border-radius: 2rem; border: 1px solid #f1f5f9; padding: 2rem; break-inside: avoid; page-break-inside: avoid; -webkit-print-color-adjust: exact !important; }
+        .pdf-pie { width: 110px; height: 110px; border-radius: 50%; display: inline-block; border: 6px solid #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); -webkit-print-color-adjust: exact !important; }
+        .category-bullet { width: 10px; height: 10px; border-radius: 4px; display: inline-block; margin-right: 12px; -webkit-print-color-adjust: exact !important; }
+        .pdf-bar { width: 100%; border-radius: 8px; display: block; min-height: 4px; -webkit-print-color-adjust: exact !important; }
+        
+        .pdf-page-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 2.5rem; }
+        .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; break-inside: avoid; }
+        
+        .pdf-footer { margin-top: 3rem; padding-top: 2rem; border-top: 2px solid #f8fafc; display: flex; justify-content: space-between; align-items: flex-start; break-inside: avoid; }
+        .pdf-footer p { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; margin-top: 0; }
+      }
+
+      /* --- 📱 UPI-STYLE TOAST --- */
+      .upi-toast-container {
+          position: fixed;
+          bottom: 40px;
+          left: 20px;
+          right: 20px;
+          display: flex;
+          justify-content: center;
+          z-index: 9999;
+          pointer-events: none;
+      }
+
+      .upi-toast {
+          background: #ffffff;
+          padding: 16px 24px;
+          border-radius: 24px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          min-width: 280px;
+          max-width: 90%;
+          pointer-events: auto;
+          animation: upiSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      @keyframes upiSlideUp {
+          from { transform: translateY(100px) scale(0.9); opacity: 0; }
+          to { transform: translateY(0) scale(1); opacity: 1; }
+      }
+
+      .upi-toast-icon {
+          width: 44px;
+          height: 44px;
+          background: #008f51;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          box-shadow: 0 4px 12px rgba(0,143,81,0.2);
+      }
+
+      .upi-toast-icon.error {
+          background: #dc2626;
+          box-shadow: 0 4px 12px rgba(220,38,38,0.2);
+      }
+
+      .upi-toast-content {
+          display: flex;
+          flex-direction: column;
+      }
+
+      .upi-toast-title {
+          font-size: 14px;
+          font-weight: 800;
+          color: #1e293b;
+          line-height: 1.2;
+      }
+
+      .upi-toast-sub {
+          font-size: 11px;
+          font-weight: 600;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-top: 2px;
+      }
+    `}</style>
+  );
+};
 
 // --- 🌍 TRANSLATIONS ---
 const TRANSLATIONS = {
@@ -866,6 +1047,7 @@ const LanguageSwitcher = ({ lang, onLangChange, variant = 'light', up = false })
 };
 
 export default function App() {
+  const [supabaseClient, setSupabaseClient] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState(localStorage.getItem('app_lang') || 'en');
@@ -877,34 +1059,38 @@ export default function App() {
     localStorage.setItem('app_lang', l);
   };
 
-  useEffect(() => {
-    // Initial fetch of session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+  const handleSystemLoad = (client) => {
+    setSupabaseClient(client);
+    client.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    client.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
     });
+  };
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
+  if (loading && !supabaseClient) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-orange-50 text-orange-500">
-        <Loader2 className="animate-spin" size={40} />
-      </div>
+      <>
+        <SystemManager onLoad={handleSystemLoad} />
+        <div className="min-h-screen flex items-center justify-center bg-orange-50 text-orange-500">
+          <Loader2 className="animate-spin" size={40} />
+        </div>
+      </>
     );
   }
 
-  return !session ? (
-    <AuthScreen supabase={supabase} lang={lang} t={t} onLangChange={handleLangChange} />
-  ) : (
-    <Dashboard session={session} supabase={supabase} lang={lang} t={t} onLangChange={handleLangChange} />
+  return (
+    <>
+      <SystemManager onLoad={handleSystemLoad} />
+      {!session ? (
+        <AuthScreen supabase={supabaseClient} lang={lang} t={t} onLangChange={handleLangChange} />
+      ) : (
+        <Dashboard session={session} supabase={supabaseClient} lang={lang} t={t} onLangChange={handleLangChange} />
+      )}
+    </>
   );
 }
 
