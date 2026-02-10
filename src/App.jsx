@@ -2,9 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import Tesseract from 'tesseract.js';
-// ⚠️ FOR VERCEL DEPLOYMENT: Uncomment the line below and install the package
-// import { createClient } from '@supabase/supabase-js';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
 import { 
   Plus, Wallet, Coffee, ShoppingBag, Car, Zap, Home, Heart, Smartphone, 
   Briefcase, Laptop, Gift, Star, X, Calendar, ArrowDownLeft, ArrowUpRight, 
