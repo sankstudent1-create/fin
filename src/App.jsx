@@ -19,6 +19,9 @@ import {
 const SUPABASE_URL = "https://rtcwtaweamrgyimyhhup.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0Y3d0YXdlYW1yZ3lpbXloaHVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MDcyODEsImV4cCI6MjA4NTE4MzI4MX0.6bD8rcBJjoi0pRBOPEWiToPDZ_09-aVu7MgYZIS7a-8";
 
+// Create Supabase client immediately
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // --- 🎨 SYSTEM MANAGER (Styles & Scripts) ---
 const SystemManager = ({ onLoad }) => {
   useEffect(() => {
@@ -31,22 +34,8 @@ const SystemManager = ({ onLoad }) => {
       document.head.appendChild(link);
     }
 
-    // 2. Supabase
-    if (!window.supabase) {
-      const script = document.createElement('script');
-      script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-      script.async = true;
-      script.onload = () => {
-        const { createClient } = window.supabase;
-        const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        onLoad(client);
-      };
-      document.body.appendChild(script);
-    } else {
-      const { createClient } = window.supabase;
-      const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      onLoad(client);
-    }
+    // 2. Pass the Supabase client immediately
+    onLoad(supabaseClient);
 
     // 3. Service Worker Registration
     if ('serviceWorker' in navigator && !window.location.href.includes('blob:')) {
