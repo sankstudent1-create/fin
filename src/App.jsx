@@ -22,40 +22,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // --- 🎨 SYSTEM MANAGER (Styles & Scripts) ---
 const SystemManager = ({ onLoad }) => {
   useEffect(() => {
-    // 1. Tailwind CSS
-    if (!document.getElementById('tailwind-script')) {
-      const script = document.createElement('script');
-      script.id = 'tailwind-script';
-      script.src = "https://cdn.tailwindcss.com";
-      script.onload = () => {
-        window.tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                orange: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c' },
-                emerald: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669' },
-                rose: { 50: '#fff1f2', 100: '#ffe4e6', 500: '#f43f5e', 600: '#e11d48' }
-              },
-              fontFamily: {
-                sans: ['Outfit', 'sans-serif'],
-              },
-              animation: {
-                'bounce-subtle': 'bounce-subtle 2s infinite',
-              },
-              keyframes: {
-                'bounce-subtle': {
-                  '0%, 100%': { transform: 'translateY(-5%)' },
-                  '50%': { transform: 'translateY(0)' },
-                }
-              }
-            }
-          }
-        };
-      };
-      document.head.appendChild(script);
-    }
-
-    // 2. Google Fonts
+    // 1. Google Fonts
     if (!document.getElementById('google-fonts')) {
       const link = document.createElement('link');
       link.id = 'google-fonts';
@@ -64,7 +31,7 @@ const SystemManager = ({ onLoad }) => {
       document.head.appendChild(link);
     }
 
-    // 3. Supabase
+    // 2. Supabase
     if (!window.supabase) {
       const script = document.createElement('script');
       script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
@@ -81,7 +48,7 @@ const SystemManager = ({ onLoad }) => {
       onLoad(client);
     }
 
-    // 4. Service Worker Registration
+    // 3. Service Worker Registration
     if ('serviceWorker' in navigator && !window.location.href.includes('blob:')) {
       navigator.serviceWorker.register('/sw.js')
         .then(reg => console.log('SW Registered:', reg))
