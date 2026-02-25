@@ -12,47 +12,72 @@ export const AuthScreen = () => {
     const [fullName, setFullName] = useState('');
     const [error, setError] = useState(null);
 
+    // ─── Human-readable error mapper ────────────────────────────────────────
+    const friendlyError = (err) => {
+        const msg = err?.message || '';
+        console.error('%c🔴 Auth Error', 'color:#ef4444;font-weight:bold', {
+            message: msg, code: err?.code, status: err?.status, raw: err
+        });
+        // Network / connectivity
+        if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('TIMEOUT'))
+            return '⚠️ Cannot reach the server. The Supabase project may be paused or your internet is unstable. Check console for details.';
+        // Auth specific
+        if (msg.includes('Invalid login credentials'))
+            return 'Wrong email or password. Please try again.';
+        if (msg.includes('Email not confirmed'))
+            return 'Please confirm your email first. Check your inbox for the verification link.';
+        if (msg.includes('User already registered'))
+            return 'An account with this email already exists. Try signing in instead.';
+        if (msg.includes('Password should be'))
+            return 'Password must be at least 6 characters.';
+        if (msg.includes('rate limit') || msg.includes('429'))
+            return 'Too many attempts. Please wait a minute before trying again.';
+        if (msg.includes('signup is disabled'))
+            return 'New sign-ups are currently disabled. Contact the administrator.';
+        // Fallback — show raw message but also log it
+        return msg || 'An unexpected error occurred. See browser console for details.';
+    };
+
     const handleAuth = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
+        console.group('%c🔐 Auth Attempt', 'color:#f97316;font-weight:bold');
+        console.log('Mode:', isLogin ? 'Sign In' : 'Sign Up', '| Email:', email);
+
         try {
             if (isLogin) {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
+                console.log('→ Calling supabase.auth.signInWithPassword …');
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
+                console.log('%c✅ Sign In OK', 'color:#16a34a;font-weight:bold', data?.user?.email);
             } else {
-                const { error } = await supabase.auth.signUp({
+                console.log('→ Calling supabase.auth.signUp …');
+                const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
-                    options: {
-                        data: {
-                            full_name: fullName,
-                            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
-                        },
-                    },
+                    options: { data: { full_name: fullName, avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}` } },
                 });
                 if (error) throw error;
-                alert("Check your email for the confirmation link!");
+                console.log('%c✅ Sign Up OK', 'color:#16a34a;font-weight:bold', data?.user?.email);
+                alert('Account created! Check your email for the confirmation link.');
             }
         } catch (err) {
-            setError(err.message);
+            setError(friendlyError(err));
         } finally {
+            console.groupEnd();
             setLoading(false);
         }
     };
 
     const handleGoogleLogin = async () => {
+        console.log('%c🔐 Google OAuth initiated', 'color:#f97316;font-weight:bold');
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-            });
+            const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
             if (error) throw error;
         } catch (err) {
-            setError(err.message);
+            setError(friendlyError(err));
         }
     };
 
@@ -86,10 +111,14 @@ export const AuthScreen = () => {
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 mb-6"
+                        className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm font-medium flex items-start gap-3 mb-6"
                     >
-                        <AlertCircle size={16} />
-                        {error}
+                        <AlertCircle size={18} className="mt-0.5 shrink-0 text-rose-500" />
+                        <div>
+                            <p className="font-bold text-rose-700 mb-0.5">Authentication Failed</p>
+                            <p className="text-rose-600 text-xs leading-relaxed">{error}</p>
+                            <p className="text-rose-400 text-[10px] mt-1">Open DevTools → Console for full diagnostics</p>
+                        </div>
                     </motion.div>
                 )}
 

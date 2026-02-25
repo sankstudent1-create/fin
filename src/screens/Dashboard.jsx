@@ -107,27 +107,44 @@ export const Dashboard = ({ session }) => {
     const fetchTransactions = useCallback(async () => {
         if (!user) return;
         setLoading(true);
-        try {
-            const cached = localStorage.getItem(`cached_tx_${user.id}`);
-            if (cached) {
-                setTransactions(JSON.parse(cached));
-                setLoading(false);
-            }
 
-            if (isOnline) {
+        // Load cached data immediately (offline support)
+        const cached = localStorage.getItem(`cached_tx_${user.id}`);
+        if (cached) {
+            setTransactions(JSON.parse(cached));
+            setLoading(false);
+        }
+
+        if (isOnline) {
+            const t0 = Date.now();
+            console.debug('%c📦 Fetching transactions…', 'color:#f97316;font-weight:bold', { userId: user.id });
+            try {
                 const { data, error } = await supabase
                     .from('transactions')
                     .select('*')
                     .eq('user_id', user.id)
                     .order('date', { ascending: false });
 
-                if (!error && data) {
+                const ms = Date.now() - t0;
+                if (error) {
+                    console.error('%c🔴 transactions fetch error', 'color:#ef4444;font-weight:bold', {
+                        message: error.message,
+                        code: error.code,
+                        details: error.details,
+                        hint: error.hint,
+                        ms,
+                    });
+                    // Hint for common errors
+                    if (error.code === '42P01') console.error('   ↳ Table "transactions" does not exist — did you run supabase_setup_NEW.sql?');
+                    if (error.code === 'PGRST301') console.error('   ↳ RLS policy blocked the query. Check Supabase → Auth → Policies.');
+                } else {
+                    console.debug('%c✅ transactions loaded', 'color:#22c55e;font-weight:bold', `${data.length} rows in ${ms}ms`);
                     setTransactions(data);
                     localStorage.setItem(`cached_tx_${user.id}`, JSON.stringify(data));
                 }
+            } catch (err) {
+                console.error('%c🔴 transactions network error', 'color:#ef4444;font-weight:bold', err.message);
             }
-        } catch (err) {
-            console.error('Fetch error:', err);
         }
         setLoading(false);
     }, [user, isOnline]);
@@ -206,14 +223,23 @@ export const Dashboard = ({ session }) => {
         };
 
         if (editTransaction) {
+            console.log('%c✏️ Updating transaction', 'color:#f97316;font-weight:bold', editTransaction.id, newTx);
             const { error } = await supabase.from('transactions').update(newTx).eq('id', editTransaction.id);
-            if (!error) {
+            if (error) {
+                console.error('%c🔴 Update failed', 'color:#ef4444;font-weight:bold', { code: error.code, message: error.message, hint: error.hint });
+                showToast('Update failed: ' + error.message, 'error');
+            } else {
                 setTransactions(prev => prev.map(t => t.id === editTransaction.id ? { ...t, ...newTx } : t));
                 showToast('Transaction updated! ✏️');
             }
         } else {
+            console.log('%c➕ Inserting transaction', 'color:#f97316;font-weight:bold', newTx);
             const { data, error } = await supabase.from('transactions').insert([newTx]).select();
-            if (!error && data) {
+            if (error) {
+                console.error('%c🔴 Insert failed', 'color:#ef4444;font-weight:bold', { code: error.code, message: error.message, hint: error.hint });
+                if (error.code === '42P01') console.error('   ↳ Table "transactions" does not exist. Run supabase_setup_NEW.sql in your Supabase SQL Editor.');
+                showToast('Save failed: ' + error.message, 'error');
+            } else if (data) {
                 setTransactions(prev => [data[0], ...prev]);
                 showToast('Transaction added! ✅');
 
@@ -233,8 +259,12 @@ export const Dashboard = ({ session }) => {
     };
 
     const handleDeleteTransaction = async (id) => {
+        console.log('%c🗑️ Deleting transaction', 'color:#f97316;font-weight:bold', id);
         const { error } = await supabase.from('transactions').delete().eq('id', id);
-        if (!error) {
+        if (error) {
+            console.error('%c🔴 Delete failed', 'color:#ef4444;font-weight:bold', { code: error.code, message: error.message });
+            showToast('Delete failed: ' + error.message, 'error');
+        } else {
             setTransactions(prev => prev.filter(t => t.id !== id));
             showToast('Transaction deleted', 'info');
         }
