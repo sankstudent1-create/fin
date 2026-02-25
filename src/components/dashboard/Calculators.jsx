@@ -1,0 +1,564 @@
+
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, Coins, Lock, ShieldCheck, Percent, RotateCcw, Download, Mail, Share2, Loader2, X, Info, ChevronDown, ChevronUp, IndianRupee, Scale, FileText } from 'lucide-react';
+import { generateEmailLink } from '../../utils/reportGenerator';
+
+// --- TRANSLATIONS (English Fallback) ---
+const EN_Translations = {
+    tool_sip: "SIP", tool_lumpsum: "Lumpsum", tool_fd: "Fixed Deposit", tool_ppf: "PPF", tool_interest: "Interest",
+    sip_desc: "Equity Mutual Fund (MF)", lumpsum_desc: "One-time MF Investment", fd_desc: "Secure Bank Savings",
+    ppf_desc: "Tax-Free Govt Scheme", interest_desc: "Simple Loan Interest",
+    monthly_invest: "Monthly Investment (₹)", yearly_invest: "Yearly Investment (₹)", invest_amt: "Investment Amount (₹)",
+    time_period: "Time Period (Years)", exp_ratio: "Expense Ratio (%)", return_rate: "Exp. Return Rate (% p.a)",
+    ppf_info: "PPF uses fixed Govt rate ~7.1%", projection: "Projection", reset: "Reset",
+    pdf_report: "PDF Report", est_tax: "Est. Tax",
+    calc_subject: "Projection", calc_share_text: "I calculated my investment return on Orange Finance.",
+    analysis_projections: "Investment Analysis & Projections", report_generated: "Report Generated",
+    invested: "Invested", wealth_created: "Wealth Created", net_value: "Net Maturity Value",
+    calculate: "Calculate", detailed_report: "Detailed Report", share: "Share", generating: "Generating..."
+};
+
+const t = (key) => EN_Translations[key] || key;
+
+// --- INDIAN TAX INFO FOR EACH SCHEME (FY 2025-26) ---
+const SCHEME_TAX_INFO = {
+    sip: {
+        name: "SIP (Systematic Investment Plan)",
+        section: "Equity Mutual Fund",
+        taxRules: [
+            { label: "Holding Period for LTCG", value: "> 12 months per unit" },
+            { label: "LTCG Tax Rate", value: "12.5% (on gains > ₹1.25L/year)" },
+            { label: "STCG Tax Rate", value: "20% (if sold within 12 months)" },
+            { label: "Indexation Benefit", value: "Not Available" },
+            { label: "TDS", value: "Not applicable on equity MFs" },
+        ],
+        exemptions: [
+            "LTCG up to ₹1,25,000 per financial year is fully exempt from tax",
+            "Each SIP installment is treated as a separate purchase — holding period is calculated per unit",
+            "No TDS is deducted on equity mutual fund redemptions",
+            "Dividend income from MFs is taxable at slab rate under new regime",
+        ],
+        tip: "💡 Hold your equity SIP units for more than 12 months to qualify for the lower 12.5% LTCG rate instead of 20% STCG."
+    },
+    lumpsum: {
+        name: "Lumpsum Investment",
+        section: "Equity Mutual Fund (One-time)",
+        taxRules: [
+            { label: "Holding for LTCG", value: "> 12 months" },
+            { label: "LTCG Tax Rate", value: "12.5% (gains > ₹1.25L)" },
+            { label: "STCG Tax Rate", value: "20%" },
+            { label: "Indexation Benefit", value: "Not Available" },
+            { label: "Surcharge", value: "Applicable based on total income" },
+        ],
+        exemptions: [
+            "First ₹1,25,000 of LTCG in a financial year is completely tax-free",
+            "No Section 80C deduction available for equity MF investments",
+            "For debt MFs purchased after April 2023, all gains taxed at slab rate",
+            "Hybrid funds with >35% equity get LTCG treatment after 24 months",
+        ],
+        tip: "💡 If holding >12 months, only gains exceeding ₹1.25L are taxed. Strategic harvest gains annually to stay within the exempt limit."
+    },
+    fd: {
+        name: "Fixed Deposit (FD)",
+        section: "Income from Other Sources",
+        taxRules: [
+            { label: "Interest Taxation", value: "Fully taxable at slab rate" },
+            { label: "TDS Threshold (< 60 yrs)", value: "₹50,000/year (FY 2025-26)" },
+            { label: "TDS Threshold (≥ 60 yrs)", value: "₹1,00,000/year" },
+            { label: "TDS Rate (with PAN)", value: "10%" },
+            { label: "TDS Rate (without PAN)", value: "20%" },
+        ],
+        exemptions: [
+            "5-Year Tax Saver FD qualifies for Section 80C deduction up to ₹1.5L (Old Regime only)",
+            "Senior citizens get ₹50,000 deduction under Section 80TTB on interest income",
+            "Submit Form 15G/15H to avoid TDS if total income is below taxable limit",
+            "Under New Tax Regime, no Section 80C benefit is available",
+            "FD interest is taxed on accrual basis, not on maturity",
+        ],
+        tip: "💡 If your income is below ₹12L (new regime), submit Form 15G to bank to avoid TDS deduction on FD interest."
+    },
+    ppf: {
+        name: "Public Provident Fund (PPF)",
+        section: "EEE — Exempt-Exempt-Exempt",
+        taxRules: [
+            { label: "Contribution Deduction", value: "Sec 80C up to ₹1.5L/year" },
+            { label: "Interest Earned", value: "100% Tax Free" },
+            { label: "Maturity Amount", value: "100% Tax Free" },
+            { label: "Current Rate (2025-26)", value: "7.1% p.a. compounded yearly" },
+            { label: "Lock-in Period", value: "15 years (partial withdrawal from Year 7)" },
+        ],
+        exemptions: [
+            "PPF enjoys EEE (Exempt-Exempt-Exempt) status — no tax at any stage",
+            "Investment up to ₹1,50,000/year deductible under Section 80C (Old Regime)",
+            "Interest earned is completely exempt under Section 10(11)",
+            "Maturity proceeds are fully tax-free regardless of amount",
+            "Maximum investment limit: ₹1,50,000 per financial year",
+            "Available under both Old and New tax regime (but 80C only in Old Regime)",
+        ],
+        tip: "💡 PPF is the safest tax-free investment. Even interest is not taxed. Ideal for long-term goals like retirement or child education."
+    },
+    interest: {
+        name: "Simple Interest Calculator",
+        section: "Income from Other Sources",
+        taxRules: [
+            { label: "Interest Income Tax", value: "Taxed at slab rate" },
+            { label: "Section 80TTA (Savings)", value: "₹10,000 exempt (< 60 yrs)" },
+            { label: "Section 80TTB (Senior)", value: "₹50,000 exempt (≥ 60 yrs)" },
+            { label: "TDS Applicability", value: "Based on source of interest" },
+            { label: "Reporting", value: "Must declare in ITR" },
+        ],
+        exemptions: [
+            "Interest from savings accounts up to ₹10,000 is exempt under 80TTA for non-seniors",
+            "Senior citizens get up to ₹50,000 exemption under 80TTB on all interest",
+            "Interest from PPF, Sukanya Samriddhi is fully exempt",
+            "Interest from Tax-Free Bonds issued by Govt entities is fully exempt",
+        ],
+        tip: "💡 Always report all interest income in your ITR. Use Form 15G/H if eligible to prevent TDS deduction."
+    }
+};
+
+// --- Calculation Logic ---
+
+const calculateSIP = (p, n, r, er = 0) => {
+    const netR = r - er;
+    const i = netR / 100 / 12;
+    const invested = p * n;
+    const total = p * ((Math.pow(1 + i, n) - 1) / i) * (1 + i);
+    const returns = total - invested;
+
+    // LTCG: 12.5% on gains exceeding ₹1.25L
+    const taxableGains = Math.max(0, returns - 125000);
+    const tax = taxableGains * 0.125;
+
+    const projections = [];
+    for (let y = 1; y <= Math.ceil(n / 12); y++) {
+        const months = y * 12;
+        const currentTotal = p * ((Math.pow(1 + i, months) - 1) / i) * (1 + i);
+        projections.push({ year: y, invested: p * months, total: currentTotal });
+    }
+
+    return { invested, total, returns, tax, netTotal: total - tax, projections };
+};
+
+const calculateLumpsum = (p, n, r, er = 0) => {
+    const netR = r - er;
+    const total = p * Math.pow(1 + netR / 100, n);
+    const returns = total - p;
+
+    const taxableGains = Math.max(0, returns - 125000);
+    const tax = taxableGains * 0.125;
+
+    const projections = [];
+    for (let y = 1; y <= n; y++) {
+        projections.push({ year: y, invested: p, total: p * Math.pow(1 + netR / 100, y) });
+    }
+
+    return { invested: p, total, returns, tax, netTotal: total - tax, projections };
+};
+
+const calculateFD = (p, n, r) => {
+    const total = p * Math.pow(1 + r / 100, n);
+    const returns = total - p;
+    // FD interest taxed at slab rate. Use 10% TDS as estimate
+    const tax = returns * 0.10;
+
+    const projections = [];
+    for (let y = 1; y <= n; y++) {
+        projections.push({ year: y, invested: p, total: p * Math.pow(1 + r / 100, y) });
+    }
+
+    return { invested: p, total, returns, tax, netTotal: total - tax, projections };
+};
+
+const calculatePPF = (p, n) => {
+    const r = 7.1;
+    let total = 0;
+    let invested = 0;
+    const projections = [];
+    for (let y = 1; y <= n; y++) {
+        total = (total + p) * (1 + r / 100);
+        invested += p;
+        projections.push({ year: y, invested, total });
+    }
+    return { invested, total, returns: total - invested, tax: 0, netTotal: total, projections };
+};
+
+const calculateSimpleInterest = (p, n, r) => {
+    const interest = (p * r * n) / 100;
+    const projections = [];
+    for (let y = 1; y <= n; y++) {
+        const curInt = (p * r * y) / 100;
+        projections.push({ year: y, invested: p, total: p + curInt });
+    }
+    const tax = interest * 0.10;
+    return { invested: p, total: p + interest, returns: interest, tax, netTotal: (p + interest) - tax, projections };
+};
+
+// --- TAX INFO CARD COMPONENT ---
+const TaxInfoCard = ({ toolId }) => {
+    const [expanded, setExpanded] = useState(false);
+    const info = SCHEME_TAX_INFO[toolId];
+    if (!info) return null;
+
+    return (
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-[2rem] border border-indigo-100 overflow-hidden">
+            <button
+                onClick={() => setExpanded(!expanded)}
+                className="w-full p-5 flex items-center justify-between text-left"
+            >
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl">
+                        <Scale size={18} />
+                    </div>
+                    <div>
+                        <p className="text-xs font-black text-indigo-700 uppercase tracking-wider leading-tight">Indian Tax Info (FY 2025-26)</p>
+                        <p className="text-[10px] text-indigo-400 font-bold mt-0.5">{info.section}</p>
+                    </div>
+                </div>
+                {expanded ? <ChevronUp size={18} className="text-indigo-400" /> : <ChevronDown size={18} className="text-indigo-400" />}
+            </button>
+
+            {expanded && (
+                <div className="px-5 pb-5 space-y-4 animate-in slide-in-from-top-2">
+                    {/* Tax Rules Grid */}
+                    <div className="bg-white rounded-2xl p-4 space-y-3">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            <FileText size={12} /> Tax Rules
+                        </h4>
+                        {info.taxRules.map((rule, i) => (
+                            <div key={i} className="flex justify-between items-center text-xs border-b border-slate-50 pb-2 last:border-0 last:pb-0">
+                                <span className="text-slate-500 font-medium">{rule.label}</span>
+                                <span className="text-slate-900 font-black text-right">{rule.value}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Exemptions */}
+                    <div className="bg-white rounded-2xl p-4">
+                        <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <ShieldCheck size={12} /> Tax Benefits & Exemptions
+                        </h4>
+                        <ul className="space-y-2">
+                            {info.exemptions.map((ex, i) => (
+                                <li key={i} className="flex items-start gap-2 text-[11px] text-slate-600 leading-relaxed">
+                                    <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
+                                    {ex}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Pro Tip */}
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-[11px] font-medium text-amber-800 leading-relaxed">
+                        {info.tip}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- MAIN COMPONENT ---
+
+export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, t: propT }) => {
+    const [data, setData] = useState({ amount: '', duration: '', rate: '', expense_ratio: '1' });
+    const [result, setResult] = useState(null);
+    const [showDetailed, setShowDetailed] = useState(false);
+    const [showProjections, setShowProjections] = useState(false);
+
+    const translate = propT || t;
+
+    const tools = {
+        sip: { name: 'SIP Calculator', icon: TrendingUp, color: 'text-blue-600 bg-blue-50 border-blue-100', desc: 'Equity Mutual Fund' },
+        lumpsum: { name: 'Lumpsum Calculator', icon: Coins, color: 'text-emerald-600 bg-emerald-50 border-emerald-100', desc: 'One-time Investment' },
+        fd: { name: 'Fixed Deposit', icon: Lock, color: 'text-amber-600 bg-amber-50 border-amber-100', desc: 'Secure Bank Savings' },
+        ppf: { name: 'PPF Scheme', icon: ShieldCheck, color: 'text-indigo-600 bg-indigo-50 border-indigo-100', desc: 'Tax-Free Govt Scheme' },
+        interest: { name: 'Interest', icon: Percent, color: 'text-slate-600 bg-slate-50 border-slate-100', desc: 'Simple Loan Interest' },
+    };
+
+    const currentTool = tools[toolId];
+
+    const handleCalculate = () => {
+        const p = parseFloat(data.amount);
+        const n = parseFloat(data.duration);
+        const r = parseFloat(data.rate);
+        const er = parseFloat(data.expense_ratio) || 0;
+
+        if (!p || !n) return;
+
+        let res = { invested: 0, total: 0, returns: 0, tax: 0, netTotal: 0, projections: [] };
+
+        switch (toolId) {
+            case 'sip':
+                res = calculateSIP(p, n * 12, r || 12, er);
+                break;
+            case 'lumpsum':
+                res = calculateLumpsum(p, n, r || 12, er);
+                break;
+            case 'fd':
+                res = calculateFD(p, n, r || 6.5);
+                break;
+            case 'ppf':
+                res = calculatePPF(p, n);
+                break;
+            case 'interest':
+                res = calculateSimpleInterest(p, n, r || 10);
+                break;
+            default:
+                break;
+        }
+        setResult({ ...res, detailed: showDetailed });
+    };
+
+    useEffect(() => { setResult(null); }, [toolId]);
+
+    if (!currentTool) return null;
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in" onClick={onClose}>
+            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-y-auto max-h-[90vh] animate-slide-up hide-scrollbar ring-1 ring-white/50" onClick={e => e.stopPropagation()}>
+
+                {/* Header */}
+                <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl p-6 flex items-center justify-between border-b border-slate-100">
+                    <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-2xl shadow-sm border ${currentTool.color}`}>
+                            <currentTool.icon size={28} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight">{translate(`tool_${toolId}`)}</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{translate(`${toolId}_desc`)}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-100 text-slate-400 transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-8 space-y-6">
+                    {toolId === 'ppf' && (
+                        <div className="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center gap-2">
+                            <ShieldCheck size={16} /> {translate('ppf_info')} • EEE Status — Fully Tax Free
+                        </div>
+                    )}
+
+                    {/* Tax Info Card */}
+                    <TaxInfoCard toolId={toolId} />
+
+                    <div className="space-y-4">
+                        <div className="group">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
+                                {toolId === 'sip' ? translate('monthly_invest') : toolId === 'ppf' ? translate('yearly_invest') : translate('invest_amt')}
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                <input
+                                    type="number"
+                                    value={data.amount}
+                                    onChange={e => setData({ ...data, amount: e.target.value })}
+                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pl-10 pr-4 py-4 font-bold text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-all text-lg"
+                                    placeholder="5000"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+
+                        <div className="group">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">{translate('time_period')}</label>
+                            <input
+                                type="number"
+                                value={data.duration}
+                                onChange={e => setData({ ...data, duration: e.target.value })}
+                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-all text-lg"
+                                placeholder={toolId === 'ppf' ? '15' : '5'}
+                            />
+                        </div>
+
+                        {(toolId === 'sip' || toolId === 'lumpsum') && (
+                            <div className="group">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">{translate('exp_ratio')}</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={data.expense_ratio}
+                                    onChange={e => setData({ ...data, expense_ratio: e.target.value })}
+                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-all text-lg"
+                                    placeholder="1.0"
+                                />
+                            </div>
+                        )}
+
+                        {toolId !== 'ppf' && (
+                            <div className="group">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">{translate('return_rate')}</label>
+                                <input
+                                    type="number"
+                                    value={data.rate}
+                                    onChange={e => setData({ ...data, rate: e.target.value })}
+                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-all text-lg"
+                                    placeholder={toolId === 'fd' ? '6.5' : '12'}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div>
+                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">{translate('detailed_report')}</p>
+                        </div>
+                        <button
+                            onClick={() => setShowDetailed(!showDetailed)}
+                            className={`w-12 h-7 rounded-full transition-all relative ${showDetailed ? 'bg-orange-500' : 'bg-slate-200'}`}
+                        >
+                            <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${showDetailed ? 'left-6' : 'left-1'}`} />
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={handleCalculate}
+                        className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 active:scale-95 transition-all shadow-xl shadow-slate-900/20 text-lg tracking-tight"
+                    >
+                        {translate('calculate')}
+                    </button>
+                </div>
+
+                {/* Result */}
+                {result && (
+                    <div className="bg-orange-50/30 p-8 border-t border-orange-100 space-y-6">
+                        <div className="flex justify-between items-end mb-6">
+                            <h4 className="font-black text-slate-900 text-lg tracking-tight">{translate('projection')}</h4>
+                            <button onClick={() => setResult(null)} className="text-xs font-bold text-orange-600 flex items-center gap-1 hover:underline bg-orange-100 px-3 py-1 rounded-lg">
+                                <RotateCcw size={12} /> {translate('reset')}
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-center">
+                            <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm">
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">{translate('invested')}</p>
+                                <p className="font-black text-slate-900 text-lg">₹{Math.round(result.invested).toLocaleString()}</p>
+                            </div>
+                            <div className="bg-white p-4 rounded-[1.5rem] border border-emerald-100 shadow-sm">
+                                <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mb-1">{translate('wealth_created')}</p>
+                                <p className="font-black text-emerald-600 text-lg">+₹{Math.round(result.returns).toLocaleString()}</p>
+                            </div>
+                            <div className="bg-white p-4 rounded-[1.5rem] border border-rose-100 shadow-sm">
+                                <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest mb-1">{translate('est_tax')}</p>
+                                <p className="font-black text-rose-600 text-lg">-₹{Math.round(result.tax).toLocaleString()}</p>
+                            </div>
+                            <div className="bg-orange-500 p-4 rounded-[1.5rem] border border-orange-600 shadow-lg shadow-orange-500/20 text-white">
+                                <p className="text-[10px] text-white/80 font-black uppercase tracking-widest mb-1">{translate('net_value')}</p>
+                                <p className="font-black text-2xl">₹{Math.round(result.netTotal).toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        {/* Scheme-specific tax summary in results */}
+                        <div className="bg-gradient-to-r from-slate-50 to-indigo-50 rounded-2xl p-4 border border-slate-100">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <IndianRupee size={12} /> Tax Treatment Summary
+                            </h4>
+                            {toolId === 'ppf' ? (
+                                <div className="text-xs text-emerald-700 font-bold bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                                    ✅ PPF is Exempt-Exempt-Exempt. Your entire maturity of ₹{Math.round(result.netTotal).toLocaleString()} is 100% TAX FREE.
+                                    {parseFloat(data.amount) <= 150000 && " Your annual contribution also qualifies for Section 80C deduction (Old Regime)."}
+                                </div>
+                            ) : toolId === 'sip' || toolId === 'lumpsum' ? (
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex justify-between p-2 bg-white rounded-lg">
+                                        <span className="text-slate-500">Total Gains</span>
+                                        <span className="font-bold text-slate-900">₹{Math.round(result.returns).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between p-2 bg-white rounded-lg">
+                                        <span className="text-slate-500">LTCG Exempt (₹1.25L)</span>
+                                        <span className="font-bold text-emerald-600">-₹{Math.min(Math.round(result.returns), 125000).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between p-2 bg-white rounded-lg">
+                                        <span className="text-slate-500">Taxable Gains @ 12.5%</span>
+                                        <span className="font-bold text-rose-600">₹{Math.max(0, Math.round(result.returns - 125000)).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between p-2 bg-rose-50 rounded-lg border border-rose-100">
+                                        <span className="text-rose-700 font-bold">Estimated LTCG Tax</span>
+                                        <span className="font-black text-rose-700">₹{Math.round(result.tax).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex justify-between p-2 bg-white rounded-lg">
+                                        <span className="text-slate-500">Interest Earned</span>
+                                        <span className="font-bold text-slate-900">₹{Math.round(result.returns).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between p-2 bg-white rounded-lg">
+                                        <span className="text-slate-500">TDS @ 10% (estimated)</span>
+                                        <span className="font-bold text-rose-600">₹{Math.round(result.tax).toLocaleString()}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-2 italic">
+                                        * Actual tax depends on your income slab. TDS is only an advance collection.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Projections Table */}
+                        {result.projections && result.projections.length > 0 && (
+                            <div>
+                                <button
+                                    onClick={() => setShowProjections(!showProjections)}
+                                    className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors mb-3"
+                                >
+                                    {showProjections ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    {showProjections ? 'Hide' : 'Show'} Year-wise Projections
+                                </button>
+                                {showProjections && (
+                                    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                                        <table className="w-full text-xs">
+                                            <thead>
+                                                <tr className="bg-slate-50 text-slate-400 font-black uppercase tracking-widest">
+                                                    <th className="p-3 text-left">Year</th>
+                                                    <th className="p-3 text-right">Invested</th>
+                                                    <th className="p-3 text-right">Value</th>
+                                                    <th className="p-3 text-right">Growth</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                                {result.projections.map((p, i) => (
+                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="p-3 font-bold text-slate-500">Yr {p.year}</td>
+                                                        <td className="p-3 text-right font-bold text-slate-700 tabular-nums">₹{Math.round(p.invested).toLocaleString()}</td>
+                                                        <td className="p-3 text-right font-black text-slate-900 tabular-nums">₹{Math.round(p.total).toLocaleString()}</td>
+                                                        <td className={`p-3 text-right font-black tabular-nums ${p.total > p.invested ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                                            +{p.invested > 0 ? (((p.total - p.invested) / p.invested) * 100).toFixed(1) : '0'}%
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            {onPrint && (
+                                <button
+                                    onClick={() => onPrint(translate(`tool_${toolId}`), data, result)}
+                                    className="flex-1 bg-white border-2 border-slate-100 text-slate-700 py-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
+                                >
+                                    <Download size={16} /> PDF
+                                </button>
+                            )}
+                            {onShare && (
+                                <button
+                                    onClick={() => onShare(translate(`tool_${toolId}`), data, result)}
+                                    disabled={isSharing}
+                                    className="flex-1 bg-slate-900 text-white py-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-slate-800 active:scale-95 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-50"
+                                >
+                                    {isSharing ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
+                                    {isSharing ? 'Wait...' : 'Share'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
