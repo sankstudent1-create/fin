@@ -422,139 +422,192 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
                     </button>
                 </div>
 
-                {/* Result */}
+                {/* Result — Professional Report */}
                 {result && (
-                    <div className="bg-orange-50/30 p-8 border-t border-orange-100 space-y-6">
-                        <div className="flex justify-between items-end mb-6">
-                            <h4 className="font-black text-slate-900 text-lg tracking-tight">{translate('projection')}</h4>
-                            <button onClick={() => setResult(null)} className="text-xs font-bold text-orange-600 flex items-center gap-1 hover:underline bg-orange-100 px-3 py-1 rounded-lg">
-                                <RotateCcw size={12} /> {translate('reset')}
-                            </button>
+                    <div className="border-t border-slate-100">
+                        {/* Gradient Hero Card */}
+                        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-8 relative overflow-hidden">
+                            {/* Decorative circles */}
+                            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
+                            <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/5" />
+
+                            <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-0.5">{translate('projection')}</p>
+                                        <p className="text-xs text-white/60">{currentTool.desc}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setResult(null)}
+                                        className="flex items-center gap-1.5 text-[10px] font-bold text-white/60 hover:text-white/90 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-all"
+                                    >
+                                        <RotateCcw size={11} /> Reset
+                                    </button>
+                                </div>
+
+                                {/* Net Value — Hero Number */}
+                                <div className="mb-6">
+                                    <p className="text-white/60 text-xs mb-1">{translate('net_value')}</p>
+                                    <p className="text-4xl font-bold text-white tracking-tight">₹{Math.round(result.netTotal).toLocaleString('en-IN')}</p>
+                                </div>
+
+                                {/* Progress Bar — Invested vs Returns */}
+                                {(() => {
+                                    const total = result.invested + result.returns;
+                                    const invPct = total > 0 ? (result.invested / total) * 100 : 0;
+                                    return (
+                                        <div>
+                                            <div className="flex justify-between text-[10px] text-white/50 mb-1.5">
+                                                <span>Invested</span>
+                                                <span>Returns</span>
+                                            </div>
+                                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-orange-400 to-amber-400 rounded-full transition-all"
+                                                    style={{ width: `${invPct}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-[10px] text-white/60 mt-1.5 font-semibold">
+                                                <span>₹{Math.round(result.invested).toLocaleString('en-IN')}</span>
+                                                <span className="text-emerald-400">+₹{Math.round(result.returns).toLocaleString('en-IN')}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 text-center">
-                            <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm">
-                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">{translate('invested')}</p>
-                                <p className="font-black text-slate-900 text-lg">₹{Math.round(result.invested).toLocaleString()}</p>
+                        {/* Metric Cards Row */}
+                        <div className="p-5 sm:p-6 space-y-5">
+                            <div className="grid grid-cols-3 gap-2.5">
+                                <div className="bg-slate-50 rounded-2xl p-3.5 text-center border border-slate-100">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{translate('invested')}</p>
+                                    <p className="font-bold text-slate-800 text-sm">₹{Math.round(result.invested).toLocaleString('en-IN')}</p>
+                                </div>
+                                <div className="bg-emerald-50 rounded-2xl p-3.5 text-center border border-emerald-100">
+                                    <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider mb-1">{translate('wealth_created')}</p>
+                                    <p className="font-bold text-emerald-700 text-sm">+₹{Math.round(result.returns).toLocaleString('en-IN')}</p>
+                                </div>
+                                <div className="bg-rose-50 rounded-2xl p-3.5 text-center border border-rose-100">
+                                    <p className="text-[9px] font-bold text-rose-400 uppercase tracking-wider mb-1">{translate('est_tax')}</p>
+                                    <p className="font-bold text-rose-600 text-sm">-₹{Math.round(result.tax).toLocaleString('en-IN')}</p>
+                                </div>
                             </div>
-                            <div className="bg-white p-4 rounded-[1.5rem] border border-emerald-100 shadow-sm">
-                                <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mb-1">{translate('wealth_created')}</p>
-                                <p className="font-black text-emerald-600 text-lg">+₹{Math.round(result.returns).toLocaleString()}</p>
-                            </div>
-                            <div className="bg-white p-4 rounded-[1.5rem] border border-rose-100 shadow-sm">
-                                <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest mb-1">{translate('est_tax')}</p>
-                                <p className="font-black text-rose-600 text-lg">-₹{Math.round(result.tax).toLocaleString()}</p>
-                            </div>
-                            <div className="bg-orange-500 p-4 rounded-[1.5rem] border border-orange-600 shadow-lg shadow-orange-500/20 text-white">
-                                <p className="text-[10px] text-white/80 font-black uppercase tracking-widest mb-1">{translate('net_value')}</p>
-                                <p className="font-black text-2xl">₹{Math.round(result.netTotal).toLocaleString()}</p>
-                            </div>
-                        </div>
 
-                        {/* Scheme-specific tax summary in results */}
-                        <div className="bg-gradient-to-r from-slate-50 to-indigo-50 rounded-2xl p-4 border border-slate-100">
-                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <IndianRupee size={12} /> Tax Treatment Summary
-                            </h4>
-                            {toolId === 'ppf' ? (
-                                <div className="text-xs text-emerald-700 font-bold bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                                    ✅ PPF is Exempt-Exempt-Exempt. Your entire maturity of ₹{Math.round(result.netTotal).toLocaleString()} is 100% TAX FREE.
-                                    {parseFloat(data.amount) <= 150000 && " Your annual contribution also qualifies for Section 80C deduction (Old Regime)."}
-                                </div>
-                            ) : toolId === 'sip' || toolId === 'lumpsum' ? (
-                                <div className="space-y-2 text-xs">
-                                    <div className="flex justify-between p-2 bg-white rounded-lg">
-                                        <span className="text-slate-500">Total Gains</span>
-                                        <span className="font-bold text-slate-900">₹{Math.round(result.returns).toLocaleString()}</span>
+                            {/* Returns multiplier badge */}
+                            {result.invested > 0 && (
+                                <div className="flex items-center gap-3 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 rounded-2xl px-4 py-3">
+                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center">
+                                        <TrendingUp size={16} className="text-white" />
                                     </div>
-                                    <div className="flex justify-between p-2 bg-white rounded-lg">
-                                        <span className="text-slate-500">LTCG Exempt (₹1.25L)</span>
-                                        <span className="font-bold text-emerald-600">-₹{Math.min(Math.round(result.returns), 125000).toLocaleString()}</span>
+                                    <div>
+                                        <p className="text-[10px] text-orange-500 font-semibold">Total Return</p>
+                                        <p className="text-sm font-bold text-slate-900">
+                                            {((result.returns / result.invested) * 100).toFixed(1)}% gain · {(result.netTotal / result.invested).toFixed(2)}x your money
+                                        </p>
                                     </div>
-                                    <div className="flex justify-between p-2 bg-white rounded-lg">
-                                        <span className="text-slate-500">Taxable Gains @ 12.5%</span>
-                                        <span className="font-bold text-rose-600">₹{Math.max(0, Math.round(result.returns - 125000)).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between p-2 bg-rose-50 rounded-lg border border-rose-100">
-                                        <span className="text-rose-700 font-bold">Estimated LTCG Tax</span>
-                                        <span className="font-black text-rose-700">₹{Math.round(result.tax).toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-2 text-xs">
-                                    <div className="flex justify-between p-2 bg-white rounded-lg">
-                                        <span className="text-slate-500">Interest Earned</span>
-                                        <span className="font-bold text-slate-900">₹{Math.round(result.returns).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between p-2 bg-white rounded-lg">
-                                        <span className="text-slate-500">TDS @ 10% (estimated)</span>
-                                        <span className="font-bold text-rose-600">₹{Math.round(result.tax).toLocaleString()}</span>
-                                    </div>
-                                    <p className="text-[10px] text-slate-400 mt-2 italic">
-                                        * Actual tax depends on your income slab. TDS is only an advance collection.
-                                    </p>
                                 </div>
                             )}
-                        </div>
 
-                        {/* Projections Table */}
-                        {result.projections && result.projections.length > 0 && (
-                            <div>
-                                <button
-                                    onClick={() => setShowProjections(!showProjections)}
-                                    className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors mb-3"
-                                >
-                                    {showProjections ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                                    {showProjections ? 'Hide' : 'Show'} Year-wise Projections
-                                </button>
-                                {showProjections && (
-                                    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-                                        <table className="w-full text-xs">
-                                            <thead>
-                                                <tr className="bg-slate-50 text-slate-400 font-black uppercase tracking-widest">
-                                                    <th className="p-3 text-left">Year</th>
-                                                    <th className="p-3 text-right">Invested</th>
-                                                    <th className="p-3 text-right">Value</th>
-                                                    <th className="p-3 text-right">Growth</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-50">
-                                                {result.projections.map((p, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                                        <td className="p-3 font-bold text-slate-500">Yr {p.year}</td>
-                                                        <td className="p-3 text-right font-bold text-slate-700 tabular-nums">₹{Math.round(p.invested).toLocaleString()}</td>
-                                                        <td className="p-3 text-right font-black text-slate-900 tabular-nums">₹{Math.round(p.total).toLocaleString()}</td>
-                                                        <td className={`p-3 text-right font-black tabular-nums ${p.total > p.invested ? 'text-emerald-600' : 'text-slate-400'}`}>
-                                                            +{p.invested > 0 ? (((p.total - p.invested) / p.invested) * 100).toFixed(1) : '0'}%
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                            {/* Tax Treatment Summary */}
+                            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-4 border border-indigo-100/60">
+                                <h4 className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <IndianRupee size={12} /> Tax Treatment
+                                </h4>
+                                {toolId === 'ppf' ? (
+                                    <div className="text-xs text-emerald-700 font-semibold bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                                        ✅ EEE Status — Your entire ₹{Math.round(result.netTotal).toLocaleString('en-IN')} is 100% TAX FREE
+                                    </div>
+                                ) : toolId === 'sip' || toolId === 'lumpsum' ? (
+                                    <div className="space-y-1.5 text-xs">
+                                        {[
+                                            ['Total Gains', `₹${Math.round(result.returns).toLocaleString('en-IN')}`, 'text-slate-800'],
+                                            ['LTCG Exempt (₹1.25L)', `-₹${Math.min(Math.round(result.returns), 125000).toLocaleString('en-IN')}`, 'text-emerald-600'],
+                                            ['Taxable @ 12.5%', `₹${Math.max(0, Math.round(result.returns - 125000)).toLocaleString('en-IN')}`, 'text-amber-600'],
+                                            ['Est. LTCG Tax', `₹${Math.round(result.tax).toLocaleString('en-IN')}`, 'text-rose-600 font-bold'],
+                                        ].map(([label, val, valColor]) => (
+                                            <div key={label} className="flex justify-between items-center bg-white/70 px-3 py-2 rounded-lg">
+                                                <span className="text-slate-500">{label}</span>
+                                                <span className={valColor}>{val}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1.5 text-xs">
+                                        {[
+                                            ['Interest Earned', `₹${Math.round(result.returns).toLocaleString('en-IN')}`, 'text-slate-800'],
+                                            ['TDS @ 10% (est.)', `₹${Math.round(result.tax).toLocaleString('en-IN')}`, 'text-rose-600'],
+                                        ].map(([label, val, valColor]) => (
+                                            <div key={label} className="flex justify-between items-center bg-white/70 px-3 py-2 rounded-lg">
+                                                <span className="text-slate-500">{label}</span>
+                                                <span className={valColor}>{val}</span>
+                                            </div>
+                                        ))}
+                                        <p className="text-[10px] text-slate-400 mt-1 italic">* Actual tax depends on income slab</p>
                                     </div>
                                 )}
                             </div>
-                        )}
 
-                        <div className="flex gap-3">
-                            {onPrint && (
-                                <button
-                                    onClick={() => onPrint(translate(`tool_${toolId}`), data, result)}
-                                    className="flex-1 bg-white border-2 border-slate-100 text-slate-700 py-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
-                                >
-                                    <Download size={16} /> PDF
-                                </button>
+                            {/* Year-wise Projections */}
+                            {result.projections?.length > 0 && (
+                                <div>
+                                    <button
+                                        onClick={() => setShowProjections(!showProjections)}
+                                        className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors mb-3"
+                                    >
+                                        {showProjections ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                        {showProjections ? 'Hide' : 'Show'} Year-wise Projections
+                                    </button>
+                                    {showProjections && (
+                                        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                                            <table className="w-full text-xs">
+                                                <thead>
+                                                    <tr className="bg-slate-50">
+                                                        {['Year', 'Invested', 'Value', 'Growth'].map(h => (
+                                                            <th key={h} className={`p-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider ${h === 'Year' ? 'text-left' : 'text-right'}`}>{h}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {result.projections.map((p, i) => {
+                                                        const gain = p.invested > 0 ? (((p.total - p.invested) / p.invested) * 100).toFixed(1) : '0';
+                                                        return (
+                                                            <tr key={i} className="hover:bg-orange-50/30 transition-colors">
+                                                                <td className="p-3 font-semibold text-slate-500">Yr {p.year}</td>
+                                                                <td className="p-3 text-right text-slate-600 tabular-nums">₹{Math.round(p.invested).toLocaleString('en-IN')}</td>
+                                                                <td className="p-3 text-right font-semibold text-slate-900 tabular-nums">₹{Math.round(p.total).toLocaleString('en-IN')}</td>
+                                                                <td className={`p-3 text-right font-semibold tabular-nums ${p.total > p.invested ? 'text-emerald-600' : 'text-slate-400'}`}>+{gain}%</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
                             )}
-                            {onShare && (
-                                <button
-                                    onClick={() => onShare(translate(`tool_${toolId}`), data, result)}
-                                    disabled={isSharing}
-                                    className="flex-1 bg-slate-900 text-white py-3 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-slate-800 active:scale-95 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-50"
-                                >
-                                    {isSharing ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />}
-                                    {isSharing ? 'Wait...' : 'Share'}
-                                </button>
-                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 pt-1">
+                                {onPrint && (
+                                    <button
+                                        onClick={() => onPrint(translate(`tool_${toolId}`), data, result)}
+                                        className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3.5 rounded-2xl text-xs font-bold transition-all"
+                                    >
+                                        <Download size={15} /> PDF Report
+                                    </button>
+                                )}
+                                {onShare && (
+                                    <button
+                                        onClick={() => onShare(translate(`tool_${toolId}`), data, result)}
+                                        disabled={isSharing}
+                                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white py-3.5 rounded-2xl text-xs font-bold shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30 active:scale-[0.98] transition-all disabled:opacity-50"
+                                    >
+                                        {isSharing ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />}
+                                        {isSharing ? 'Sharing…' : 'Share'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
