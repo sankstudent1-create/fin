@@ -20,7 +20,7 @@ import { SupportModal } from '../components/modals/SupportModal';
 import { DigitalIDModal } from '../components/modals/DigitalIDModal';
 import { CategoryManager, fetchCategories, getCategoryIcon, getCategoryColor } from '../components/modals/CategoryManager';
 import { useOfflineSync } from '../hooks/useOfflineSync';
-import { createPDF, getPDFFile, getCalcPDFFile } from '../utils/pdfGenerator';
+import { createPDF, getPDFFile } from '../utils/pdfGenerator';
 import { generateCalculatorPDF } from '../utils/reportGenerator';
 import { MONTH_NAMES, TOOLS, DEFAULT_CATEGORIES, ICON_MAP } from '../config/constants';
 
@@ -298,25 +298,30 @@ export const Dashboard = ({ session }) => {
         }, 600);
     };
 
-    // Calculator PDF → uses jsPDF direct download (NO window.print — no popup leak)
-    const handleCalcPrint = (toolName, data, result) => {
-        try {
-            // Use jsPDF to generate and directly save the PDF
-            const file = getCalcPDFFile(toolName, data, result, user);
-            // Create a blob URL and trigger download
-            const url = URL.createObjectURL(file);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showToast(`${toolName} PDF downloaded! 📄`);
-        } catch (err) {
-            console.error('PDF generation error:', err);
-            showToast('PDF generation failed', 'error');
-        }
+    // Calculator PDF → uses window.print() via PrintView (same premium design as analytics)
+    const handleCalcPrint = (toolName, inputData, result) => {
+        // Build inputs display object (filter out empty/zero values)
+        const inputLabels = {
+            amount: toolName.includes('SIP') ? 'Monthly Investment (₹)' : 'Investment Amount (₹)',
+            duration: 'Time Period (Years)',
+            rate: 'Expected Return Rate (%)',
+            expense_ratio: 'Expense Ratio (%)',
+        };
+        const inputs = Object.fromEntries(
+            Object.entries(inputLabels)
+                .filter(([k]) => inputData[k] && parseFloat(inputData[k]) > 0)
+                .map(([k, label]) => [label, inputData[k]])
+        );
+
+        setCalculatorPrintData({ toolName, inputs, result });
+        setPrintVariant('classic');   // uses the CalculatorReport component inside PrintView
+        setIsPrinting(true);
+        setShowCalculator(null);      // close modal so it doesn't bleed into print
+        setTimeout(() => {
+            window.print();
+            setIsPrinting(false);
+            setCalculatorPrintData(null);
+        }, 600);
     };
 
     // Download analytics report as PDF file using jsPDF
