@@ -67,14 +67,48 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
     const updatePref = (key, value) => setPrefs(prev => ({ ...prev, [key]: value }));
 
     // ── Avatar helpers ───────────────────────────────────────────────────────
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarToast, setAvatarToast] = useState('');
+
+    const showAvatarMsg = (msg) => { setAvatarToast(msg); setTimeout(() => setAvatarToast(''), 3000); };
+
     const handleAvatarChange = async (e) => {
         const file = e.target.files?.[0];
-        if (!file) return;
-        // Preview immediately
+        if (!file || !user?.id) return;
+
+        // 1 — instant local preview
         const preview = URL.createObjectURL(file);
         setLocalAvatar(preview);
-        // Upload
-        await onAvatarUpload(e);
+        setUploadingAvatar(true);
+
+        try {
+            const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+            const filePath = `${user.id}/avatar.${ext}`;
+
+            // 2 — upload to Supabase Storage
+            const { error: upErr } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, { upsert: true });
+            if (upErr) throw upErr;
+
+            // 3 — get public URL (cache-busted)
+            const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+            const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+            // 4 — persist to auth metadata
+            const { error: metaErr } = await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+            if (metaErr) throw metaErr;
+
+            // 5 — update local display
+            setLocalAvatar(publicUrl);
+            showAvatarMsg('✅ Photo updated!');
+        } catch (err) {
+            console.error('Avatar upload error:', err);
+            setLocalAvatar(avatarUrl || '');
+            showAvatarMsg('❌ Upload failed');
+        }
+
+        setUploadingAvatar(false);
     };
 
     const handleDeleteAvatar = async () => {
@@ -148,32 +182,39 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                 {/* Camera badge */}
                                 <button
                                     onClick={() => fileRef.current?.click()}
-                                    className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center shadow-md hover:bg-orange-600 transition-colors"
+                                    disabled={uploadingAvatar}
+                                    className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center shadow-md hover:bg-orange-600 transition-colors disabled:opacity-70"
                                 >
-                                    <Camera size={12} className="text-white" />
+                                    {uploadingAvatar ? <Loader2 size={11} className="text-white animate-spin" /> : <Camera size={12} className="text-white" />}
                                 </button>
-                                <input ref={fileRef} type="file" className="hidden" onChange={handleAvatarChange} accept="image/*" />
+                                <input ref={fileRef} type="file" className="hidden" onChange={handleAvatarChange} accept="image/jpeg,image/png,image/webp" />
                             </div>
 
                             {/* Actions */}
                             <div className="flex flex-col gap-2 flex-1">
                                 <button
                                     onClick={() => fileRef.current?.click()}
-                                    className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all"
+                                    disabled={uploadingAvatar}
+                                    className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-60"
                                 >
-                                    <Upload size={14} className="text-orange-500" /> Upload New Photo
+                                    {uploadingAvatar ? <Loader2 size={14} className="animate-spin text-orange-500" /> : <Upload size={14} className="text-orange-500" />}
+                                    {uploadingAvatar ? 'Uploading...' : 'Upload New Photo'}
                                 </button>
                                 {localAvatar && (
                                     <button
                                         onClick={handleDeleteAvatar}
-                                        disabled={deletingAvatar}
+                                        disabled={deletingAvatar || uploadingAvatar}
                                         className="flex items-center gap-2 bg-white border border-rose-200 text-rose-500 px-4 py-2.5 rounded-xl text-xs font-semibold hover:bg-rose-50 transition-all disabled:opacity-50"
                                     >
                                         {deletingAvatar ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                         {deletingAvatar ? 'Removing...' : 'Remove Photo'}
                                     </button>
                                 )}
-                                <p className="text-[10px] text-slate-400">JPG, PNG or WebP · Max 5MB</p>
+                                {avatarToast ? (
+                                    <p className={`text-[11px] font-semibold ${avatarToast.startsWith('✅') ? 'text-emerald-500' : 'text-rose-500'}`}>{avatarToast}</p>
+                                ) : (
+                                    <p className="text-[10px] text-slate-400">JPG, PNG or WebP · Max 5MB</p>
+                                )}
                             </div>
                         </div>
                     </div>

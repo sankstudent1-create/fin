@@ -517,8 +517,8 @@ export const Dashboard = ({ session }) => {
 
                                 {/* Tools Section */}
                                 <motion.div variants={itemVariants}>
-                                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 ml-1">Financial Tools</h2>
-                                    <div className="grid grid-cols-5 gap-3">
+                                    <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 ml-1">Financial Tools</h2>
+                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                                         {TOOLS.map(tool => (
                                             <motion.button
                                                 key={tool.id}

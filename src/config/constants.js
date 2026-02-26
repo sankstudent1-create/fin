@@ -1,5 +1,5 @@
 
-import { ShoppingBag, Coffee, Car, Zap, Heart, Smartphone, Home, Plane, Gift, Dumbbell, Briefcase, BookOpen, Music, Film, User, Shield, CreditCard, DollarSign, Percent, Utensils, Wifi, Fuel, Banknote, GraduationCap, Baby, PawPrint, Flower2, Gamepad2, Pizza, ShoppingCart, Bus, Stethoscope, Landmark, Scissors, Sparkles, Tag } from 'lucide-react';
+import { ShoppingBag, Coffee, Car, Zap, Heart, Smartphone, Home, Plane, Gift, Dumbbell, Briefcase, BookOpen, Music, Film, User, Shield, CreditCard, DollarSign, Percent, Utensils, Wifi, Fuel, Banknote, GraduationCap, Baby, PawPrint, Flower2, Gamepad2, Pizza, ShoppingCart, Bus, Stethoscope, Landmark, Scissors, Sparkles, Tag, Calendar } from 'lucide-react';
 
 export const MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
@@ -7,11 +7,12 @@ export const MONTH_NAMES = [
 ];
 
 export const TOOLS = [
-    { id: 'sip', name: 'SIP Calculator', icon: DollarSign, bg: 'bg-blue-100', color: 'text-blue-600' },
+    { id: 'sip', name: 'SIP', icon: DollarSign, bg: 'bg-blue-100', color: 'text-blue-600' },
     { id: 'lumpsum', name: 'Lumpsum', icon: CreditCard, bg: 'bg-emerald-100', color: 'text-emerald-600' },
     { id: 'fd', name: 'Fixed Deposit', icon: Shield, bg: 'bg-amber-100', color: 'text-amber-600' },
-    { id: 'ppf', name: 'PPF Scheme', icon: Briefcase, bg: 'bg-indigo-100', color: 'text-indigo-600' },
+    { id: 'ppf', name: 'PPF', icon: Briefcase, bg: 'bg-indigo-100', color: 'text-indigo-600' },
     { id: 'interest', name: 'Interest', icon: Percent, bg: 'bg-slate-100', color: 'text-slate-600' },
+    { id: 'age', name: 'Age Calc', icon: Calendar, bg: 'bg-pink-100', color: 'text-pink-600' },
 ];
 
 export const DEFAULT_CATEGORIES = [

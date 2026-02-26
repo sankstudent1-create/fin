@@ -12,15 +12,19 @@ const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit',
 /* ------------------------------------------------------------------ */
 const PrintStyles = () => (
     <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
         @page {
             size: A4 portrait;
             margin: 0;
         }
         #print-root * {
-            font-family: 'Inter', -apple-system, sans-serif !important;
+            font-family: 'Poppins', 'Montserrat', -apple-system, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+        }
+        #print-root h1, #print-root h2, #print-root h3 {
+            font-family: 'Montserrat', sans-serif !important;
+            letter-spacing: -0.02em;
         }
         .pg-break { page-break-after: always; break-after: page; }
         .no-break  { page-break-inside: avoid; break-inside: avoid; }
@@ -31,7 +35,6 @@ const PrintStyles = () => (
             box-sizing: border-box;
             background: white;
         }
-        /* Accent bar on dark card */
         .accent-bar {
             background: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
         }
