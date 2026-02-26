@@ -381,7 +381,14 @@ export const Dashboard = ({ session }) => {
         const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
         if (!uploadError) {
             const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
-            setAvatarUrl(urlData.publicUrl);
+            const publicUrl = urlData.publicUrl;
+            // Save URL to Supabase auth user metadata so it persists across sessions
+            await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+            setAvatarUrl(publicUrl);
+            showToast('Profile photo updated! 📸');
+        } else {
+            console.error('Avatar upload error:', uploadError);
+            showToast('Upload failed: ' + uploadError.message, 'error');
         }
     };
 
@@ -558,13 +565,13 @@ export const Dashboard = ({ session }) => {
                                     {/* Transaction List */}
                                     {loading ? (
                                         <div className="flex justify-center py-16">
-                                            <Loader2 className="animate-spin text-orange-500" size={32} />
+                                            <Loader2 className="animate-spin text-orange-400" size={28} />
                                         </div>
                                     ) : filteredTransactions.length === 0 ? (
                                         <div className="text-center py-16">
                                             <Receipt className="mx-auto text-slate-200 mb-4" size={48} />
-                                            <p className="text-sm font-bold text-slate-400">No transactions found</p>
-                                            <p className="text-xs text-slate-300 mt-1">Add your first transaction to get started</p>
+                                            <p className="text-sm font-semibold text-slate-400">No transactions yet</p>
+                                            <p className="text-xs text-slate-300 mt-1">Tap the + button to add your first one</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
@@ -573,7 +580,7 @@ export const Dashboard = ({ session }) => {
                                                     <TransactionItem
                                                         key={tx.id}
                                                         transaction={tx}
-                                                        categories={DEFAULT_CATEGORIES}
+                                                        categories={userCategories}
                                                         onDelete={() => handleDeleteTransaction(tx.id)}
                                                         onEdit={() => handleEditTransaction(tx)}
                                                     />
@@ -725,7 +732,7 @@ export const Dashboard = ({ session }) => {
                                 className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-400 hover:text-slate-600 transition-all active:scale-90"
                             >
                                 <Headphones size={20} strokeWidth={1.5} />
-                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Help</span>
+                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Support</span>
                             </button>
                             <button
                                 onClick={() => setShowSettings(true)}
