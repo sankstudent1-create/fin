@@ -6,17 +6,24 @@ import {
     Sun, Moon, Monitor, Trash2, Download, Volume2, QrCode,
     Lock, Fingerprint, ChevronRight, AlertTriangle,
     Bell, Clock, Sparkles, Timer, MessageSquare, Camera,
-    Check, Loader2, Edit3, Image, ChevronLeft
+    Check, Loader2, Edit3, Image, ChevronLeft, Play, ZoomIn
 } from 'lucide-react';
 import { supabase } from '../../config/supabase';
+import {
+    SOUND_EFFECTS, DEFAULT_SOUND_PREFS,
+    loadSoundPrefs, saveSoundPrefs, playSound
+} from '../../hooks/useSoundEngine';
 
 // ─── Preferences ────────────────────────────────────────────────────────────
 const PREFS_KEY = 'orange_fin_prefs';
 const DEFAULT_PREFS = {
     sound_enabled: true, sound_volume: 70, sound_duration: 300,
+    sound_effect: 'chime',
+    sound_on_tx: true, sound_on_delete: true, sound_on_success: true,
     notification_enabled: true, popup_duration: 3000,
     popup_style: 'pill', popup_position: 'bottom',
     theme: 'light', biometric_enabled: false,
+    ui_density: 'normal',   /* compact | normal | comfortable */
 };
 const loadPrefs = () => { try { const s = localStorage.getItem(PREFS_KEY); return s ? { ...DEFAULT_PREFS, ...JSON.parse(s) } : { ...DEFAULT_PREFS }; } catch { return { ...DEFAULT_PREFS }; } };
 const savePrefs = (p) => localStorage.setItem(PREFS_KEY, JSON.stringify(p));
@@ -268,34 +275,98 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                 </div>
             );
 
-            // ── NOTIFICATIONS ────────────────────────────────────────────────
+            // ── NOTIFICATIONS / SOUND ────────────────────────────────────────
             case 'notifications': return (
                 <div className="space-y-5">
+
+                    {/* ── Sound master toggle ── */}
                     <div className="space-y-2">
-                        <SectionLabel>Sound</SectionLabel>
-                        <SettingRow icon={Volume2} title="Sound Effects" desc="Play sounds on transactions" iconColor="text-violet-500" iconBg="bg-violet-50">
+                        <SectionLabel>Sound Engine</SectionLabel>
+                        <SettingRow icon={Volume2} title="Sound Effects" desc="Plays on transactions, deletes & alerts" iconColor="text-violet-500" iconBg="bg-violet-50">
                             <Toggle checked={prefs.sound_enabled} onChange={() => updatePref('sound_enabled', !prefs.sound_enabled)} />
                         </SettingRow>
+
                         {prefs.sound_enabled && (
-                            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-4">
-                                <div className="space-y-2">
+                            <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+
+                                {/* Effect selector */}
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-500 mb-2">Sound Effect</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {Object.entries(SOUND_EFFECTS).map(([key, { label, desc }]) => (
+                                            <button key={key}
+                                                onClick={() => {
+                                                    updatePref('sound_effect', key);
+                                                    /* Small save so saveSoundPrefs keeps in sync */
+                                                    saveSoundPrefs({ ...loadSoundPrefs(), effect: key, volume: prefs.sound_volume / 100, duration_ms: prefs.sound_duration });
+                                                    playSound(key, prefs.sound_volume / 100, prefs.sound_duration);
+                                                }}
+                                                className={`flex items-center gap-2 p-2.5 rounded-xl border-2 text-left transition-all ${prefs.sound_effect === key
+                                                        ? 'border-violet-400 bg-violet-50'
+                                                        : 'border-slate-100 bg-white hover:border-slate-200'
+                                                    }`}>
+                                                <span className="text-base leading-none">{label.split(' ')[0]}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[11px] font-bold text-slate-700 truncate">{label.split(' ').slice(1).join(' ')}</p>
+                                                    <p className="text-[9px] text-slate-400">{desc}</p>
+                                                </div>
+                                                {prefs.sound_effect === key && <div className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Volume */}
+                                <div className="space-y-1.5">
                                     <div className="flex justify-between text-xs">
                                         <span className="font-semibold text-slate-500">Volume</span>
-                                        <span className="font-bold text-orange-600">{prefs.sound_volume}%</span>
+                                        <span className="font-bold text-violet-600">{prefs.sound_volume}%</span>
                                     </div>
-                                    <input type="range" min={0} max={100} value={prefs.sound_volume} onChange={e => updatePref('sound_volume', +e.target.value)} className="w-full accent-orange-500" />
+                                    <input type="range" min={0} max={100} value={prefs.sound_volume}
+                                        onChange={e => updatePref('sound_volume', +e.target.value)}
+                                        className="w-full accent-violet-500" />
                                 </div>
-                                <div className="space-y-2">
+
+                                {/* Duration */}
+                                <div className="space-y-1.5">
                                     <div className="flex justify-between text-xs">
                                         <span className="font-semibold text-slate-500">Duration</span>
-                                        <span className="font-bold text-orange-600">{prefs.sound_duration}ms</span>
+                                        <span className="font-bold text-violet-600">{prefs.sound_duration}ms</span>
                                     </div>
-                                    <input type="range" min={100} max={2000} value={prefs.sound_duration} onChange={e => updatePref('sound_duration', +e.target.value)} className="w-full accent-orange-500" />
+                                    <input type="range" min={100} max={2000} step={50} value={prefs.sound_duration}
+                                        onChange={e => updatePref('sound_duration', +e.target.value)}
+                                        className="w-full accent-violet-500" />
+                                    <div className="flex justify-between text-[9px] text-slate-300 font-medium">
+                                        <span>100ms (short)</span><span>2000ms (long)</span>
+                                    </div>
+                                </div>
+
+                                {/* Preview button */}
+                                <button
+                                    onClick={() => playSound(prefs.sound_effect || 'chime', prefs.sound_volume / 100, prefs.sound_duration)}
+                                    className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 active:scale-95 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-violet-500/20">
+                                    <Play size={13} /> Play Sound Now
+                                </button>
+
+                                {/* Per-event toggles */}
+                                <div className="pt-1 border-t border-slate-200 space-y-2">
+                                    <p className="text-xs font-semibold text-slate-400 mb-1">Play sound when…</p>
+                                    {[
+                                        { key: 'sound_on_tx', label: 'Adding a transaction' },
+                                        { key: 'sound_on_delete', label: 'Deleting a transaction' },
+                                        { key: 'sound_on_success', label: 'Successful save / update' },
+                                    ].map(({ key, label }) => (
+                                        <div key={key} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5 border border-slate-100">
+                                            <span className="text-xs font-semibold text-slate-600">{label}</span>
+                                            <Toggle checked={prefs[key] ?? true} onChange={() => updatePref(key, !prefs[key])} color="orange" />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
                     </div>
 
+                    {/* ── Toast alerts ── */}
                     <div className="space-y-2">
                         <SectionLabel>Popup Alerts</SectionLabel>
                         <SettingRow icon={MessageSquare} title="Toast Notifications" desc="Show popups on actions" iconColor="text-blue-500" iconBg="bg-blue-50">
@@ -303,31 +374,32 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                         </SettingRow>
                         {prefs.notification_enabled && (
                             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-4">
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                     <div className="flex justify-between text-xs">
                                         <span className="font-semibold text-slate-500">Display Duration</span>
-                                        <span className="font-bold text-orange-600">{(prefs.popup_duration / 1000).toFixed(1)}s</span>
+                                        <span className="font-bold text-blue-600">{(prefs.popup_duration / 1000).toFixed(1)}s</span>
                                     </div>
-                                    <input type="range" min={1000} max={10000} step={500} value={prefs.popup_duration} onChange={e => updatePref('popup_duration', +e.target.value)} className="w-full accent-orange-500" />
+                                    <input type="range" min={1000} max={10000} step={500} value={prefs.popup_duration}
+                                        onChange={e => updatePref('popup_duration', +e.target.value)} className="w-full accent-blue-500" />
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold text-slate-500 mb-3">Position</p>
+                                    <p className="text-xs font-semibold text-slate-500 mb-2">Position</p>
                                     <div className="grid grid-cols-2 gap-2">
                                         {['top', 'bottom'].map(pos => (
                                             <button key={pos} onClick={() => updatePref('popup_position', pos)}
-                                                className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${prefs.popup_position === pos ? 'bg-orange-500 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
-                                                {pos}
+                                                className={`py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${prefs.popup_position === pos ? 'bg-blue-500 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                                                ↑ {pos}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold text-slate-500 mb-3">Style</p>
+                                    <p className="text-xs font-semibold text-slate-500 mb-2">Toast Style</p>
                                     <div className="grid grid-cols-2 gap-2">
                                         {['pill', 'card', 'minimal', 'banner'].map(style => (
                                             <button key={style} onClick={() => updatePref('popup_style', style)}
-                                                className={`p-3 rounded-xl text-center transition-all border-2 ${prefs.popup_style === style ? 'border-orange-400 bg-orange-50 scale-[1.02]' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-                                                <div className={`bg-emerald-500 text-white text-[8px] font-bold mx-auto mb-1.5 px-2 py-1 ${style === 'pill' ? 'rounded-full' : style === 'card' ? 'rounded-xl shadow-lg' : style === 'banner' ? 'rounded-lg w-full' : 'rounded-md'}`}>✓ Done</div>
+                                                className={`p-3 rounded-xl text-center transition-all border-2 ${prefs.popup_style === style ? 'border-blue-400 bg-blue-50 scale-[1.02]' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                                                <div className={`bg-emerald-500 text-white text-[8px] font-bold mx-auto mb-1.5 px-2 py-0.5 ${style === 'pill' ? 'rounded-full' : style === 'card' ? 'rounded-lg shadow' : style === 'banner' ? 'rounded w-full' : 'rounded'}`}>✓ Done</div>
                                                 <span className="text-[10px] font-bold text-slate-600 capitalize">{style}</span>
                                             </button>
                                         ))}
@@ -342,16 +414,21 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
             // ── APPEARANCE ───────────────────────────────────────────────────
             case 'appearance': return (
                 <div className="space-y-5">
+
+                    {/* Theme */}
                     <div className="space-y-2">
                         <SectionLabel>Theme Preference</SectionLabel>
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { id: 'light', icon: Sun, label: 'Light', desc: 'Always bright' },
+                                { id: 'light', icon: Sun, label: 'Light', desc: 'Bright & clean' },
                                 { id: 'dark', icon: Moon, label: 'Dark', desc: 'Easy on eyes' },
                                 { id: 'system', icon: Monitor, label: 'Auto', desc: 'Follows device' },
                             ].map(t => (
                                 <button key={t.id} onClick={() => updatePref('theme', t.id)}
-                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${prefs.theme === t.id ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-500/10' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${prefs.theme === t.id
+                                            ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-500/10'
+                                            : 'border-slate-100 bg-white hover:border-slate-200'
+                                        }`}>
                                     <t.icon size={22} className={prefs.theme === t.id ? 'text-orange-500' : 'text-slate-400'} />
                                     <div>
                                         <p className="text-xs font-bold text-slate-800">{t.label}</p>
@@ -360,8 +437,42 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                 </button>
                             ))}
                         </div>
-                        <p className="text-[10px] text-slate-400 ml-1 mt-2">Dark mode coming soon — stay tuned 🌙</p>
+                        <p className="text-[10px] text-slate-400 ml-1 mt-1">Dark mode coming soon 🌙</p>
                     </div>
+
+                    {/* UI Density / Size */}
+                    <div className="space-y-2">
+                        <SectionLabel>UI Density</SectionLabel>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { id: 'compact', icon: ZoomIn, label: 'Compact', desc: 'More content', padding: 'p-2.5' },
+                                { id: 'normal', icon: ZoomIn, label: 'Normal', desc: 'Balanced', padding: 'p-3.5' },
+                                { id: 'comfortable', icon: ZoomIn, label: 'Comfortable', desc: 'More space', padding: 'p-5' },
+                            ].map(d => (
+                                <button key={d.id} onClick={() => updatePref('ui_density', d.id)}
+                                    className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${prefs.ui_density === d.id
+                                            ? 'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-500/10'
+                                            : 'border-slate-100 bg-white hover:border-slate-200'
+                                        }`}>
+                                    {/* Visual preview of density */}
+                                    <div className={`w-full bg-slate-100 rounded-lg ${d.padding} space-y-1`}>
+                                        {[1, 2].map(n => (
+                                            <div key={n} className="h-1 bg-slate-300 rounded-full" />
+                                        ))}
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] font-bold text-slate-800">{d.label}</p>
+                                        <p className="text-[9px] text-slate-400">{d.desc}</p>
+                                    </div>
+                                    {prefs.ui_density === d.id && (
+                                        <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-slate-400 ml-1">Saved to your device — applies immediately</p>
+                    </div>
+
                 </div>
             );
 
