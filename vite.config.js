@@ -6,6 +6,9 @@ import vitePluginServiceWorker from './vite-plugin-sw.js'
 export default defineConfig({
   plugins: [react(), vitePluginServiceWorker()],
   build: {
+    // Disable automatic <link rel="modulepreload"> injection
+    // This eliminates the ~150 "preloaded resource not used" browser warnings
+    modulePreload: { polyfill: false },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -13,15 +16,14 @@ export default defineConfig({
           'lucide': ['lucide-react'],
           'supabase': ['@supabase/supabase-js'],
           'framer-motion': ['framer-motion'],
-          'tesseract': ['tesseract.js'],
-          'confetti': ['canvas-confetti']
         }
       }
     },
-    assetsInlineLimit: 4096
+    assetsInlineLimit: 4096,
   },
   server: {
     port: 3000,
     host: true
   }
 })
+

@@ -93,7 +93,10 @@ export const Dashboard = ({ session }) => {
     const [avatarUrl, setAvatarUrl] = useState('');
 
     const user = session?.user;
-    const { isOnline } = useOfflineSync(supabase, session);
+    const { isOnline, syncStatus, pendingCount, queueInsert, queueDelete } = useOfflineSync(supabase, session);
+
+    // saving state for Add/Edit button spinner
+    const [savingTx, setSavingTx] = useState(false);
 
     // --- TOAST HELPER (uses user preferences) ---
     const showToast = (message, type = 'success') => {
@@ -212,63 +215,107 @@ export const Dashboard = ({ session }) => {
 
     // --- CRUD ---
     const handleAddTransaction = async () => {
-        if (!txForm.title || !txForm.amount) return;
+        if (!txForm.title || !txForm.amount || savingTx) return;
         const newTx = {
             user_id: user.id,
-            title: txForm.title,
+            title: txForm.title.trim(),
             amount: parseFloat(txForm.amount),
             type: txForm.type,
             category: txForm.category,
             date: txForm.date
         };
 
+        setSavingTx(true);
+
         if (editTransaction) {
-            console.log('%c✏️ Updating transaction', 'color:#f97316;font-weight:bold', editTransaction.id, newTx);
-            const { error } = await supabase.from('transactions').update(newTx).eq('id', editTransaction.id);
-            if (error) {
-                console.error('%c🔴 Update failed', 'color:#ef4444;font-weight:bold', { code: error.code, message: error.message, hint: error.hint });
-                showToast('Update failed: ' + error.message, 'error');
+            // Optimistic update
+            setTransactions(prev => prev.map(t => t.id === editTransaction.id ? { ...t, ...newTx } : t));
+            setShowTransaction(false);
+            setEditTransaction(null);
+            setTxForm({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] });
+
+            if (isOnline) {
+                const { error } = await supabase.from('transactions').update(newTx).eq('id', editTransaction.id);
+                if (error) {
+                    showToast('Update failed: ' + error.message, 'error');
+                    // Revert
+                    setTransactions(prev => prev.map(t => t.id === editTransaction.id ? { ...t, ...editTransaction } : t));
+                } else {
+                    showToast('Transaction updated! ✏️');
+                    // Sync cache
+                    const cached = JSON.parse(localStorage.getItem(`cached_tx_${user.id}`) || '[]');
+                    localStorage.setItem(`cached_tx_${user.id}`, JSON.stringify(
+                        cached.map(t => t.id === editTransaction.id ? { ...t, ...newTx } : t)
+                    ));
+                }
             } else {
-                setTransactions(prev => prev.map(t => t.id === editTransaction.id ? { ...t, ...newTx } : t));
-                showToast('Transaction updated! ✏️');
+                queueInsert({ ...newTx, _op: 'update', _id: editTransaction.id });
+                showToast('Saved offline — will sync when online 📶');
             }
         } else {
-            console.log('%c➕ Inserting transaction', 'color:#f97316;font-weight:bold', newTx);
-            const { data, error } = await supabase.from('transactions').insert([newTx]).select();
-            if (error) {
-                console.error('%c🔴 Insert failed', 'color:#ef4444;font-weight:bold', { code: error.code, message: error.message, hint: error.hint });
-                if (error.code === '42P01') console.error('   ↳ Table "transactions" does not exist. Run supabase_setup_NEW.sql in your Supabase SQL Editor.');
-                showToast('Save failed: ' + error.message, 'error');
-            } else if (data) {
-                setTransactions(prev => [data[0], ...prev]);
-                showToast('Transaction added! ✅');
+            // Optimistic: add a temp local entry immediately
+            const localId = `local_${Date.now()}`;
+            const localTx = { ...newTx, id: localId, _pending: true };
+            setTransactions(prev => [localTx, ...prev]);
+            setShowTransaction(false);
+            setTxForm({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] });
 
-                // Increment category usage_count
+            if (isOnline) {
+                const { data, error } = await supabase.from('transactions').insert([newTx]).select();
+                if (error) {
+                    // Remove optimistic entry on failure
+                    setTransactions(prev => prev.filter(t => t.id !== localId));
+                    showToast('Save failed: ' + error.message, 'error');
+                    if (error.code === '42P01') console.error('Table "transactions" does not exist. Run supabase_setup_NEW.sql.');
+                } else if (data?.[0]) {
+                    // Replace local entry with real one from DB
+                    setTransactions(prev => prev.map(t => t.id === localId ? data[0] : t));
+                    showToast('Transaction added! ✅');
+                    // Update cache
+                    const cached = JSON.parse(localStorage.getItem(`cached_tx_${user.id}`) || '[]');
+                    localStorage.setItem(`cached_tx_${user.id}`, JSON.stringify([data[0], ...cached.filter(t => t.id !== localId)]));
+                }
+
+                // Increment category usage_count (fire-and-forget)
                 const cat = userCategories.find(c => c.name === txForm.category);
                 if (cat?.id) {
-                    supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id).then(() => {
-                        setUserCategories(prev => prev.map(c => c.id === cat.id ? { ...c, usage_count: (c.usage_count || 0) + 1 } : c));
-                    });
+                    supabase.from('categories').update({ usage_count: (cat.usage_count || 0) + 1 }).eq('id', cat.id);
+                    setUserCategories(prev => prev.map(c => c.id === cat.id ? { ...c, usage_count: (c.usage_count || 0) + 1 } : c));
                 }
+            } else {
+                // Queue for later sync
+                queueInsert(newTx);
+                showToast('Saved offline — will sync when online 📶');
+                // Keep the optimistic entry as-is (marked _pending)
             }
         }
 
-        setShowTransaction(false);
-        setEditTransaction(null);
-        setTxForm({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] });
+        setSavingTx(false);
     };
 
     const handleDeleteTransaction = async (id) => {
-        console.log('%c🗑️ Deleting transaction', 'color:#f97316;font-weight:bold', id);
-        const { error } = await supabase.from('transactions').delete().eq('id', id);
-        if (error) {
-            console.error('%c🔴 Delete failed', 'color:#ef4444;font-weight:bold', { code: error.code, message: error.message });
-            showToast('Delete failed: ' + error.message, 'error');
+        // Optimistic remove
+        const tx = transactions.find(t => t.id === id);
+        setTransactions(prev => prev.filter(t => t.id !== id));
+
+        if (isOnline) {
+            const { error } = await supabase.from('transactions').delete().eq('id', id);
+            if (error) {
+                // Revert
+                if (tx) setTransactions(prev => [tx, ...prev]);
+                showToast('Delete failed: ' + error.message, 'error');
+            } else {
+                showToast('Transaction deleted', 'info');
+                // Update cache
+                const cached = JSON.parse(localStorage.getItem(`cached_tx_${user.id}`) || '[]');
+                localStorage.setItem(`cached_tx_${user.id}`, JSON.stringify(cached.filter(t => t.id !== id)));
+            }
         } else {
-            setTransactions(prev => prev.filter(t => t.id !== id));
-            showToast('Transaction deleted', 'info');
+            queueDelete(id);
+            showToast('Deleted offline — will sync when online 📶');
         }
     };
+
 
     const handleEditTransaction = (tx) => {
         setEditTransaction(tx);
@@ -431,10 +478,33 @@ export const Dashboard = ({ session }) => {
                                 <Wallet className="text-white" size={20} />
                             </div>
                             <div>
-                                <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none">Orange Finance</h1>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    {isOnline ? '🟢 Online' : '🔴 Offline'}
-                                </p>
+                                <h1 className="text-base font-black text-slate-900 tracking-tight leading-tight">Orange Finance</h1>
+                                {/* ── Online / Offline / Syncing chip ── */}
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    {syncStatus === 'syncing' ? (
+                                        <>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Syncing…</span>
+                                        </>
+                                    ) : syncStatus === 'synced' ? (
+                                        <>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Synced ✓</span>
+                                        </>
+                                    ) : syncStatus === 'offline' || !isOnline ? (
+                                        <>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                            <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">
+                                                Offline{pendingCount > 0 ? ` · ${pendingCount} pending` : ''}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Online</span>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -905,12 +975,21 @@ export const Dashboard = ({ session }) => {
                                 <div className="px-6 pb-6 sm:px-8 sm:pb-8 pt-1">
                                     <button
                                         onClick={handleAddTransaction}
-                                        className={`w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-xl ${txForm.type === 'income'
+                                        disabled={savingTx || !txForm.title || !txForm.amount}
+                                        className={`w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${txForm.type === 'income'
                                             ? 'bg-emerald-500 text-white shadow-emerald-500/20 hover:bg-emerald-600'
                                             : 'bg-slate-900 text-white shadow-slate-900/20 hover:bg-slate-800'
                                             }`}
                                     >
-                                        {editTransaction ? '✓ Update Transaction' : '+ Add Transaction'}
+                                        {savingTx ? (
+                                            <><Loader2 size={20} className="animate-spin" /> Saving…</>
+                                        ) : editTransaction ? (
+                                            '✓ Update Transaction'
+                                        ) : isOnline ? (
+                                            '+ Add Transaction'
+                                        ) : (
+                                            '+ Add Offline (will sync)'
+                                        )}
                                     </button>
                                 </div>
                             </motion.div>
