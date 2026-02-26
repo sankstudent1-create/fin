@@ -9,10 +9,10 @@ import { supabase } from '../../config/supabase';
  */
 const DEFAULT_CAT_OBJECTS = DEFAULT_CATEGORIES.map(name => ({
     name,
-    icon_key: name,          // key into ICON_MAP
+    icon_key: name,
     type: ['Salary', 'Investment'].includes(name) ? 'income' : 'expense',
     usage_count: 5,
-    isEmoji: false,
+    is_emoji: false,
 }));
 
 /**
@@ -21,7 +21,7 @@ const DEFAULT_CAT_OBJECTS = DEFAULT_CATEGORIES.map(name => ({
 export const getCategoryIcon = (name, categories = []) => {
     const match = categories.find(c => c.name === name);
     if (match) {
-        if (match.isEmoji) return null; // emoji categories don't use icon components
+        if (match.is_emoji) return null;
         if (ICON_MAP[match.icon_key]) return ICON_MAP[match.icon_key];
     }
     if (ICON_MAP[name]) return ICON_MAP[name];
@@ -116,7 +116,7 @@ export const CategoryManager = ({ isOpen, onClose, onCategoriesChange, userId })
         setEditName(cat.name);
         setEditIcon(cat.icon_key || cat.name);
         setEditType(cat.type || 'expense');
-        setEditIsEmoji(cat.isEmoji || false);
+        setEditIsEmoji(cat.is_emoji || false);
         setEditingCat(cat);
         setShowAdd(true);
     };
@@ -129,7 +129,7 @@ export const CategoryManager = ({ isOpen, onClose, onCategoriesChange, userId })
             name: editName.trim(),
             icon_key: editIcon,
             type: editType,
-            isEmoji: editIsEmoji,
+            is_emoji: editIsEmoji,
         };
 
         try {
@@ -242,7 +242,7 @@ export const CategoryManager = ({ isOpen, onClose, onCategoriesChange, userId })
                             <Loader2 className="animate-spin text-orange-500" size={28} />
                         </div>
                     ) : sortedCategories.map((cat, i) => {
-                        const IconComp = cat.isEmoji ? null : getIconComponent(cat.icon_key || cat.name);
+                        const IconComp = cat.is_emoji ? null : getIconComponent(cat.icon_key || cat.name);
                         const catColor = getCategoryColor(cat.name);
                         return (
                             <motion.div
@@ -251,7 +251,7 @@ export const CategoryManager = ({ isOpen, onClose, onCategoriesChange, userId })
                                 className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80 hover:bg-slate-100/80 transition-all group"
                             >
                                 <div className={`w-10 h-10 rounded-xl ${catColor.bg} ${catColor.text} flex items-center justify-center flex-shrink-0 text-lg`}>
-                                    {cat.isEmoji ? cat.icon_key : (IconComp && <IconComp size={18} />)}
+                                    {cat.is_emoji ? cat.icon_key : (IconComp && <IconComp size={18} />)}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <span className="text-sm font-bold text-slate-800 truncate block">{cat.name}</span>
@@ -341,8 +341,8 @@ export const CategoryManager = ({ isOpen, onClose, onCategoriesChange, userId })
                                                 key={type}
                                                 onClick={() => setEditType(type)}
                                                 className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${editType === type
-                                                        ? (type === 'expense' ? 'bg-rose-500 text-white shadow-lg' : 'bg-emerald-500 text-white shadow-lg')
-                                                        : 'text-slate-400'
+                                                    ? (type === 'expense' ? 'bg-rose-500 text-white shadow-lg' : 'bg-emerald-500 text-white shadow-lg')
+                                                    : 'text-slate-400'
                                                     }`}
                                             >
                                                 {type}
