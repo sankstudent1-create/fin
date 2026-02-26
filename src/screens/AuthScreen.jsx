@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Mail, Lock, ArrowRight, Loader2, Sparkles, User, AlertCircle } from 'lucide-react';
+import { Wallet, Mail, Lock, ArrowRight, Loader2, Sparkles, User, AlertCircle, WifiOff, RefreshCw } from 'lucide-react';
 import { supabase } from '../config/supabase';
 
 export const AuthScreen = () => {
@@ -11,6 +11,17 @@ export const AuthScreen = () => {
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [error, setError] = useState(null);
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [supabaseDown, setSupabaseDown] = useState(false);
+
+    // Track online/offline
+    useEffect(() => {
+        const on = () => { setIsOffline(false); setSupabaseDown(false); setError(null); };
+        const off = () => { setIsOffline(true); };
+        window.addEventListener('online', on);
+        window.addEventListener('offline', off);
+        return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+    }, []);
 
     // ─── Human-readable error mapper ────────────────────────────────────────
     const friendlyError = (err) => {
@@ -19,8 +30,10 @@ export const AuthScreen = () => {
             message: msg, code: err?.code, status: err?.status, raw: err
         });
         // Network / connectivity
-        if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('TIMEOUT'))
-            return '⚠️ Cannot reach the server. The Supabase project may be paused or your internet is unstable. Check console for details.';
+        if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('TIMEOUT') || msg.includes('ERR_CONNECTION')) {
+            setSupabaseDown(true);
+            return null; // Special banner is shown instead
+        }
         // Auth specific
         if (msg.includes('Invalid login credentials'))
             return 'Wrong email or password. Please try again.';
@@ -40,8 +53,10 @@ export const AuthScreen = () => {
 
     const handleAuth = async (e) => {
         e.preventDefault();
+        if (isOffline) return;
         setLoading(true);
         setError(null);
+        setSupabaseDown(false);
 
         console.group('%c🔐 Auth Attempt', 'color:#f97316;font-weight:bold');
         console.log('Mode:', isLogin ? 'Sign In' : 'Sign Up', '| Email:', email);
@@ -64,7 +79,8 @@ export const AuthScreen = () => {
                 alert('Account created! Check your email for the confirmation link.');
             }
         } catch (err) {
-            setError(friendlyError(err));
+            const msg = friendlyError(err);
+            if (msg) setError(msg);
         } finally {
             console.groupEnd();
             setLoading(false);
@@ -72,12 +88,14 @@ export const AuthScreen = () => {
     };
 
     const handleGoogleLogin = async () => {
+        if (isOffline) return;
         console.log('%c🔐 Google OAuth initiated', 'color:#f97316;font-weight:bold');
         try {
             const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
             if (error) throw error;
         } catch (err) {
-            setError(friendlyError(err));
+            const msg = friendlyError(err);
+            if (msg) setError(msg);
         }
     };
 
@@ -107,6 +125,43 @@ export const AuthScreen = () => {
                     </p>
                 </div>
 
+                {/* ── Offline banner ── */}
+                {isOffline && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-xl text-sm font-medium mb-6">
+                        <WifiOff size={18} className="text-slate-300 shrink-0" />
+                        <div>
+                            <p className="font-bold">You're offline</p>
+                            <p className="text-slate-400 text-xs">Reconnect to sign in to your account.</p>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ── Supabase paused banner ── */}
+                {supabaseDown && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="bg-amber-50 border border-amber-200 px-4 py-3 rounded-xl text-sm mb-6">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-bold text-amber-800">Backend Unreachable</p>
+                                <p className="text-amber-700 text-xs mt-0.5 leading-relaxed">
+                                    The Supabase project appears to be <strong>paused</strong> (free tier auto-pauses after 1 week inactive).
+                                </p>
+                                <div className="flex gap-2 mt-2">
+                                    <a href="https://supabase.com/dashboard/project/joanfonaixkgbpbyuwch" target="_blank" rel="noreferrer"
+                                        className="text-xs font-bold text-amber-700 underline">→ Resume on Supabase</a>
+                                    <button onClick={() => { setSupabaseDown(false); setError(null); }}
+                                        className="text-xs font-bold text-amber-600 flex items-center gap-1 ml-2 hover:text-amber-800">
+                                        <RefreshCw size={11} /> Retry
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ── Auth error ── */}
                 {error && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
@@ -169,10 +224,10 @@ export const AuthScreen = () => {
 
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="w-full bg-slate-900 text-white font-black py-4 rounded-xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+                        disabled={loading || isOffline}
+                        className="w-full bg-slate-900 text-white font-black py-4 rounded-xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                     >
-                        {loading ? <Loader2 className="animate-spin" /> : (
+                        {loading ? <Loader2 className="animate-spin" size={20} /> : (
                             <>
                                 {isLogin ? 'Sign In' : 'Create Account'} <ArrowRight size={20} />
                             </>
