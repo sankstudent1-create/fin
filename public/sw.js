@@ -2,8 +2,8 @@
 /*  Orange Finance — Service Worker  v10                               */
 /*  Strategy: Cache-First for static, Network-First for API          */
 /* ================================================================== */
-const CACHE_VERSION = 'of-v10';
-const DATA_CACHE = 'of-data-v10';
+const CACHE_VERSION = 'of-v11';
+const DATA_CACHE = 'of-data-v11';
 
 const STATIC_ASSETS = [
   '/',
@@ -34,6 +34,10 @@ self.addEventListener('install', (event) => {
     const externals = [
       'https://img.icons8.com/color/192/wallet.png',
       'https://img.icons8.com/color/512/wallet.png',
+      'https://img.icons8.com/color/96/minus.png',
+      'https://img.icons8.com/color/96/plus--v1.png',
+      'https://img.icons8.com/color/96/camera.png',
+      'https://img.icons8.com/color/96/bot.png',
       'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Montserrat:wght@500;600;700;800;900&display=swap',
     ];
     for (const url of externals) {
@@ -45,7 +49,7 @@ self.addEventListener('install', (event) => {
       }
     }
 
-    console.log('[SW] Installed v10 ✓');
+    console.log('[SW] Installed v11 ✓');
   })());
   self.skipWaiting();
 });
@@ -60,7 +64,7 @@ self.addEventListener('activate', (event) => {
         .map(k => caches.delete(k))
     );
     await self.clients.claim();
-    console.log('[SW] Activated v10 ✓');
+    console.log('[SW] Activated v11 ✓');
   })());
 });
 
@@ -200,7 +204,18 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const action = event.notification.data?.action || '/';
   event.waitUntil(
-    self.clients.openWindow('/')
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // If an existing window is open, navigate it
+      for (const client of clients) {
+        if (client.url.includes(self.registration.scope)) {
+          client.navigate(action);
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window
+      return self.clients.openWindow(action);
+    })
   );
 });

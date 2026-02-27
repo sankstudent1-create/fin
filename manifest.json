@@ -1,13 +1,54 @@
 {
   "name": "Orange Finance",
-  "short_name": "Orange",
-  "description": "Smart finance tracker by Swinfosystems",
+  "short_name": "OrangeFin",
+  "description": "Smart personal finance tracker – income, expenses, investments & analytics by Swinfosystems",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#fff7ed",
   "theme_color": "#f97316",
   "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "finance",
+    "productivity",
+    "utilities"
+  ],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
+    {
+      "src": "https://img.icons8.com/color/48/wallet.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://img.icons8.com/color/72/wallet.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://img.icons8.com/color/96/wallet.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://img.icons8.com/color/128/wallet.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "https://img.icons8.com/color/192/wallet.png",
       "sizes": "192x192",
@@ -32,5 +73,68 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Add Expense",
+      "short_name": "Add Expense",
+      "description": "Quickly add a new expense transaction",
+      "url": "/?action=add-expense",
+      "icons": [
+        {
+          "src": "https://img.icons8.com/color/96/minus.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Quick Add Income",
+      "short_name": "Add Income",
+      "description": "Quickly add a new income transaction",
+      "url": "/?action=add-income",
+      "icons": [
+        {
+          "src": "https://img.icons8.com/color/96/plus--v1.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Scan Receipt",
+      "short_name": "Scan",
+      "description": "Scan a receipt to auto-add expense",
+      "url": "/?action=scan-receipt",
+      "icons": [
+        {
+          "src": "https://img.icons8.com/color/96/camera.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "AI Advisor",
+      "short_name": "AI Chat",
+      "description": "Chat with your AI financial advisor",
+      "url": "/?action=ai-chat",
+      "icons": [
+        {
+          "src": "https://img.icons8.com/color/96/bot.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/?action=share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

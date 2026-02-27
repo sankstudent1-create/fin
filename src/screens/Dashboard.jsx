@@ -80,6 +80,36 @@ export const Dashboard = ({ session }) => {
     const [showChatbot, setShowChatbot] = useState(false);
     const [isListeningTx, setIsListeningTx] = useState(false);
 
+    // --- PWA SHORTCUT HANDLER ---
+    // When user taps a shortcut from home screen, the URL has ?action=xxx
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const action = params.get('action');
+        if (action) {
+            // Clean the URL so it doesn't re-trigger on reload
+            window.history.replaceState({}, document.title, '/');
+            // Use a small delay to ensure Dashboard is fully mounted
+            setTimeout(() => {
+                switch (action) {
+                    case 'add-expense':
+                        setTxForm(prev => ({ ...prev, type: 'expense' }));
+                        setShowTransaction(true);
+                        break;
+                    case 'add-income':
+                        setTxForm(prev => ({ ...prev, type: 'income' }));
+                        setShowTransaction(true);
+                        break;
+                    case 'scan-receipt':
+                        setShowScanner(true);
+                        break;
+                    case 'ai-chat':
+                        setShowChatbot(true);
+                        break;
+                }
+            }, 300);
+        }
+    }, []);
+
     // Transaction form state
     const [txForm, setTxForm] = useState({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] });
 
