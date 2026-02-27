@@ -63,9 +63,12 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     // Force unlock HTML5 Audio Context on iOS/Safari by playing silent base64 audio
     const unlockAudio = () => {
         try {
-            const silentAudio = new Audio('data:audio/mp3;base64,//NgxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
-            silentAudio.volume = 0;
-            silentAudio.play().catch(e => console.log(e));
+            if (!window._cloudAudioPlayer) {
+                window._cloudAudioPlayer = new Audio();
+            }
+            window._cloudAudioPlayer.src = 'data:audio/mp3;base64,//NgxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
+            window._cloudAudioPlayer.volume = 0;
+            window._cloudAudioPlayer.play().catch(e => console.log(e));
             addLog("Cloud Audio stream unlocked for mobile.", "success");
         } catch (e) { }
     };
@@ -326,8 +329,11 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         if (!isOpen) return;
         setState('speaking');
 
-        // Stripping markdown & emojis for TTS engine
-        const cleanText = text.replace(/[*_#`~]/g, '').replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1FB00}-\u{1FBFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+        // Stripping markdown & emojis for TTS engine, replace currencies that break Google TTS
+        let cleanText = text.replace(/[*_#`~]/g, '')
+            .replace(/₹/g, ' rupees ')
+            .replace(/\$/g, ' dollars ')
+            .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1FB00}-\u{1FBFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
         if (!cleanText.trim()) {
             addLog("Nothing to speak (text was barren). Restarting listen.");
@@ -339,15 +345,28 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         addLog(`Fetching Cloud Stream: "${cleanText}"`);
 
         try {
-            // Bypass user's system OS text-to-speech completely and use a Cloud TTS API
-            // using the googleapis.com proxy which bypasses all strict referer checks natively
-            const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=en-IN&q=${encodeURIComponent(cleanText)}`;
-            const cloudAudio = new Audio(url);
+            // Split into <150 char chunks to bypass Google's length limits which cause 404s
+            const wordsMatch = cleanText.split(/\s+/);
+            const playChunks = [];
+            let currentChunk = "";
+            for (const word of wordsMatch) {
+                if ((currentChunk + word).length > 150) {
+                    if (currentChunk.trim()) playChunks.push(currentChunk.trim());
+                    currentChunk = word + " ";
+                } else {
+                    currentChunk += word + " ";
+                }
+            }
+            if (currentChunk.trim()) playChunks.push(currentChunk.trim());
 
-            // Removing crossOrigin entirely forces an opaque 'no-cors' request which bypasses the block
-            cloudAudio.volume = 1.0;
+            if (!window._cloudAudioPlayer) {
+                window._cloudAudioPlayer = new Audio();
+            }
+            const player = window._cloudAudioPlayer;
+            player.volume = 1.0;
 
             let completed = false;
+            let chunkIndex = 0;
 
             const handleComplete = () => {
                 if (completed) return;
@@ -360,43 +379,62 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                 }
             };
 
-            cloudAudio.onplay = () => {
-                addLog("Cloud stream started playing.", "success");
-                if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
+            const playNextChunk = () => {
+                if (chunkIndex >= playChunks.length) {
+                    handleComplete();
+                    return;
+                }
+
+                // client=tw-ob is the stable widget proxy
+                const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=en-IN&q=${encodeURIComponent(playChunks[chunkIndex])}`;
+
+                // Unbind previous to prevent duplicates
+                player.onplay = null;
+                player.onended = null;
+                player.onerror = null;
+
+                player.onplay = () => {
+                    if (chunkIndex === 0) addLog("Cloud stream started playing.", "success");
+                    if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
+                };
+
+                player.onended = () => {
+                    chunkIndex++;
+                    playNextChunk();
+                };
+
+                player.onerror = (e) => {
+                    addLog(`Steam Error on chunk ${chunkIndex + 1}! Network block?`, "error");
+                    chunkIndex++;
+                    playNextChunk();
+                };
+
+                player.src = url;
+                player.play().catch(err => {
+                    addLog(`Chunk ${chunkIndex + 1} Error: ${err.message}`, "error");
+                    chunkIndex++;
+                    playNextChunk();
+                });
             };
 
-            cloudAudio.onended = () => {
-                addLog("Cloud stream finished playing.", "success");
-                handleComplete();
-            };
-
-            cloudAudio.onerror = (e) => {
-                addLog(`Cloud Steam Error! Could not buffer audio. Network block?`, "error");
-                handleComplete();
-            };
-
-            // Force play natively
-            cloudAudio.play().catch(err => {
-                addLog(`Audio Play Error: ${err.message}`, "error");
-                handleComplete();
-            });
+            playNextChunk();
 
             // Hardware failsafe if onstart/onend never fires
-            const words = cleanText.split(' ').length;
-            const estimatedDurationMs = Math.max(3000, words * 450);
+            const totalWords = cleanText.split(' ').length;
+            const estimatedDurationMs = Math.max(3000, totalWords * 450);
 
             window._ttsSafetyTimeout = setTimeout(() => {
                 if (completed) return;
                 setState(s => {
                     if (s === 'speaking') {
                         addLog(`Safety timeout hit (${estimatedDurationMs}ms). Forcing loop restart.`, "warning");
-                        cloudAudio.pause(); // Kill the zombie audio buffer
+                        player.pause(); // Kill the zombie audio buffer
                         handleComplete();
                         return 'idle';
                     }
                     return s;
                 });
-            }, estimatedDurationMs + 4000);
+            }, estimatedDurationMs + 5000);
 
         } catch (err) {
             addLog(`Cloud Audio Error: ${err.message}`, "error");
