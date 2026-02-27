@@ -49,8 +49,12 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
         // Pre-warm the voices list early
         if (support.speechSynthesis) {
-            window.speechSynthesis.getVoices();
-            addLog("TTS Voices pre-warmed.");
+            const loadVoices = () => {
+                const v = window.speechSynthesis.getVoices();
+                if (v.length > 0 && logs.length < 5) addLog(`TTS Voices loaded: ${v.length} available.`);
+            };
+            loadVoices();
+            window.speechSynthesis.onvoiceschanged = loadVoices;
         }
 
         if (!isOpen) {
@@ -69,6 +73,8 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     // Force unlock TTS on iOS/Safari by playing silent audio
     const unlockAudio = () => {
         if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
         const silentUtterance = new SpeechSynthesisUtterance('');
         silentUtterance.volume = 0;
         window.speechSynthesis.speak(silentUtterance);
@@ -344,6 +350,8 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
         addLog(`Starting TTS: "${cleanText}"`);
 
+        // A known fix for Chrome Android synthesis-failed is to cancel any current/zombie utterances
+        window.speechSynthesis.cancel();
         // Ensure iOS/Safari hasn't killed the speech engine by calling resume
         window.speechSynthesis.resume();
 
@@ -359,9 +367,11 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
         if (preferredVoice) {
             utterance.voice = preferredVoice;
+            utterance.lang = preferredVoice.lang;
             addLog(`Assigned Voice: ${preferredVoice.name}`, "success");
         } else {
-            addLog("No preferred voice, using default.", "warning");
+            utterance.lang = 'en-US'; // Requires an explicit language to prevent mobile crash
+            addLog(`No preferred voice, using default (${voices.length} voices found).`, "warning");
         }
 
         utterance.rate = 1.0;
