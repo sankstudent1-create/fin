@@ -8,6 +8,7 @@ import {
     FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic
 } from 'lucide-react';
 import { AIChatbot } from '../components/modals/AIChatbot';
+import { VoiceAssistantModal } from '../components/modals/VoiceAssistantModal';
 import { supabase } from '../config/supabase';
 import { StatCard } from '../components/dashboard/StatCard';
 import { TransactionItem } from '../components/dashboard/TransactionItem';
@@ -25,10 +26,6 @@ import { createPDF, getPDFFile } from '../utils/pdfGenerator';
 import { generateCalculatorPDF } from '../utils/reportGenerator';
 import { playSound } from '../hooks/useSoundEngine';
 import { MONTH_NAMES, TOOLS, DEFAULT_CATEGORIES, ICON_MAP } from '../config/constants';
-import confetti from 'canvas-confetti';
-import { SubscriptionManager } from '../components/dashboard/SubscriptionManager';
-import { GoalsSystem } from '../components/dashboard/GoalsSystem';
-import { CalendarHeatmap } from '../components/dashboard/CalendarHeatmap';
 
 // Animation Variants
 const containerVariants = {
@@ -82,6 +79,7 @@ export const Dashboard = ({ session }) => {
     const [showCategoryManager, setShowCategoryManager] = useState(false);
     const [userCategories, setUserCategories] = useState([]);
     const [showChatbot, setShowChatbot] = useState(false);
+    const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
     const [isListeningTx, setIsListeningTx] = useState(false);
 
     // --- PWA SHORTCUT HANDLER ---
@@ -522,9 +520,6 @@ export const Dashboard = ({ session }) => {
                     setTransactions(prev => prev.map(t => t.id === localId ? data[0] : t));
                     showToast('Transaction added! ✅');
 
-                    // Gamification: Trigger confetti if balance stays positive after expense
-                    if (stats.balance > 0) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
-
                     // Update cache
                     const cached = JSON.parse(localStorage.getItem(`cached_tx_${user.id}`) || '[]');
                     localStorage.setItem(`cached_tx_${user.id}`, JSON.stringify([data[0], ...cached.filter(t => t.id !== localId)]));
@@ -540,7 +535,6 @@ export const Dashboard = ({ session }) => {
                 // Queue for later sync
                 queueInsert(newTx);
                 showToast('Saved offline — will sync when online 📶');
-                if (stats.balance > 0) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
                 // Keep the optimistic entry as-is (marked _pending)
             }
         }
@@ -874,17 +868,6 @@ export const Dashboard = ({ session }) => {
                                     <TrendBarChart transactions={filteredTransactions} type="expense" />
                                 </motion.div>
 
-                                {/* Gamification, Goals & Subscriptions */}
-                                <motion.div variants={itemVariants}>
-                                    <GoalsSystem userId={user?.id} onGoalComplete={() => confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })} />
-                                </motion.div>
-                                <motion.div variants={itemVariants}>
-                                    <SubscriptionManager transactions={filteredTransactions} />
-                                </motion.div>
-                                <motion.div variants={itemVariants}>
-                                    <CalendarHeatmap transactions={filteredTransactions} />
-                                </motion.div>
-
                                 {/* Recent Transactions */}
                                 <motion.div variants={itemVariants}>
                                     <div className="flex justify-between items-center mb-4">
@@ -1087,18 +1070,28 @@ export const Dashboard = ({ session }) => {
                 </div>
             </div>
 
-            {/* AI Chatbot Floating Button */}
+            {/* AI Floating Hub (Voice & Chat) */}
             {!isPrinting && (
-                <button
-                    onClick={() => setShowChatbot(true)}
-                    className="fixed bottom-24 left-4 sm:left-6 z-40 w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all outline-none border-2 border-white/20"
-                >
-                    <Bot size={24} />
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white"></span>
-                    </span>
-                </button>
+                <div className="fixed bottom-24 left-4 sm:left-6 z-40 flex flex-col gap-3">
+                    {/* Voice Assistant Button */}
+                    <button
+                        onClick={() => setShowVoiceAssistant(true)}
+                        className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all outline-none border-2 border-white/20"
+                    >
+                        <Mic size={24} />
+                    </button>
+                    {/* Text Chatbot Button */}
+                    <button
+                        onClick={() => setShowChatbot(true)}
+                        className="w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all outline-none border-2 border-white/20 group"
+                    >
+                        <Bot size={24} className="group-hover:scale-110 transition-transform" />
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white"></span>
+                        </span>
+                    </button>
+                </div>
             )}
 
             {/* ========= MODALS — all get data-print-hide so they NEVER appear in print ========= */}
@@ -1348,6 +1341,14 @@ export const Dashboard = ({ session }) => {
                 <AIChatbot
                     isOpen={showChatbot}
                     onClose={() => setShowChatbot(false)}
+                    transactions={filteredTransactions}
+                    userName={firstName}
+                />
+
+                {/* Voice Assistant component */}
+                <VoiceAssistantModal
+                    isOpen={showVoiceAssistant}
+                    onClose={() => setShowVoiceAssistant(false)}
                     transactions={filteredTransactions}
                     userName={firstName}
                 />
