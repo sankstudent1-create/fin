@@ -7,147 +7,194 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     const [transcript, setTranscript] = useState('');
     const [aiResponse, setAiResponse] = useState('');
     const [conversation, setConversation] = useState([]);
-    const mediaRecorder = useRef(null);
-    const audioChunks = useRef([]);
+
+    // Core refs to survive renders
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
     const streamRef = useRef(null);
     const audioContextRef = useRef(null);
+    const analyserRef = useRef(null);
+
+    // Timer refs
     const silenceTimerRef = useRef(null);
+    const maxRecordTimerRef = useRef(null);
+    const checkSilenceFrameRef = useRef(null);
+
+    // State flags
     const isSpeakingRef = useRef(false);
     const isAutoModeRef = useRef(true);
 
-    // Stop speaking/recording when closed
+    // Initializer and Cleanup
     useEffect(() => {
+        // Pre-warm the voices list early
+        window.speechSynthesis.getVoices();
+
         if (!isOpen) {
             stopEverything();
         } else {
-            // Auto start listening on open
-            startListening();
+            initStreamAndListen();
         }
+
+        return () => {
+            // Clean up when unmounted.
+            stopEverything();
+        };
     }, [isOpen]);
 
-    const stopEverything = () => {
-        isAutoModeRef.current = false;
-        if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
-            mediaRecorder.current.stop();
-        }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-        }
-        if (audioContextRef.current) {
-            audioContextRef.current.close().catch(() => { });
-            audioContextRef.current = null;
-        }
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        window.speechSynthesis.cancel();
-        setState('idle');
-    };
-
-    const startListening = async () => {
+    const initStreamAndListen = async () => {
         isAutoModeRef.current = true;
-        window.speechSynthesis.cancel(); // stop any ongoing speech
-        setState('listening');
-        setTranscript('');
-        setAiResponse('');
-        audioChunks.current = [];
-        isSpeakingRef.current = false;
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            streamRef.current = stream;
-
-            // iOS compatible MIME type fallback
-            const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
-            mediaRecorder.current = new MediaRecorder(stream, options);
-
-            mediaRecorder.current.ondataavailable = (event) => {
-                if (event.data.size > 0) audioChunks.current.push(event.data);
-            };
-
-            mediaRecorder.current.onstop = async () => {
-                stream.getTracks().forEach(track => track.stop());
-                if (audioContextRef.current) {
-                    audioContextRef.current.close().catch(() => { });
-                    audioContextRef.current = null;
-                }
-                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-
-                if (audioChunks.current.length > 0) {
-                    processAudio();
-                } else {
-                    setState('idle');
-                }
-            };
-
-            mediaRecorder.current.start();
-
-            // Set up Voice Activity Detection (VAD)
-            try {
+            if (!streamRef.current) {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                streamRef.current = stream;
+            }
+            if (!audioContextRef.current) {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioCtx = new AudioContext();
-                audioContextRef.current = audioCtx;
-                const source = audioCtx.createMediaStreamSource(stream);
-                const analyser = audioCtx.createAnalyser();
-                analyser.minDecibels = -60;
+                audioContextRef.current = new AudioContext();
+            }
+            if (audioContextRef.current.state === 'suspended') {
+                await audioContextRef.current.resume();
+            }
+            if (!analyserRef.current) {
+                const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
+                const analyser = audioContextRef.current.createAnalyser();
+                analyser.minDecibels = -70; // highly sensitive to pick up whispers
                 analyser.smoothingTimeConstant = 0.2;
                 source.connect(analyser);
-
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                const checkSilence = () => {
-                    if (mediaRecorder.current?.state !== 'recording') return;
-
-                    analyser.getByteFrequencyData(dataArray);
-                    let sum = 0;
-                    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-                    const average = sum / dataArray.length;
-
-                    if (average > 10) { // Sound detected
-                        isSpeakingRef.current = true;
-                        if (silenceTimerRef.current) {
-                            clearTimeout(silenceTimerRef.current);
-                            silenceTimerRef.current = null;
-                        }
-                    } else if (isSpeakingRef.current) { // Was speaking, now silent
-                        if (!silenceTimerRef.current) {
-                            silenceTimerRef.current = setTimeout(() => {
-                                if (mediaRecorder.current?.state === 'recording') {
-                                    mediaRecorder.current.stop();
-                                }
-                            }, 1800); // Stop after 1.8 seconds of silence
-                        }
-                    }
-                    requestAnimationFrame(checkSilence);
-                };
-                requestAnimationFrame(checkSilence);
-            } catch (e) {
-                console.log("VAD not supported, fallback to 10s max", e);
-                setTimeout(() => {
-                    if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
-                        mediaRecorder.current.stop();
-                    }
-                }, 10000);
+                analyserRef.current = analyser;
             }
+            startListening();
         } catch (err) {
-            console.error('Mic error:', err);
-            setAiResponse('Microphone access denied or error occurred.');
+            console.error(err);
+            setAiResponse('Mic access denied. Please allow microphone permissions.');
             setState('idle');
         }
     };
 
+    const stopEverything = () => {
+        isAutoModeRef.current = false;
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+        if (checkSilenceFrameRef.current) cancelAnimationFrame(checkSilenceFrameRef.current);
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        if (maxRecordTimerRef.current) clearTimeout(maxRecordTimerRef.current);
+
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        if (audioContextRef.current) {
+            audioContextRef.current.close().catch(() => { });
+            audioContextRef.current = null;
+            analyserRef.current = null;
+        }
+
+        window.speechSynthesis.cancel();
+        setState('idle');
+    };
+
+    const startListening = () => {
+        if (!streamRef.current || !isOpen) return;
+
+        isAutoModeRef.current = true;
+        window.speechSynthesis.cancel(); // kill any overlapping TTS
+        setState('listening');
+        setTranscript('');
+        setAiResponse('');
+        audioChunksRef.current = [];
+        isSpeakingRef.current = false;
+
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        if (maxRecordTimerRef.current) clearTimeout(maxRecordTimerRef.current);
+        if (checkSilenceFrameRef.current) cancelAnimationFrame(checkSilenceFrameRef.current);
+
+        const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
+        mediaRecorderRef.current = new MediaRecorder(streamRef.current, options);
+
+        mediaRecorderRef.current.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+            if (maxRecordTimerRef.current) clearTimeout(maxRecordTimerRef.current);
+            if (checkSilenceFrameRef.current) cancelAnimationFrame(checkSilenceFrameRef.current);
+
+            // Only process if we caught audio and we still want to continue
+            if (audioChunksRef.current.length > 0 && isAutoModeRef.current && isOpen) {
+                processAudio();
+            } else {
+                if (isAutoModeRef.current && isOpen) startListening();
+                else setState('idle');
+            }
+        };
+
+        mediaRecorderRef.current.start();
+
+        // VAD (Voice Activity Detection)
+        try {
+            const analyser = analyserRef.current;
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            const checkSilence = () => {
+                if (mediaRecorderRef.current?.state !== 'recording') return;
+
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                const average = sum / dataArray.length;
+
+                if (average > 8) { // Speech detected (threshold adjusted)
+                    if (!isSpeakingRef.current) isSpeakingRef.current = true;
+
+                    if (silenceTimerRef.current) {
+                        clearTimeout(silenceTimerRef.current);
+                        silenceTimerRef.current = null;
+                    }
+                    if (maxRecordTimerRef.current) {
+                        clearTimeout(maxRecordTimerRef.current); // Lift the idle rule since they started speaking!
+                        maxRecordTimerRef.current = null;
+                    }
+                } else if (isSpeakingRef.current) {
+                    // They were speaking, now they stopped
+                    if (!silenceTimerRef.current) {
+                        silenceTimerRef.current = setTimeout(() => {
+                            if (mediaRecorderRef.current?.state === 'recording') {
+                                mediaRecorderRef.current.stop();
+                            }
+                        }, 1200); // Wait 1.2s to ensure they are done speaking
+                    }
+                }
+                checkSilenceFrameRef.current = requestAnimationFrame(checkSilence);
+            };
+            checkSilenceFrameRef.current = requestAnimationFrame(checkSilence);
+        } catch (e) {
+            console.log("VAD error", e);
+        }
+
+        // Failsafe: if completely silent for an extended time, stop and restart loop
+        maxRecordTimerRef.current = setTimeout(() => {
+            if (mediaRecorderRef.current?.state === 'recording') {
+                mediaRecorderRef.current.stop();
+            }
+        }, 15000);
+    };
+
     const processAudio = async () => {
+        if (!isOpen) return;
         setState('processing');
         const groqKey = import.meta.env.VITE_GROQ_API_KEY;
         if (!groqKey) {
-            setAiResponse("Groq API key is missing. Add VITE_GROQ_API_KEY.");
+            setAiResponse("Groq API key is missing.");
             setState('idle');
             return;
         }
 
         try {
             // 1. STT (Whisper)
-            const audioBlob = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType || 'audio/mp4' });
-            const fileExt = mediaRecorder.current.mimeType?.includes('webm') ? 'webm' : 'm4a';
+            const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType || 'audio/mp4' });
+            const fileExt = mediaRecorderRef.current.mimeType?.includes('webm') ? 'webm' : 'm4a';
             const formData = new FormData();
             formData.append('file', audioBlob, `voice.${fileExt}`);
             formData.append('model', 'whisper-large-v3-turbo');
@@ -159,20 +206,24 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                 body: formData,
             });
 
-            if (!sttRes.ok) throw new Error("Transcription failed.");
+            if (!sttRes.ok) throw new Error("Voice to text failed. Wait a moment.");
             const sttData = await sttRes.json();
             const text = sttData.text?.trim();
 
             if (!text) {
-                setAiResponse("I didn't catch that. Could you try again?");
-                speakText("I didn't catch that. Could you try again?");
+                // Background noise/silence caught - just loop back silently!
+                if (isAutoModeRef.current && isOpen) {
+                    startListening();
+                } else {
+                    setState('idle');
+                }
                 return;
             }
 
             setTranscript(text);
 
             // 2. Generate Response (LLM)
-            const summary = transactions.slice(0, 10).map(t => `${t.type}: ₹${t.amount} on ${t.category}`).join(', ');
+            const summary = transactions.slice(0, 5).map(t => `${t.type}: ₹${t.amount} on ${t.category}`).join(', ');
 
             const completionRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
@@ -183,81 +234,98 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                 body: JSON.stringify({
                     model: 'llama-3.3-70b-versatile',
                     messages: [
-                        { role: 'system', content: `You are OrangeFin Voice Assistant. Be VERY concise, conversational, and helpful. Answer in 1 or 2 short sentences. User name: ${userName || 'user'}. Recent transactions summary: ${summary}` },
+                        { role: 'system', content: `You are OrangeFin Voice Assistant. You speak exclusively in English, but act completely natural and conversational like a human on the phone. Do NOT use markdown. Reply in ONE short, snappy sentence max. User name: ${userName || 'user'}. Recent transactions summary: ${summary}` },
                         ...conversation,
                         { role: 'user', content: text }
                     ],
-                    max_tokens: 100,
-                    temperature: 0.5,
+                    max_tokens: 150,
+                    temperature: 0.6,
                 }),
             });
 
-            if (!completionRes.ok) throw new Error("AI generation failed.");
+            if (!completionRes.ok) {
+                const errData = await completionRes.json();
+                throw new Error(errData.error?.message || "AI brain offline.");
+            }
             const aiData = await completionRes.json();
-            const reply = aiData.choices[0]?.message?.content || "I couldn't process that.";
+            const reply = aiData.choices[0]?.message?.content || "Hmm, I didn't quite get that.";
 
-            setConversation(prev => [...prev.slice(-4), { role: 'user', content: text }, { role: 'assistant', content: reply }]);
+            setConversation(prev => [...prev.slice(-6), { role: 'user', content: text }, { role: 'assistant', content: reply }]);
             setAiResponse(reply);
             speakText(reply);
 
         } catch (err) {
             console.error(err);
-            setAiResponse("Something went wrong processing your voice request.");
-            setState('idle');
+            setAiResponse(err.message || "Something went wrong.");
+
+            // Loop back on error after a brief delay so we don't break the session
+            if (isAutoModeRef.current && isOpen) {
+                setTimeout(startListening, 3000);
+            } else {
+                setState('idle');
+            }
         }
     };
 
     const speakText = (text) => {
+        if (!isOpen) return;
         setState('speaking');
 
-        // Clean text of emojis and bold markdown before speaking
-        const cleanText = text.replace(/[*_#]/g, '').replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1FB00}-\u{1FBFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+        // Stripping markdown & emojis for TTS engine
+        const cleanText = text.replace(/[*_#`~]/g, '').replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1FB00}-\u{1FBFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
         if (!cleanText.trim()) {
-            setState('idle');
+            if (isAutoModeRef.current && isOpen) startListening();
+            else setState('idle');
             return;
         }
 
         const utterance = new SpeechSynthesisUtterance(cleanText);
 
-        // Try getting an Indian English voice, fallback to loud clear voice
+        // Prioritize Indian English Voices (en-IN)
         const voices = window.speechSynthesis.getVoices();
         let preferredVoice = voices.find(v => v.lang.includes('en-IN') || v.lang.includes('en_IN') || v.name.includes('India'));
-        if (!preferredVoice) {
-            preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Male') || v.name.includes('Female')));
-        }
+
+        // Fallbacks
+        if (!preferredVoice) preferredVoice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Female'));
+        if (!preferredVoice) preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Samantha')));
+
         if (preferredVoice) utterance.voice = preferredVoice;
 
-        utterance.rate = 1.05; // Slightly faster
+        utterance.rate = 1.0;
         utterance.pitch = 1.0;
-        utterance.volume = 1.0; // Max volume
+        utterance.volume = 1.0; // Max
 
         utterance.onend = () => {
-            if (isAutoModeRef.current) startListening();
-            else setState('idle');
+            if (isAutoModeRef.current && isOpen) {
+                setTimeout(startListening, 200); // 200ms breath before listening
+            } else {
+                setState('idle');
+            }
         };
         utterance.onerror = () => {
-            if (isAutoModeRef.current) startListening();
-            else setState('idle');
+            if (isAutoModeRef.current && isOpen) {
+                setTimeout(startListening, 200);
+            } else {
+                setState('idle');
+            }
         };
 
-        // Anti-GC bug fix for some browsers
-        window.activeSpeechUtterance = utterance;
-
+        window.activeSpeechUtterance = utterance; // GC fix
         window.speechSynthesis.speak(utterance);
 
-        // Fallback safety timeout if browser fails to trigger onend
+        // Hardware failsafe if onend never fires
         const words = cleanText.split(' ').length;
-        const estimatedDurationMs = Math.max(3000, words * 450);
+        const estimatedDurationMs = Math.max(2500, words * 450);
         setTimeout(() => {
             setState(s => {
                 if (s === 'speaking') {
-                    if (isAutoModeRef.current) setTimeout(startListening, 100);
+                    if (isAutoModeRef.current && isOpen) setTimeout(startListening, 100);
                     return 'idle';
                 }
                 return s;
             });
-        }, estimatedDurationMs + 2000);
+        }, estimatedDurationMs + 3000);
     };
 
     if (!isOpen) return null;
@@ -315,15 +383,16 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                         </div>
                     </div>
 
-                    <div className="h-32 w-full relative z-10 flex flex-col items-center justify-center space-y-4">
+                    <div className="h-40 w-full relative z-10 flex flex-col items-center justify-center space-y-4">
                         {state === 'listening' && <p className="text-rose-500 font-bold animate-pulse text-lg">Listening...</p>}
                         {state === 'processing' && <p className="text-indigo-500 font-bold animate-pulse text-lg">Processing...</p>}
 
-                        {(state === 'speaking' || state === 'idle') && transcript && (
-                            <div className="flex flex-col gap-2 w-full text-left">
-                                <p className="text-xs font-bold text-slate-400 bg-slate-50 p-2 rounded-lg self-end w-3/4 break-words">🗣️ "{transcript}"</p>
+                        {/* Display real-time transcript or reply */}
+                        {(state === 'speaking' || state === 'idle' || state === 'listening') && transcript && (
+                            <div className="flex flex-col gap-3 w-full text-left overflow-y-auto max-h-36 pr-2 custom-scrollbar">
+                                <p className="text-xs font-bold text-slate-400 bg-slate-50 p-2 rounded-lg self-end max-w-[85%] break-words border border-slate-100/60 shadow-sm">🗣️ "{transcript}"</p>
                                 {aiResponse && (
-                                    <p className="font-semibold text-slate-800 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50 self-start w-[90%] break-words">
+                                    <p className="font-semibold text-slate-800 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/80 self-start max-w-[95%] break-words shadow-sm">
                                         {aiResponse}
                                     </p>
                                 )}
@@ -331,22 +400,25 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                         )}
                     </div>
 
-                    <div className="mt-6 flex gap-3 w-full relative z-10">
+                    <div className="mt-6 w-full relative z-10">
                         {state === 'listening' ? (
                             <button
                                 onClick={() => {
-                                    if (mediaRecorder.current) mediaRecorder.current.stop();
+                                    if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
                                 }}
-                                className="flex-1 bg-rose-100 text-rose-600 font-bold py-3.5 rounded-xl hover:bg-rose-200 transition-colors flex items-center justify-center gap-2"
+                                className="w-full bg-rose-100 text-rose-600 font-bold py-3.5 rounded-xl hover:bg-rose-200 transition-colors flex items-center justify-center gap-2"
                             >
-                                <StopCircle size={20} /> Stop
+                                <StopCircle size={20} /> Pause Listening
                             </button>
                         ) : (
                             <button
-                                onClick={startListening}
-                                className="flex-1 bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
+                                onClick={() => {
+                                    isAutoModeRef.current = true;
+                                    startListening();
+                                }}
+                                className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
                             >
-                                Speak Again
+                                <Mic size={20} /> Tap to Speak
                             </button>
                         )}
                     </div>
