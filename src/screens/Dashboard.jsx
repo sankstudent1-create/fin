@@ -758,6 +758,12 @@ export const Dashboard = ({ session }) => {
                         </div>
                         <div className="flex items-center gap-3">
                             <button
+                                onClick={() => setShowSupport(true)}
+                                className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                            >
+                                <Headphones size={20} />
+                            </button>
+                            <button
                                 onClick={() => setShowScanner(true)}
                                 className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
                             >
@@ -1052,47 +1058,28 @@ export const Dashboard = ({ session }) => {
 
                             {/* Right tabs */}
                             <button
-                                onClick={() => setShowSupport(true)}
-                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-400 hover:text-slate-600 transition-all active:scale-90"
+                                onClick={() => setShowVoiceAssistant(true)}
+                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all active:scale-90"
                             >
-                                <Headphones size={20} strokeWidth={1.5} />
-                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Support</span>
+                                <Mic size={20} strokeWidth={1.5} />
+                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Voice</span>
                             </button>
                             <button
-                                onClick={() => setShowSettings(true)}
-                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-400 hover:text-slate-600 transition-all active:scale-90"
+                                onClick={() => setShowChatbot(true)}
+                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-400 hover:text-rose-600 transition-all active:scale-90 relative"
                             >
-                                <Settings size={20} strokeWidth={1.5} />
-                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Settings</span>
+                                <Bot size={20} strokeWidth={1.5} />
+                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Chat</span>
+                                <span className="absolute top-2 right-[18px] flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                                </span>
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* AI Floating Hub (Voice & Chat) */}
-            {!isPrinting && (
-                <div className="fixed bottom-24 left-4 sm:left-6 z-40 flex flex-col gap-3">
-                    {/* Voice Assistant Button */}
-                    <button
-                        onClick={() => setShowVoiceAssistant(true)}
-                        className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all outline-none border-2 border-white/20"
-                    >
-                        <Mic size={24} />
-                    </button>
-                    {/* Text Chatbot Button */}
-                    <button
-                        onClick={() => setShowChatbot(true)}
-                        className="w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all outline-none border-2 border-white/20 group"
-                    >
-                        <Bot size={24} className="group-hover:scale-110 transition-transform" />
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white"></span>
-                        </span>
-                    </button>
-                </div>
-            )}
 
             {/* ========= MODALS — all get data-print-hide so they NEVER appear in print ========= */}
             <div data-print-hide="true" className={isPrinting ? 'print-hide' : ''}>

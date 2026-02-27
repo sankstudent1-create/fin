@@ -9,6 +9,9 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     const mediaRecorder = useRef(null);
     const audioChunks = useRef([]);
     const streamRef = useRef(null);
+    const audioContextRef = useRef(null);
+    const silenceTimerRef = useRef(null);
+    const isSpeakingRef = useRef(false);
 
     // Stop speaking/recording when closed
     useEffect(() => {
@@ -27,6 +30,11 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
         }
+        if (audioContextRef.current) {
+            audioContextRef.current.close().catch(() => { });
+            audioContextRef.current = null;
+        }
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         window.speechSynthesis.cancel();
         setState('idle');
     };
@@ -37,6 +45,8 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         setTranscript('');
         setAiResponse('');
         audioChunks.current = [];
+        isSpeakingRef.current = false;
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -52,17 +62,68 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
             mediaRecorder.current.onstop = async () => {
                 stream.getTracks().forEach(track => track.stop());
-                processAudio();
+                if (audioContextRef.current) {
+                    audioContextRef.current.close().catch(() => { });
+                    audioContextRef.current = null;
+                }
+                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+                if (audioChunks.current.length > 0) {
+                    processAudio();
+                } else {
+                    setState('idle');
+                }
             };
 
             mediaRecorder.current.start();
 
-            // Max recording duration: 10s
-            setTimeout(() => {
-                if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
-                    mediaRecorder.current.stop();
-                }
-            }, 10000);
+            // Set up Voice Activity Detection (VAD)
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+                audioContextRef.current = audioCtx;
+                const source = audioCtx.createMediaStreamSource(stream);
+                const analyser = audioCtx.createAnalyser();
+                analyser.minDecibels = -60;
+                analyser.smoothingTimeConstant = 0.2;
+                source.connect(analyser);
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                const checkSilence = () => {
+                    if (mediaRecorder.current?.state !== 'recording') return;
+
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                    const average = sum / dataArray.length;
+
+                    if (average > 10) { // Sound detected
+                        isSpeakingRef.current = true;
+                        if (silenceTimerRef.current) {
+                            clearTimeout(silenceTimerRef.current);
+                            silenceTimerRef.current = null;
+                        }
+                    } else if (isSpeakingRef.current) { // Was speaking, now silent
+                        if (!silenceTimerRef.current) {
+                            silenceTimerRef.current = setTimeout(() => {
+                                if (mediaRecorder.current?.state === 'recording') {
+                                    mediaRecorder.current.stop();
+                                }
+                            }, 1800); // Stop after 1.8 seconds of silence
+                        }
+                    }
+                    requestAnimationFrame(checkSilence);
+                };
+                requestAnimationFrame(checkSilence);
+            } catch (e) {
+                console.log("VAD not supported, fallback to 10s max", e);
+                setTimeout(() => {
+                    if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
+                        mediaRecorder.current.stop();
+                    }
+                }, 10000);
+            }
         } catch (err) {
             console.error('Mic error:', err);
             setAiResponse('Microphone access denied or error occurred.');
@@ -146,6 +207,11 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         // Clean text of emojis and bold markdown before speaking
         const cleanText = text.replace(/[*_#]/g, '').replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1FB00}-\u{1FBFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
+        if (!cleanText.trim()) {
+            setState('idle');
+            return;
+        }
+
         const utterance = new SpeechSynthesisUtterance(cleanText);
 
         // Try getting a decent voice
@@ -159,8 +225,21 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         utterance.onend = () => {
             setState('idle');
         };
+        utterance.onerror = () => {
+            setState('idle');
+        };
+
+        // Anti-GC bug fix for some browsers
+        window.activeSpeechUtterance = utterance;
 
         window.speechSynthesis.speak(utterance);
+
+        // Fallback safety timeout if browser fails to trigger onend
+        const words = cleanText.split(' ').length;
+        const estimatedDurationMs = Math.max(3000, words * 450);
+        setTimeout(() => {
+            setState(s => s === 'speaking' ? 'idle' : s);
+        }, estimatedDurationMs + 2000);
     };
 
     if (!isOpen) return null;
