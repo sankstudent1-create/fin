@@ -6,12 +6,14 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     const [state, setState] = useState('idle'); // idle, listening, processing, speaking
     const [transcript, setTranscript] = useState('');
     const [aiResponse, setAiResponse] = useState('');
+    const [conversation, setConversation] = useState([]);
     const mediaRecorder = useRef(null);
     const audioChunks = useRef([]);
     const streamRef = useRef(null);
     const audioContextRef = useRef(null);
     const silenceTimerRef = useRef(null);
     const isSpeakingRef = useRef(false);
+    const isAutoModeRef = useRef(true);
 
     // Stop speaking/recording when closed
     useEffect(() => {
@@ -24,6 +26,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     }, [isOpen]);
 
     const stopEverything = () => {
+        isAutoModeRef.current = false;
         if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
             mediaRecorder.current.stop();
         }
@@ -40,6 +43,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     };
 
     const startListening = async () => {
+        isAutoModeRef.current = true;
         window.speechSynthesis.cancel(); // stop any ongoing speech
         setState('listening');
         setTranscript('');
@@ -180,6 +184,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                     model: 'llama-3.3-70b-versatile',
                     messages: [
                         { role: 'system', content: `You are OrangeFin Voice Assistant. Be VERY concise, conversational, and helpful. Answer in 1 or 2 short sentences. User name: ${userName || 'user'}. Recent transactions summary: ${summary}` },
+                        ...conversation,
                         { role: 'user', content: text }
                     ],
                     max_tokens: 100,
@@ -191,6 +196,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             const aiData = await completionRes.json();
             const reply = aiData.choices[0]?.message?.content || "I couldn't process that.";
 
+            setConversation(prev => [...prev.slice(-4), { role: 'user', content: text }, { role: 'assistant', content: reply }]);
             setAiResponse(reply);
             speakText(reply);
 
@@ -214,19 +220,25 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
         const utterance = new SpeechSynthesisUtterance(cleanText);
 
-        // Try getting a decent voice
+        // Try getting an Indian English voice, fallback to loud clear voice
         const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Male') || v.name.includes('Female')));
+        let preferredVoice = voices.find(v => v.lang.includes('en-IN') || v.lang.includes('en_IN') || v.name.includes('India'));
+        if (!preferredVoice) {
+            preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Male') || v.name.includes('Female')));
+        }
         if (preferredVoice) utterance.voice = preferredVoice;
 
         utterance.rate = 1.05; // Slightly faster
         utterance.pitch = 1.0;
+        utterance.volume = 1.0; // Max volume
 
         utterance.onend = () => {
-            setState('idle');
+            if (isAutoModeRef.current) startListening();
+            else setState('idle');
         };
         utterance.onerror = () => {
-            setState('idle');
+            if (isAutoModeRef.current) startListening();
+            else setState('idle');
         };
 
         // Anti-GC bug fix for some browsers
@@ -238,7 +250,13 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         const words = cleanText.split(' ').length;
         const estimatedDurationMs = Math.max(3000, words * 450);
         setTimeout(() => {
-            setState(s => s === 'speaking' ? 'idle' : s);
+            setState(s => {
+                if (s === 'speaking') {
+                    if (isAutoModeRef.current) setTimeout(startListening, 100);
+                    return 'idle';
+                }
+                return s;
+            });
         }, estimatedDurationMs + 2000);
     };
 
