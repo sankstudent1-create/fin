@@ -192,7 +192,8 @@ Answer the user's questions about their finances accurately, warmly, and concise
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
+            const mediaRecorder = new MediaRecorder(stream, options);
             const audioChunks = [];
 
             setIsListening(true);
@@ -206,9 +207,10 @@ Answer the user's questions about their finances accurately, warmly, and concise
                 setIsListening(false);
 
                 try {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
+                    const fileExt = mediaRecorder.mimeType.includes('webm') ? 'webm' : 'm4a';
                     const formData = new FormData();
-                    formData.append('file', audioBlob, 'voice.webm');
+                    formData.append('file', audioBlob, `voice.${fileExt}`);
                     formData.append('model', 'whisper-large-v3-turbo');
                     formData.append('language', 'en');
 

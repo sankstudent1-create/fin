@@ -206,15 +206,24 @@ export const ReceiptScanner = ({ isOpen, onClose, onScanComplete }) => {
                             <span className="text-[11px] font-bold text-slate-400">{progress}%</span>
                         </div>
                     ) : (
-                        <button
-                            onClick={() => fileRef.current.click()}
-                            className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors shadow-lg active:scale-95"
-                        >
-                            <UploadCloud size={20} /> Select Receipt
-                        </button>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => document.getElementById('cameraInput').click()}
+                                className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors shadow-lg active:scale-95"
+                            >
+                                <Camera size={20} /> Take Photo
+                            </button>
+                            <button
+                                onClick={() => document.getElementById('galleryInput').click()}
+                                className="w-full bg-slate-100 text-slate-700 py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors shadow-none active:scale-95"
+                            >
+                                <UploadCloud size={20} /> Upload Image
+                            </button>
+                        </div>
                     )}
 
-                    <input type="file" ref={fileRef} onChange={handleFile} className="hidden" accept="image/*" capture="environment" />
+                    <input id="cameraInput" type="file" onChange={handleFile} className="hidden" accept="image/*" capture="environment" />
+                    <input id="galleryInput" type="file" onChange={handleFile} className="hidden" accept="image/*" />
                 </div>
             </motion.div>
         </AnimatePresence>

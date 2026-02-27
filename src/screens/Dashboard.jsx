@@ -247,7 +247,9 @@ export const Dashboard = ({ session }) => {
         // Use MediaRecorder + Groq Whisper (works on ALL browsers)
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            // Don't force webm, let browser pick (iOS Safari doesn't support webm recording)
+            const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
+            const mediaRecorder = new MediaRecorder(stream, options);
             const audioChunks = [];
 
             setIsListeningTx(true);
@@ -262,9 +264,10 @@ export const Dashboard = ({ session }) => {
                 showToast('⏳ Transcribing with AI...', 'info');
 
                 try {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
+                    const fileExtension = mediaRecorder.mimeType.includes('webm') ? 'webm' : 'm4a';
                     const formData = new FormData();
-                    formData.append('file', audioBlob, 'voice.webm');
+                    formData.append('file', audioBlob, `voice.${fileExtension}`);
                     formData.append('model', 'whisper-large-v3-turbo');
                     formData.append('language', 'en');
 
@@ -1068,7 +1071,7 @@ export const Dashboard = ({ session }) => {
             {!isPrinting && (
                 <button
                     onClick={() => setShowChatbot(true)}
-                    className="fixed bottom-24 right-4 sm:right-6 z-40 w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all outline-none border-2 border-white/20"
+                    className="fixed bottom-24 left-4 sm:left-6 z-40 w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all outline-none border-2 border-white/20"
                 >
                     <Bot size={24} />
                     <span className="absolute -top-1 -right-1 flex h-4 w-4">
