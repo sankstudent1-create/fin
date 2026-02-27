@@ -56,8 +56,9 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         if (!isOpen) {
             stopEverything();
         } else {
-            addLog("Modal Opened. Initializing stream...");
-            initStreamAndListen();
+            addLog("Modal Opened.");
+            // On mobile, the very first user interaction sets up the audio.
+            // But we can only unlock it safely on a synchronous button click.
         }
 
         return () => {
@@ -71,7 +72,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         const silentUtterance = new SpeechSynthesisUtterance('');
         silentUtterance.volume = 0;
         window.speechSynthesis.speak(silentUtterance);
-        addLog("Audio contextual unlock triggered.", "success");
+        addLog("Audio contextual unlock triggered natively.", "success");
     };
 
     const initStreamAndListen = async () => {
@@ -149,7 +150,9 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         if (maxRecordTimerRef.current) clearTimeout(maxRecordTimerRef.current);
         if (checkSilenceFrameRef.current) cancelAnimationFrame(checkSilenceFrameRef.current);
 
-        const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
+        // Mobile fallback for looping
+        const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } :
+            MediaRecorder.isTypeSupported('audio/mp4') ? { mimeType: 'audio/mp4' } : {};
         mediaRecorderRef.current = new MediaRecorder(streamRef.current, options);
         addLog(`Started recording using ${options.mimeType || 'default'} type.`);
 
@@ -340,6 +343,10 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         }
 
         addLog(`Starting TTS: "${cleanText}"`);
+
+        // Ensure iOS/Safari hasn't killed the speech engine by calling resume
+        window.speechSynthesis.resume();
+
         const utterance = new SpeechSynthesisUtterance(cleanText);
 
         // Prioritize Indian English Voices (en-IN)
@@ -352,53 +359,57 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
         if (preferredVoice) {
             utterance.voice = preferredVoice;
-            addLog(`Assigned Voice: ${preferredVoice.name} (${preferredVoice.lang})`, "success");
+            addLog(`Assigned Voice: ${preferredVoice.name}`, "success");
         } else {
-            addLog("No specific preferred voice found, using system default.", "warning");
+            addLog("No preferred voice, using default.", "warning");
         }
 
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
-        utterance.volume = 1.0; // Max
+        utterance.volume = 1.0;
 
         utterance.onstart = () => {
-            addLog("TTS .onstart fired natively.", "success");
+            addLog("TTS .onstart fired.", "success");
+            // Clear the safety timeout if speech successfully starts
+            if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
+        };
+
+        const handleComplete = () => {
+            if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
+            if (isAutoModeRef.current && isOpen) {
+                setTimeout(startListening, 300); // Back into the loop
+            } else {
+                setState('idle');
+            }
         };
 
         utterance.onend = () => {
-            addLog("TTS .onend fired successfully.", "success");
-            if (isAutoModeRef.current && isOpen) {
-                setTimeout(startListening, 200); // 200ms breath before listening
-            } else {
-                setState('idle');
-            }
+            addLog("TTS .onend fired.", "success");
+            handleComplete();
         };
 
         utterance.onerror = (e) => {
-            addLog(`TTS .onerror Fired! Event: ${e.error || 'Unknown'} - Browser blocking?`, "error");
-            if (isAutoModeRef.current && isOpen) {
-                setTimeout(startListening, 200);
-            } else {
-                setState('idle');
-            }
+            addLog(`TTS .onerror Fired! Event: ${e.error}`, "error");
+            handleComplete();
         };
 
         window.activeSpeechUtterance = utterance; // GC fix
         window.speechSynthesis.speak(utterance);
 
-        // Hardware failsafe if onend never fires (iOS bug)
+        // Hardware failsafe if onstart/onend never fires (iOS bug)
         const words = cleanText.split(' ').length;
-        const estimatedDurationMs = Math.max(2500, words * 450);
-        setTimeout(() => {
+        const estimatedDurationMs = Math.max(3000, words * 450);
+
+        window._ttsSafetyTimeout = setTimeout(() => {
             setState(s => {
                 if (s === 'speaking') {
-                    addLog(`Safety timeout hit (${estimatedDurationMs}ms). Browser onend bugged! Forcing loop restart.`, "warning");
+                    addLog(`Safety timeout hit (${estimatedDurationMs}ms). Forcing loop restart.`, "warning");
                     if (isAutoModeRef.current && isOpen) setTimeout(startListening, 100);
                     return 'idle';
                 }
                 return s;
             });
-        }, estimatedDurationMs + 3000);
+        }, estimatedDurationMs + 4000);
     };
 
     if (!isOpen) return null;
@@ -480,26 +491,25 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                                 )}
                             </div>
 
-                            <div className="mt-4 w-full relative z-10">
-                                {state === 'listening' ? (
+                            <div className="mt-4 w-full relative z-10 flex flex-col gap-2">
+                                {state === 'idle' ? (
                                     <button
                                         onClick={() => {
-                                            if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
+                                            unlockAudio(); // Critical for iOS Safari TTS fix
+                                            initStreamAndListen();
                                         }}
-                                        className="w-full bg-rose-100 text-rose-600 font-bold py-3.5 rounded-xl hover:bg-rose-200 transition-colors flex items-center justify-center gap-2"
+                                        className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
                                     >
-                                        <StopCircle size={20} /> Pause Listening
+                                        <Mic size={20} /> Tap to Start
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => {
-                                            unlockAudio(); // Critical for iOS Safari TTS fix
-                                            isAutoModeRef.current = true;
-                                            startListening();
+                                            stopEverything();
                                         }}
-                                        className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
+                                        className="w-full bg-rose-100 text-rose-600 font-bold py-3.5 rounded-xl hover:bg-rose-200 transition-colors flex items-center justify-center gap-2"
                                     >
-                                        <Mic size={20} /> Tap to Speak
+                                        <StopCircle size={20} /> Stop Conversation
                                     </button>
                                 )}
                             </div>
