@@ -344,8 +344,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=en-IN&q=${encodeURIComponent(cleanText)}`;
             const cloudAudio = new Audio(url);
 
-            // It's safe to use crossOrigin with googleapis client=gtx
-            cloudAudio.crossOrigin = "anonymous";
+            // Removing crossOrigin entirely forces an opaque 'no-cors' request which bypasses the block
             cloudAudio.volume = 1.0;
 
             let completed = false;
