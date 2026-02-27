@@ -340,27 +340,30 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
         try {
             // Bypass user's system OS text-to-speech completely and use a Cloud TTS API
-            // using the Google Translate proxy API which streams high-quality Indian English voices reliably
-            // Using multiple parameters to bypass blocks: client=tw-ob or dict-chrome-ex
-            const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=dict-chrome-ex&tl=en-IN&q=${encodeURIComponent(cleanText)}`;
+            // using the googleapis.com proxy which bypasses all strict referer checks natively
+            const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=en-IN&q=${encodeURIComponent(cleanText)}`;
             const cloudAudio = new Audio(url);
 
-            // DO NOT set crossOrigin="anonymous", this triggers a CORS preflight that Google blocks!
-            // Without it, the browser fetches the audio in "no-cors" mode perfectly.
+            // It's safe to use crossOrigin with googleapis client=gtx
+            cloudAudio.crossOrigin = "anonymous";
             cloudAudio.volume = 1.0;
 
-            cloudAudio.onplay = () => {
-                addLog("Cloud stream started playing.", "success");
-                if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
-            };
+            let completed = false;
 
             const handleComplete = () => {
+                if (completed) return;
+                completed = true;
                 if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
                 if (isAutoModeRef.current && isOpen) {
                     setTimeout(startListening, 300); // Back into the loop
                 } else {
                     setState('idle');
                 }
+            };
+
+            cloudAudio.onplay = () => {
+                addLog("Cloud stream started playing.", "success");
+                if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
             };
 
             cloudAudio.onended = () => {
@@ -374,18 +377,22 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             };
 
             // Force play natively
-            await cloudAudio.play();
+            cloudAudio.play().catch(err => {
+                addLog(`Audio Play Error: ${err.message}`, "error");
+                handleComplete();
+            });
 
             // Hardware failsafe if onstart/onend never fires
             const words = cleanText.split(' ').length;
             const estimatedDurationMs = Math.max(3000, words * 450);
 
             window._ttsSafetyTimeout = setTimeout(() => {
+                if (completed) return;
                 setState(s => {
                     if (s === 'speaking') {
                         addLog(`Safety timeout hit (${estimatedDurationMs}ms). Forcing loop restart.`, "warning");
                         cloudAudio.pause(); // Kill the zombie audio buffer
-                        if (isAutoModeRef.current && isOpen) setTimeout(startListening, 100);
+                        handleComplete();
                         return 'idle';
                     }
                     return s;
