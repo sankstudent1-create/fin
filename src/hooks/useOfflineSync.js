@@ -40,9 +40,11 @@ export const useOfflineSync = (supabase, session) => {
         for (const item of queue) {
             try {
                 if (item.op === 'insert') {
-                    const { error } = await supabase.from('transactions').insert([item.data]).select();
+                    // Extract only the fields Supabase expects (don't send _queued, _pending, or id)
+                    const { _queued, _pending, id, ...dbData } = item.data;
+                    const { error } = await supabase.from('transactions').insert([dbData]).select();
                     if (error) { remaining.push(item); console.warn('[OfflineSync] Retry failed:', error.message); }
-                    else console.log('[OfflineSync] Synced insert:', item.data.title);
+                    else console.log('[OfflineSync] Synced insert:', dbData.title);
                 } else if (item.op === 'update') {
                     const { error } = await supabase.from('transactions').update(item.data).eq('id', item.id);
                     if (error) { remaining.push(item); }

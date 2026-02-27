@@ -22,6 +22,7 @@ import { CategoryManager, fetchCategories, getCategoryIcon, getCategoryColor } f
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { createPDF, getPDFFile } from '../utils/pdfGenerator';
 import { generateCalculatorPDF } from '../utils/reportGenerator';
+import { playSound } from '../hooks/useSoundEngine';
 import { MONTH_NAMES, TOOLS, DEFAULT_CATEGORIES, ICON_MAP } from '../config/constants';
 
 // Animation Variants
@@ -93,7 +94,7 @@ export const Dashboard = ({ session }) => {
     const [avatarUrl, setAvatarUrl] = useState('');
 
     const user = session?.user;
-    const { isOnline, syncStatus, pendingCount, queueInsert, queueDelete } = useOfflineSync(supabase, session);
+    const { isOnline, syncStatus, pendingCount, queueInsert, queueDelete, queueUpdate } = useOfflineSync(supabase, session);
 
     // saving state for Add/Edit button spinner
     const [savingTx, setSavingTx] = useState(false);
@@ -102,6 +103,22 @@ export const Dashboard = ({ session }) => {
     const showToast = (message, type = 'success') => {
         const prefs = getUserPrefs();
         if (!prefs.notification_enabled) return;
+
+        // Play Sound Effect if enabled
+        if (prefs.sound_enabled) {
+            const vol = (prefs.sound_volume || 70) / 100;
+            const dur = prefs.sound_duration || 300;
+            if (type === 'error' && prefs.sound_on_error) {
+                playSound('alert', vol, dur);
+            } else if (message.toLowerCase().includes('delete') && prefs.sound_on_delete) {
+                playSound('alert', vol, dur);
+            } else if (type === 'success' && prefs.sound_on_success) {
+                playSound(prefs.sound_effect || 'chime', vol, dur);
+            } else if (prefs.sound_on_tx) {
+                playSound(prefs.sound_effect || 'chime', vol, dur);
+            }
+        }
+
         setToast({ message, type, style: prefs.popup_style || 'pill', position: prefs.popup_position || 'bottom' });
         setTimeout(() => setToast(null), prefs.popup_duration || 3000);
     };
@@ -249,7 +266,7 @@ export const Dashboard = ({ session }) => {
                     ));
                 }
             } else {
-                queueInsert({ ...newTx, _op: 'update', _id: editTransaction.id });
+                queueUpdate(editTransaction.id, newTx);
                 showToast('Saved offline — will sync when online 📶');
             }
         } else {

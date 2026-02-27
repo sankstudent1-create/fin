@@ -26,7 +26,6 @@ const PrintStyles = () => (
 
         .print-page {
             width: 210mm;
-            min-height: 297mm;
             padding: 12mm 14mm;
             background: #fff;
             position: relative;
@@ -91,17 +90,18 @@ const PageHeader = ({ user, subtitle, page, totalPages }) => (
 /* ================================================================== */
 /*  SHARED: PAGE FOOTER                                                 */
 /* ================================================================== */
-const PageFooter = ({ page, total }) => (
+// Inline footers instead of absolute so it doesn't overlap text when flowing naturally
+const PageFooter = () => (
     <div style={{
-        position: 'absolute', bottom: '12mm', left: '14mm', right: '14mm',
+        marginTop: 40,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         borderTop: '1px solid #e2e8f0', paddingTop: 10
     }}>
         <span style={{ fontSize: 8, color: '#94a3b8', fontWeight: 600 }}>
-            Orange Finance · Swinfosystems · Confidential
+            Orange Finance · Generated automatically
         </span>
-        <span style={{ fontSize: 8, color: '#94a3b8' }}>
-            Page {page} of {total}
+        <span style={{ fontSize: 8, color: '#cbd5e1', fontWeight: 600 }}>
+            orangefin.com
         </span>
     </div>
 );
@@ -562,10 +562,10 @@ const CategoryBreakdown = ({ transactions, type }) => {
 /* ================================================================== */
 const AnalyticsReport = ({ user, stats, transactions, filterLabel }) => (
     <>
-        {/* PAGE 1 — Summary */}
-        <div className="print-page" style={{ paddingBottom: '30mm' }}>
+        {/* Single flowing page */}
+        <div className="print-page" style={{ paddingBottom: '10mm' }}>
             <PrintStyles />
-            <PageHeader user={user} subtitle="Financial Report" page={1} totalPages={2} />
+            <PageHeader user={user} subtitle="Financial Report" />
 
             {/* Filter label */}
             {filterLabel && (
@@ -658,17 +658,13 @@ const AnalyticsReport = ({ user, stats, transactions, filterLabel }) => (
             )}
 
             {/* Category Breakdowns */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 40 }}
                 className="no-break">
                 <CategoryBreakdown transactions={transactions} type="income" />
                 <CategoryBreakdown transactions={transactions} type="expense" />
             </div>
 
-            <PageFooter page={1} total={2} />
-        </div>
-
-        {/* PAGE 2 — Transactions */}
-        <div className="print-page pg-break" style={{ paddingBottom: '30mm' }}>
+            {/* Transactions Section */}
             <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid #e2e8f0'
@@ -764,7 +760,7 @@ const AnalyticsReport = ({ user, stats, transactions, filterLabel }) => (
                 </tfoot>
             </table>
 
-            <PageFooter page={2} total={2} />
+            <PageFooter />
         </div>
     </>
 );
