@@ -141,40 +141,84 @@ export const Dashboard = ({ session }) => {
     };
 
     const handleVoiceTransaction = () => {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            showToast('Voice recognition not supported in this browser.', 'error');
-            return;
+        // Method 1: Browser SpeechRecognition API (Chrome, Edge, Safari)
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognitionAPI) {
+            const recognition = new SpeechRecognitionAPI();
+            recognition.lang = 'en-IN'; // Better for Indian accents
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            recognition.continuous = false;
+
+            recognition.onstart = () => {
+                setIsListeningTx(true);
+                showToast('🎤 Listening... Speak now!', 'info');
+            };
+
+            recognition.onresult = async (event) => {
+                const text = event.results[0][0].transcript;
+                setIsListeningTx(false);
+                processVoiceText(text);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech error:', event.error);
+                setIsListeningTx(false);
+                if (event.error === 'not-allowed') {
+                    showToast('Microphone access denied. Please allow mic in browser settings.', 'error');
+                } else if (event.error === 'no-speech') {
+                    showToast("Didn't hear anything. Try again and speak clearly.", 'error');
+                } else {
+                    showToast('Voice recognition failed. Try speaking again.', 'error');
+                }
+            };
+
+            recognition.onend = () => setIsListeningTx(false);
+
+            try {
+                recognition.start();
+            } catch (err) {
+                setIsListeningTx(false);
+                showToast('Could not start voice input. Try again.', 'error');
+            }
+        } else {
+            showToast('Voice not supported in this browser. Use Chrome for best results.', 'error');
+        }
+    };
+
+    const processVoiceText = (rawText) => {
+        const text = rawText.toLowerCase();
+
+        // Enhanced amount parsing: "150 rupees", "spent 200", "₹500", "15.50"
+        const amountPatterns = [
+            /(\d+(?:\.\d{1,2})?)\s*(?:rupees?|rs\.?|₹)/i,
+            /(?:spent|paid|cost|for)\s*(?:₹|rs\.?)?\s*(\d+(?:\.\d{1,2})?)/i,
+            /(?:₹|rs\.?)\s*(\d+(?:\.\d{1,2})?)/i,
+            /(\d+(?:\.\d{1,2})?)/,
+        ];
+
+        let amount = '';
+        for (const pattern of amountPatterns) {
+            const match = text.match(pattern);
+            if (match) {
+                amount = match[1];
+                break;
+            }
         }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
+        const category = autoCategorize(text);
+        const isIncome = /(?:earned|received|got|income|salary|paid me|credited|refund)/i.test(text);
 
-        recognition.onstart = () => setIsListeningTx(true);
-        recognition.onresult = (event) => {
-            const text = event.results[0][0].transcript.toLowerCase();
-            setIsListeningTx(false);
+        setTxForm(prev => ({
+            ...prev,
+            title: rawText.charAt(0).toUpperCase() + rawText.slice(1),
+            amount: amount,
+            category: category || 'Other',
+            type: isIncome ? 'income' : 'expense'
+        }));
 
-            // Basic parsing: "I just spent 15 dollars on a taxi"
-            const amountMatch = text.match(/\d+(\.\d{1,2})?/);
-            const amount = amountMatch ? amountMatch[0] : '';
-
-            const categoryMatch = autoCategorize(text);
-            const category = categoryMatch === txForm.category ? 'Other' : categoryMatch; // ensure it updates if default
-
-            setTxForm(prev => ({
-                ...prev,
-                title: text.charAt(0).toUpperCase() + text.slice(1),
-                amount: amount,
-                category: category || 'Other',
-                type: text.includes('earned') || text.includes('income') || text.includes('salary') ? 'income' : 'expense'
-            }));
-
-            showToast('Voice parsed! Check details before saving.', 'success');
-        };
-        recognition.onerror = () => setIsListeningTx(false);
-        recognition.onend = () => setIsListeningTx(false);
-        recognition.start();
+        showToast(`✅ Voice parsed! ${isIncome ? 'Income' : 'Expense'}: ₹${amount || '—'} → ${category}`, 'success');
     };
 
     // --- DATA FETCHING ---
