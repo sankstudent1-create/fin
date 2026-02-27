@@ -5,8 +5,9 @@ import {
     Home, BarChart3, Settings, Wallet, TrendingUp, TrendingDown,
     Plus, Search, Calendar, ChevronDown, Download, Share2,
     Receipt, ScanLine, Headphones, Loader2, X, Check,
-    FileText, Eye, Palette, Printer, Sparkles, Tag
+    FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic
 } from 'lucide-react';
+import { AIChatbot } from '../components/modals/AIChatbot';
 import { supabase } from '../config/supabase';
 import { StatCard } from '../components/dashboard/StatCard';
 import { TransactionItem } from '../components/dashboard/TransactionItem';
@@ -76,6 +77,8 @@ export const Dashboard = ({ session }) => {
     const [editTransaction, setEditTransaction] = useState(null);
     const [showCategoryManager, setShowCategoryManager] = useState(false);
     const [userCategories, setUserCategories] = useState([]);
+    const [showChatbot, setShowChatbot] = useState(false);
+    const [isListeningTx, setIsListeningTx] = useState(false);
 
     // Transaction form state
     const [txForm, setTxForm] = useState({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] });
@@ -121,6 +124,57 @@ export const Dashboard = ({ session }) => {
 
         setToast({ message, type, style: prefs.popup_style || 'pill', position: prefs.popup_position || 'bottom' });
         setTimeout(() => setToast(null), prefs.popup_duration || 3000);
+    };
+
+    // --- SMART AUTO-CATEGORIZATION ---
+    const autoCategorize = (title) => {
+        if (!title) return 'Other';
+        const t = title.toLowerCase();
+        if (t.includes('starbucks') || t.includes('food') || t.includes('swiggy') || t.includes('zomato') || t.includes('restaurant') || t.includes('cafe')) return 'Food';
+        if (t.includes('uber') || t.includes('ola') || t.includes('taxi') || t.includes('bus') || t.includes('train') || t.includes('fuel') || t.includes('petrol')) return 'Transport';
+        if (t.includes('amazon') || t.includes('flipkart') || t.includes('clothes') || t.includes('grocery') || t.includes('walmart') || t.includes('myntra')) return 'Shopping';
+        if (t.includes('netflix') || t.includes('spotify') || t.includes('subscription') || t.includes('movie') || t.includes('prime')) return 'Entertainment';
+        if (t.includes('bill') || t.includes('electricity') || t.includes('water') || t.includes('wifi') || t.includes('recharge')) return 'Bills';
+        if (t.includes('health') || t.includes('doctor') || t.includes('pharmacy') || t.includes('medical')) return 'Health';
+        if (t.includes('salary') || t.includes('wage') || t.includes('bonus')) return 'Salary';
+        return txForm.category; // keep existing if no match
+    };
+
+    const handleVoiceTransaction = () => {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            showToast('Voice recognition not supported in this browser.', 'error');
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => setIsListeningTx(true);
+        recognition.onresult = (event) => {
+            const text = event.results[0][0].transcript.toLowerCase();
+            setIsListeningTx(false);
+
+            // Basic parsing: "I just spent 15 dollars on a taxi"
+            const amountMatch = text.match(/\d+(\.\d{1,2})?/);
+            const amount = amountMatch ? amountMatch[0] : '';
+
+            const categoryMatch = autoCategorize(text);
+            const category = categoryMatch === txForm.category ? 'Other' : categoryMatch; // ensure it updates if default
+
+            setTxForm(prev => ({
+                ...prev,
+                title: text.charAt(0).toUpperCase() + text.slice(1),
+                amount: amount,
+                category: category || 'Other',
+                type: text.includes('earned') || text.includes('income') || text.includes('salary') ? 'income' : 'expense'
+            }));
+
+            showToast('Voice parsed! Check details before saving.', 'success');
+        };
+        recognition.onerror = () => setIsListeningTx(false);
+        recognition.onend = () => setIsListeningTx(false);
+        recognition.start();
     };
 
     // --- DATA FETCHING ---
@@ -838,6 +892,20 @@ export const Dashboard = ({ session }) => {
                 </div>
             </div>
 
+            {/* AI Chatbot Floating Button */}
+            {!isPrinting && (
+                <button
+                    onClick={() => setShowChatbot(true)}
+                    className="fixed bottom-24 right-4 sm:right-6 z-40 w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-500 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all outline-none border-2 border-white/20"
+                >
+                    <Bot size={24} />
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white"></span>
+                    </span>
+                </button>
+            )}
+
             {/* ========= MODALS — all get data-print-hide so they NEVER appear in print ========= */}
             <div data-print-hide="true" className={isPrinting ? 'print-hide' : ''}>
                 <AnimatePresence>
@@ -916,7 +984,14 @@ export const Dashboard = ({ session }) => {
                                         <input
                                             type="text"
                                             value={txForm.title}
-                                            onChange={e => setTxForm({ ...txForm, title: e.target.value })}
+                                            onChange={e => {
+                                                const newTitle = e.target.value;
+                                                setTxForm(prev => ({
+                                                    ...prev,
+                                                    title: newTitle,
+                                                    category: autoCategorize(newTitle)
+                                                }));
+                                            }}
                                             placeholder="e.g. Grocery shopping"
                                             className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 outline-none focus:border-orange-400 transition-all"
                                         />
@@ -978,13 +1053,23 @@ export const Dashboard = ({ session }) => {
 
                                     {/* Quick Actions */}
                                     {!editTransaction && (
-                                        <button
-                                            onClick={() => { setShowTransaction(false); setTimeout(() => setShowScanner(true), 200); }}
-                                            className="w-full flex items-center gap-3 bg-orange-50 text-orange-600 px-5 py-3 rounded-2xl text-xs font-bold hover:bg-orange-100 transition-colors"
-                                        >
-                                            <ScanLine size={16} />
-                                            Scan receipt instead
-                                        </button>
+                                        <div className="flex flex-col gap-2">
+                                            <button
+                                                onClick={handleVoiceTransaction}
+                                                className={`w-full flex items-center justify-center gap-3 px-5 py-3 rounded-2xl text-xs font-bold transition-all shadow-sm ${isListeningTx ? 'bg-rose-500 text-white animate-pulse' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}`}
+                                            >
+                                                <Mic size={16} />
+                                                {isListeningTx ? "Listening... Speak now" : "Voice to Transaction (Try 'I spent 15 on a taxi')"}
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setShowTransaction(false); setTimeout(() => setShowScanner(true), 200); }}
+                                                className="w-full flex items-center justify-center gap-3 bg-orange-50 text-orange-600 px-5 py-3 rounded-2xl text-xs font-bold hover:bg-orange-100 transition-colors shadow-sm"
+                                            >
+                                                <ScanLine size={16} />
+                                                Scan receipt instead
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
 
@@ -1063,6 +1148,14 @@ export const Dashboard = ({ session }) => {
                         user={user}
                     />
                 )}
+
+                {/* AI Chatbot component */}
+                <AIChatbot
+                    isOpen={showChatbot}
+                    onClose={() => setShowChatbot(false)}
+                    transactions={filteredTransactions}
+                    userName={firstName}
+                />
 
                 {/* Category Manager Modal */}
                 <AnimatePresence>
