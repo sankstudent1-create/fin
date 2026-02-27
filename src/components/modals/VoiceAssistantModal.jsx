@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mic, StopCircle, RefreshCcw, Volume2 } from 'lucide-react';
+import { X, Mic, StopCircle, RefreshCcw, Volume2, Settings2, ShieldAlert } from 'lucide-react';
 
 export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions }) => {
     const [state, setState] = useState('idle'); // idle, listening, processing, speaking
     const [transcript, setTranscript] = useState('');
     const [aiResponse, setAiResponse] = useState('');
     const [conversation, setConversation] = useState([]);
+    const [showDiagnostics, setShowDiagnostics] = useState(false);
+
+    // Diagnostics State
+    const [logs, setLogs] = useState([]);
+    const [dbLevel, setDbLevel] = useState(-100);
+    const [audioSupport, setAudioSupport] = useState({});
 
     // Core refs to survive renders
     const mediaRecorderRef = useRef(null);
@@ -24,49 +30,82 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     const isSpeakingRef = useRef(false);
     const isAutoModeRef = useRef(true);
 
+    const addLog = (msg, type = 'info') => {
+        console.log(`[Voice ${type}]`, msg);
+        setLogs(prev => [...prev.slice(-15), { time: new Date().toLocaleTimeString(), msg, type }]);
+    };
+
     // Initializer and Cleanup
     useEffect(() => {
+        // Build diagnostics info
+        const support = {
+            speechSynthesis: 'speechSynthesis' in window,
+            AudioContext: ('AudioContext' in window || 'webkitAudioContext' in window),
+            getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+            MediaRecorder: 'MediaRecorder' in window,
+            userAgent: navigator.userAgent.slice(0, 50) + "..."
+        };
+        setAudioSupport(support);
+
         // Pre-warm the voices list early
-        window.speechSynthesis.getVoices();
+        if (support.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+            addLog("TTS Voices pre-warmed.");
+        }
 
         if (!isOpen) {
             stopEverything();
         } else {
+            addLog("Modal Opened. Initializing stream...");
             initStreamAndListen();
         }
 
         return () => {
-            // Clean up when unmounted.
             stopEverything();
         };
     }, [isOpen]);
+
+    // Force unlock TTS on iOS/Safari by playing silent audio
+    const unlockAudio = () => {
+        if (!window.speechSynthesis) return;
+        const silentUtterance = new SpeechSynthesisUtterance('');
+        silentUtterance.volume = 0;
+        window.speechSynthesis.speak(silentUtterance);
+        addLog("Audio contextual unlock triggered.", "success");
+    };
 
     const initStreamAndListen = async () => {
         isAutoModeRef.current = true;
         try {
             if (!streamRef.current) {
+                addLog("Requesting mic permissions...");
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 streamRef.current = stream;
+                addLog("Microphone stream acquired.", "success");
             }
             if (!audioContextRef.current) {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 audioContextRef.current = new AudioContext();
+                addLog(`AudioContext initialized (${audioContextRef.current.state}).`);
             }
             if (audioContextRef.current.state === 'suspended') {
                 await audioContextRef.current.resume();
+                addLog("AudioContext resumed.", "success");
             }
             if (!analyserRef.current) {
                 const source = audioContextRef.current.createMediaStreamSource(streamRef.current);
                 const analyser = audioContextRef.current.createAnalyser();
-                analyser.minDecibels = -70; // highly sensitive to pick up whispers
+                analyser.minDecibels = -90; // highly sensitive to pick up whispers
                 analyser.smoothingTimeConstant = 0.2;
                 source.connect(analyser);
                 analyserRef.current = analyser;
+                addLog("VAD Analyser connected.");
             }
             startListening();
         } catch (err) {
             console.error(err);
-            setAiResponse('Mic access denied. Please allow microphone permissions.');
+            setAiResponse('Mic access denied or error occurred.');
+            addLog(`Mic Error: ${err.message}`, "error");
             setState('idle');
         }
     };
@@ -92,6 +131,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
         window.speechSynthesis.cancel();
         setState('idle');
+        addLog("Hardware components shut down.");
     };
 
     const startListening = () => {
@@ -111,6 +151,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
         const options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
         mediaRecorderRef.current = new MediaRecorder(streamRef.current, options);
+        addLog(`Started recording using ${options.mimeType || 'default'} type.`);
 
         mediaRecorderRef.current.ondataavailable = (event) => {
             if (event.data.size > 0) audioChunksRef.current.push(event.data);
@@ -120,6 +161,8 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
             if (maxRecordTimerRef.current) clearTimeout(maxRecordTimerRef.current);
             if (checkSilenceFrameRef.current) cancelAnimationFrame(checkSilenceFrameRef.current);
+
+            addLog(`Recording stopped. Chunks: ${audioChunksRef.current.length}`);
 
             // Only process if we caught audio and we still want to continue
             if (audioChunksRef.current.length > 0 && isAutoModeRef.current && isOpen) {
@@ -145,15 +188,21 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                 for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
                 const average = sum / dataArray.length;
 
-                if (average > 8) { // Speech detected (threshold adjusted)
-                    if (!isSpeakingRef.current) isSpeakingRef.current = true;
+                // Update DB level for diagnostics purely for visuals
+                setDbLevel(average);
+
+                if (average > 8) { // Speech detected
+                    if (!isSpeakingRef.current) {
+                        isSpeakingRef.current = true;
+                        addLog(`Voice detected! DB Avg: ${average.toFixed(1)}`);
+                    }
 
                     if (silenceTimerRef.current) {
                         clearTimeout(silenceTimerRef.current);
                         silenceTimerRef.current = null;
                     }
                     if (maxRecordTimerRef.current) {
-                        clearTimeout(maxRecordTimerRef.current); // Lift the idle rule since they started speaking!
+                        clearTimeout(maxRecordTimerRef.current); // Lift the idle rule since they started speaking
                         maxRecordTimerRef.current = null;
                     }
                 } else if (isSpeakingRef.current) {
@@ -161,6 +210,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                     if (!silenceTimerRef.current) {
                         silenceTimerRef.current = setTimeout(() => {
                             if (mediaRecorderRef.current?.state === 'recording') {
+                                addLog("Silence timeout reached. Submitting...");
                                 mediaRecorderRef.current.stop();
                             }
                         }, 1200); // Wait 1.2s to ensure they are done speaking
@@ -170,12 +220,13 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             };
             checkSilenceFrameRef.current = requestAnimationFrame(checkSilence);
         } catch (e) {
-            console.log("VAD error", e);
+            addLog(`VAD error: ${e.message}`, "error");
         }
 
-        // Failsafe: if completely silent for an extended time, stop and restart loop
+        // Failsafe: if completely silent for 15s, stop and restart loop
         maxRecordTimerRef.current = setTimeout(() => {
             if (mediaRecorderRef.current?.state === 'recording') {
+                addLog("15s timeout hit (no speech detected), resetting loop.");
                 mediaRecorderRef.current.stop();
             }
         }, 15000);
@@ -187,12 +238,14 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         const groqKey = import.meta.env.VITE_GROQ_API_KEY;
         if (!groqKey) {
             setAiResponse("Groq API key is missing.");
+            addLog("Missing VITE_GROQ_API_KEY environment variable.", "error");
             setState('idle');
             return;
         }
 
         try {
             // 1. STT (Whisper)
+            addLog("Uploading to Whisper STT...");
             const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType || 'audio/mp4' });
             const fileExt = mediaRecorderRef.current.mimeType?.includes('webm') ? 'webm' : 'm4a';
             const formData = new FormData();
@@ -206,11 +259,12 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                 body: formData,
             });
 
-            if (!sttRes.ok) throw new Error("Voice to text failed. Wait a moment.");
+            if (!sttRes.ok) throw new Error(`Whisper Error: ${sttRes.status} ${sttRes.statusText}`);
             const sttData = await sttRes.json();
             const text = sttData.text?.trim();
 
             if (!text) {
+                addLog("Whisper returned empty string. Background noise?", "warning");
                 // Background noise/silence caught - just loop back silently!
                 if (isAutoModeRef.current && isOpen) {
                     startListening();
@@ -221,8 +275,10 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             }
 
             setTranscript(text);
+            addLog(`User said: "${text}"`, "success");
 
             // 2. Generate Response (LLM)
+            addLog("Requesting Llama AI response...");
             const summary = transactions.slice(0, 5).map(t => `${t.type}: ₹${t.amount} on ${t.category}`).join(', ');
 
             const completionRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -245,11 +301,12 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
 
             if (!completionRes.ok) {
                 const errData = await completionRes.json();
-                throw new Error(errData.error?.message || "AI brain offline.");
+                throw new Error(errData.error?.message || `Llama Error: ${completionRes.status}`);
             }
             const aiData = await completionRes.json();
             const reply = aiData.choices[0]?.message?.content || "Hmm, I didn't quite get that.";
 
+            addLog(`AI reply received: "${reply}"`, "success");
             setConversation(prev => [...prev.slice(-6), { role: 'user', content: text }, { role: 'assistant', content: reply }]);
             setAiResponse(reply);
             speakText(reply);
@@ -257,6 +314,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         } catch (err) {
             console.error(err);
             setAiResponse(err.message || "Something went wrong.");
+            addLog(`Failure: ${err.message}`, "error");
 
             // Loop back on error after a brief delay so we don't break the session
             if (isAutoModeRef.current && isOpen) {
@@ -275,11 +333,13 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         const cleanText = text.replace(/[*_#`~]/g, '').replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{1FB00}-\u{1FBFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
         if (!cleanText.trim()) {
+            addLog("Nothing to speak (text was barren). Restarting listen.");
             if (isAutoModeRef.current && isOpen) startListening();
             else setState('idle');
             return;
         }
 
+        addLog(`Starting TTS: "${cleanText}"`);
         const utterance = new SpeechSynthesisUtterance(cleanText);
 
         // Prioritize Indian English Voices (en-IN)
@@ -290,20 +350,32 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         if (!preferredVoice) preferredVoice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Female'));
         if (!preferredVoice) preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Samantha')));
 
-        if (preferredVoice) utterance.voice = preferredVoice;
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+            addLog(`Assigned Voice: ${preferredVoice.name} (${preferredVoice.lang})`, "success");
+        } else {
+            addLog("No specific preferred voice found, using system default.", "warning");
+        }
 
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
         utterance.volume = 1.0; // Max
 
+        utterance.onstart = () => {
+            addLog("TTS .onstart fired natively.", "success");
+        };
+
         utterance.onend = () => {
+            addLog("TTS .onend fired successfully.", "success");
             if (isAutoModeRef.current && isOpen) {
                 setTimeout(startListening, 200); // 200ms breath before listening
             } else {
                 setState('idle');
             }
         };
-        utterance.onerror = () => {
+
+        utterance.onerror = (e) => {
+            addLog(`TTS .onerror Fired! Event: ${e.error || 'Unknown'} - Browser blocking?`, "error");
             if (isAutoModeRef.current && isOpen) {
                 setTimeout(startListening, 200);
             } else {
@@ -314,12 +386,13 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         window.activeSpeechUtterance = utterance; // GC fix
         window.speechSynthesis.speak(utterance);
 
-        // Hardware failsafe if onend never fires
+        // Hardware failsafe if onend never fires (iOS bug)
         const words = cleanText.split(' ').length;
         const estimatedDurationMs = Math.max(2500, words * 450);
         setTimeout(() => {
             setState(s => {
                 if (s === 'speaking') {
+                    addLog(`Safety timeout hit (${estimatedDurationMs}ms). Browser onend bugged! Forcing loop restart.`, "warning");
                     if (isAutoModeRef.current && isOpen) setTimeout(startListening, 100);
                     return 'idle';
                 }
@@ -336,95 +409,138 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 md:p-8"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ scale: 0.9, y: 20 }}
                     animate={{ scale: 1, y: 0 }}
                     exit={{ scale: 0.9, y: 20 }}
-                    className="bg-white rounded-[2rem] w-full max-w-sm p-8 text-center relative overflow-hidden flex flex-col items-center shadow-2xl"
+                    className="bg-white rounded-[2rem] w-full max-w-sm md:max-w-4xl max-h-[90vh] p-6 text-center relative overflow-hidden flex flex-col items-center shadow-2xl flex-shrink-0"
                     onClick={e => e.stopPropagation()}
                 >
                     <button onClick={onClose} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors z-20">
                         <X size={20} />
                     </button>
+                    <button onClick={() => setShowDiagnostics(!showDiagnostics)} className={`absolute top-4 left-4 p-2 rounded-full transition-colors z-20 ${showDiagnostics ? 'text-rose-500 bg-rose-50' : 'text-slate-400 hover:bg-slate-100'}`}>
+                        <Settings2 size={20} />
+                    </button>
 
                     {/* Dynamic background blobs */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-2xl -mr-10 -mt-10" />
-                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-rose-50 rounded-full blur-2xl -ml-16 -mb-16" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-rose-50 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
 
-                    <h2 className="text-xl font-black text-slate-800 mb-8 relative z-10">Voice Assistant</h2>
+                    <div className={`flex w-full transition-all duration-300 ${showDiagnostics ? 'flex-col md:flex-row gap-6' : 'flex-col justify-center max-w-sm mx-auto'}`}>
 
-                    {/* Avatar Ring Animation */}
-                    <div className="relative mb-8 z-10 flex justify-center w-full">
-                        {state === 'listening' && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-24 h-24 bg-rose-100 rounded-full" />
-                                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }} className="absolute w-28 h-28 bg-orange-50 rounded-full" />
+                        {/* MAIN UI COLUMN */}
+                        <div className={`flex flex-col items-center flex-1 w-full ${showDiagnostics ? 'md:max-w-xs' : ''}`}>
+                            <h2 className="text-xl font-black text-slate-800 mb-8 relative z-10 w-full">Voice Assistant</h2>
+
+                            {/* Avatar Ring Animation */}
+                            <div className="relative mb-6 flex justify-center w-full z-10">
+                                {state === 'listening' && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-24 h-24 bg-rose-100 rounded-full" />
+                                        <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }} className="absolute w-28 h-28 bg-orange-50 rounded-full" />
+                                    </div>
+                                )}
+                                {state === 'processing' && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="w-28 h-28 border-4 border-dashed border-indigo-200 rounded-full" />
+                                    </div>
+                                )}
+                                {state === 'speaking' && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 0.8 }} className="w-24 h-24 bg-emerald-100 rounded-full" />
+                                    </div>
+                                )}
+
+                                <div className="relative w-24 h-24 bg-gradient-to-tr from-indigo-500 to-rose-500 rounded-full flex items-center justify-center shadow-xl z-20">
+                                    {state === 'listening' ? <Mic size={40} className="text-white" /> :
+                                        state === 'processing' ? <RefreshCcw size={36} className="text-white animate-spin" /> :
+                                            state === 'speaking' ? <Volume2 size={40} className="text-white animate-pulse" /> :
+                                                <Mic size={40} className="text-white opacity-90" />}
+                                </div>
                             </div>
-                        )}
-                        {state === 'processing' && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="w-28 h-28 border-4 border-dashed border-indigo-200 rounded-full" />
-                            </div>
-                        )}
-                        {state === 'speaking' && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 0.8 }} className="w-24 h-24 bg-emerald-100 rounded-full" />
-                            </div>
-                        )}
 
-                        <div className="relative w-20 h-20 bg-gradient-to-tr from-indigo-500 to-rose-500 rounded-full flex items-center justify-center shadow-xl z-20">
-                            {state === 'listening' ? <Mic size={36} className="text-white" /> :
-                                state === 'processing' ? <RefreshCcw size={32} className="text-white animate-spin" /> :
-                                    state === 'speaking' ? <Volume2 size={36} className="text-white animate-pulse" /> :
-                                        <Mic size={36} className="text-white opacity-90" />}
-                        </div>
-                    </div>
+                            <div className="h-44 w-full relative z-10 flex flex-col items-center space-y-4">
+                                {state === 'listening' && <p className="text-rose-500 font-bold animate-pulse text-lg">Listening...</p>}
+                                {state === 'processing' && <p className="text-indigo-500 font-bold animate-pulse text-lg">Processing...</p>}
 
-                    <div className="h-40 w-full relative z-10 flex flex-col items-center justify-center space-y-4">
-                        {state === 'listening' && <p className="text-rose-500 font-bold animate-pulse text-lg">Listening...</p>}
-                        {state === 'processing' && <p className="text-indigo-500 font-bold animate-pulse text-lg">Processing...</p>}
-
-                        {/* Display real-time transcript or reply */}
-                        {(state === 'speaking' || state === 'idle' || state === 'listening') && transcript && (
-                            <div className="flex flex-col gap-3 w-full text-left overflow-y-auto max-h-36 pr-2 custom-scrollbar">
-                                <p className="text-xs font-bold text-slate-400 bg-slate-50 p-2 rounded-lg self-end max-w-[85%] break-words border border-slate-100/60 shadow-sm">🗣️ "{transcript}"</p>
-                                {aiResponse && (
-                                    <p className="font-semibold text-slate-800 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/80 self-start max-w-[95%] break-words shadow-sm">
-                                        {aiResponse}
-                                    </p>
+                                {/* Display real-time transcript or reply */}
+                                {(state === 'speaking' || state === 'idle' || state === 'listening') && transcript && (
+                                    <div className="flex flex-col gap-3 w-full text-left overflow-y-auto max-h-36 custom-scrollbar px-2">
+                                        <p className="text-xs font-bold text-slate-400 bg-slate-50 p-2 rounded-lg self-end max-w-[90%] break-words border border-slate-100/60 shadow-sm">🗣️ "{transcript}"</p>
+                                        {aiResponse && (
+                                            <p className="font-semibold text-slate-800 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/80 self-start max-w-[95%] break-words shadow-sm">
+                                                {aiResponse}
+                                            </p>
+                                        )}
+                                    </div>
                                 )}
                             </div>
-                        )}
-                    </div>
 
-                    <div className="mt-6 w-full relative z-10">
-                        {state === 'listening' ? (
-                            <button
-                                onClick={() => {
-                                    if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
-                                }}
-                                className="w-full bg-rose-100 text-rose-600 font-bold py-3.5 rounded-xl hover:bg-rose-200 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <StopCircle size={20} /> Pause Listening
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    isAutoModeRef.current = true;
-                                    startListening();
-                                }}
-                                className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
-                            >
-                                <Mic size={20} /> Tap to Speak
-                            </button>
-                        )}
-                    </div>
+                            <div className="mt-4 w-full relative z-10">
+                                {state === 'listening' ? (
+                                    <button
+                                        onClick={() => {
+                                            if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
+                                        }}
+                                        className="w-full bg-rose-100 text-rose-600 font-bold py-3.5 rounded-xl hover:bg-rose-200 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <StopCircle size={20} /> Pause Listening
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            unlockAudio(); // Critical for iOS Safari TTS fix
+                                            isAutoModeRef.current = true;
+                                            startListening();
+                                        }}
+                                        className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2"
+                                    >
+                                        <Mic size={20} /> Tap to Speak
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
+                        {/* DIAGNOSTICS COLUMN (Hidden by default) */}
+                        {showDiagnostics && (
+                            <div className="flex-1 w-full bg-slate-900 rounded-2xl p-4 text-left overflow-hidden flex flex-col h-[400px] md:h-auto shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] border border-slate-800 relative z-10">
+                                <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
+                                    <h3 className="text-emerald-400 font-mono text-sm font-bold flex items-center gap-2">
+                                        <ShieldAlert size={16} /> SYSTEM DIAGNOSTICS
+                                    </h3>
+                                    <div className="flex gap-2 text-[10px] font-mono text-slate-400 font-bold bg-slate-800 px-2 py-1 rounded">
+                                        Vol: {dbLevel.toFixed(1)} dB Bar:
+                                        <div className="w-16 h-3 bg-slate-700 rounded overflow-hidden relative">
+                                            <div className="absolute top-0 bottom-0 left-0 bg-emerald-500" style={{ width: `${Math.min(100, (dbLevel / 100) * 100)}%` }} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-400 mb-4 bg-slate-800 p-2 rounded">
+                                    <div>State: <span className="text-white">{state}</span></div>
+                                    <div>Looping: <span className={isAutoModeRef.current ? "text-emerald-400" : "text-rose-400"}>{isAutoModeRef.current ? 'ON' : 'OFF'}</span></div>
+                                    <div>Chunks: <span className="text-indigo-300">{audioChunksRef.current.length}</span></div>
+                                    <div>TTS Supp: <span className={audioSupport.speechSynthesis ? "text-emerald-400" : "text-rose-400"}>{audioSupport.speechSynthesis ? 'Yes' : 'No'}</span></div>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar font-mono text-[10px] space-y-1.5 flex flex-col-reverse">
+                                    {[...logs].reverse().map((log, i) => (
+                                        <div key={i} className={`border-b border-slate-800/50 pb-1 ${log.type === 'error' ? 'text-rose-400' : log.type === 'success' ? 'text-emerald-300' : log.type === 'warning' ? 'text-orange-300' : 'text-slate-300'}`}>
+                                            <span className="text-slate-600 mr-2">[{log.time}]</span>
+                                            {log.msg}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence >
     );
 };
