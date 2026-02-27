@@ -25,6 +25,10 @@ import { createPDF, getPDFFile } from '../utils/pdfGenerator';
 import { generateCalculatorPDF } from '../utils/reportGenerator';
 import { playSound } from '../hooks/useSoundEngine';
 import { MONTH_NAMES, TOOLS, DEFAULT_CATEGORIES, ICON_MAP } from '../config/constants';
+import confetti from 'canvas-confetti';
+import { SubscriptionManager } from '../components/dashboard/SubscriptionManager';
+import { GoalsSystem } from '../components/dashboard/GoalsSystem';
+import { CalendarHeatmap } from '../components/dashboard/CalendarHeatmap';
 
 // Animation Variants
 const containerVariants = {
@@ -517,6 +521,10 @@ export const Dashboard = ({ session }) => {
                     // Replace local entry with real one from DB
                     setTransactions(prev => prev.map(t => t.id === localId ? data[0] : t));
                     showToast('Transaction added! ✅');
+
+                    // Gamification: Trigger confetti if balance stays positive after expense
+                    if (stats.balance > 0) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
+
                     // Update cache
                     const cached = JSON.parse(localStorage.getItem(`cached_tx_${user.id}`) || '[]');
                     localStorage.setItem(`cached_tx_${user.id}`, JSON.stringify([data[0], ...cached.filter(t => t.id !== localId)]));
@@ -532,6 +540,7 @@ export const Dashboard = ({ session }) => {
                 // Queue for later sync
                 queueInsert(newTx);
                 showToast('Saved offline — will sync when online 📶');
+                if (stats.balance > 0) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
                 // Keep the optimistic entry as-is (marked _pending)
             }
         }
@@ -863,6 +872,17 @@ export const Dashboard = ({ session }) => {
                                         </div>
                                     </div>
                                     <TrendBarChart transactions={filteredTransactions} type="expense" />
+                                </motion.div>
+
+                                {/* Gamification, Goals & Subscriptions */}
+                                <motion.div variants={itemVariants}>
+                                    <GoalsSystem userId={user?.id} onGoalComplete={() => confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })} />
+                                </motion.div>
+                                <motion.div variants={itemVariants}>
+                                    <SubscriptionManager transactions={filteredTransactions} />
+                                </motion.div>
+                                <motion.div variants={itemVariants}>
+                                    <CalendarHeatmap transactions={filteredTransactions} />
                                 </motion.div>
 
                                 {/* Recent Transactions */}
