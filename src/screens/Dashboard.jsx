@@ -140,50 +140,83 @@ export const Dashboard = ({ session }) => {
         return txForm.category; // keep existing if no match
     };
 
-    const handleVoiceTransaction = () => {
-        // Method 1: Browser SpeechRecognition API (Chrome, Edge, Safari)
-        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const handleVoiceTransaction = async () => {
+        const groqKey = import.meta.env.VITE_GROQ_API_KEY;
 
-        if (SpeechRecognitionAPI) {
-            const recognition = new SpeechRecognitionAPI();
-            recognition.lang = 'en-IN'; // Better for Indian accents
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-            recognition.continuous = false;
+        if (!groqKey) {
+            showToast('Voice requires VITE_GROQ_API_KEY in .env', 'error');
+            return;
+        }
 
-            recognition.onstart = () => {
-                setIsListeningTx(true);
-                showToast('🎤 Listening... Speak now!', 'info');
+        // Use MediaRecorder + Groq Whisper (works on ALL browsers)
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            const audioChunks = [];
+
+            setIsListeningTx(true);
+            showToast('🎤 Recording... Speak now! (5 seconds)', 'info');
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunks.push(event.data);
             };
 
-            recognition.onresult = async (event) => {
-                const text = event.results[0][0].transcript;
-                setIsListeningTx(false);
-                processVoiceText(text);
-            };
+            mediaRecorder.onstop = async () => {
+                stream.getTracks().forEach(track => track.stop()); // Release mic
+                showToast('⏳ Transcribing with AI...', 'info');
 
-            recognition.onerror = (event) => {
-                console.error('Speech error:', event.error);
-                setIsListeningTx(false);
-                if (event.error === 'not-allowed') {
-                    showToast('Microphone access denied. Please allow mic in browser settings.', 'error');
-                } else if (event.error === 'no-speech') {
-                    showToast("Didn't hear anything. Try again and speak clearly.", 'error');
-                } else {
-                    showToast('Voice recognition failed. Try speaking again.', 'error');
+                try {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'voice.webm');
+                    formData.append('model', 'whisper-large-v3-turbo');
+                    formData.append('language', 'en');
+
+                    const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${groqKey}` },
+                        body: formData,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Whisper error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const transcript = data.text?.trim();
+
+                    if (!transcript) {
+                        showToast("Didn't catch that. Try speaking louder and clearly.", 'error');
+                        setIsListeningTx(false);
+                        return;
+                    }
+
+                    console.log('Whisper transcript:', transcript);
+                    processVoiceText(transcript);
+                } catch (err) {
+                    console.error('Whisper transcription error:', err);
+                    showToast('Transcription failed. Please try again.', 'error');
                 }
+                setIsListeningTx(false);
             };
 
-            recognition.onend = () => setIsListeningTx(false);
+            mediaRecorder.start();
 
-            try {
-                recognition.start();
-            } catch (err) {
-                setIsListeningTx(false);
-                showToast('Could not start voice input. Try again.', 'error');
+            // Auto-stop after 5 seconds
+            setTimeout(() => {
+                if (mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            }, 5000);
+
+        } catch (err) {
+            console.error('Mic access error:', err);
+            setIsListeningTx(false);
+            if (err.name === 'NotAllowedError') {
+                showToast('Microphone access denied. Allow mic in browser settings.', 'error');
+            } else {
+                showToast('Could not access microphone. Check permissions.', 'error');
             }
-        } else {
-            showToast('Voice not supported in this browser. Use Chrome for best results.', 'error');
         }
     };
 

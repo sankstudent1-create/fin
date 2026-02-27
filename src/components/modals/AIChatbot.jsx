@@ -178,33 +178,70 @@ Answer the user's questions about their finances accurately, warmly, and concise
         setIsLoading(false);
     };
 
-    const toggleVoiceInput = () => {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            alert("Voice recognition is not supported in this browser.");
-            return;
-        }
-
+    const toggleVoiceInput = async () => {
         if (isListening) {
             setIsListening(false);
             return;
         }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
+        const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+        if (!groqKey) {
+            alert('Voice requires VITE_GROQ_API_KEY in your .env');
+            return;
+        }
 
-        recognition.onstart = () => setIsListening(true);
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            setInput(transcript);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            const audioChunks = [];
+
+            setIsListening(true);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                stream.getTracks().forEach(track => track.stop());
+                setIsListening(false);
+
+                try {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'voice.webm');
+                    formData.append('model', 'whisper-large-v3-turbo');
+                    formData.append('language', 'en');
+
+                    const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${groqKey}` },
+                        body: formData,
+                    });
+
+                    if (!response.ok) throw new Error(`Whisper error: ${response.status}`);
+
+                    const data = await response.json();
+                    const transcript = data.text?.trim();
+
+                    if (transcript) {
+                        setInput(transcript);
+                        handleSend(transcript);
+                    }
+                } catch (err) {
+                    console.error('Whisper error:', err);
+                }
+            };
+
+            mediaRecorder.start();
+            // Auto-stop after 5 seconds
+            setTimeout(() => {
+                if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+            }, 5000);
+
+        } catch (err) {
             setIsListening(false);
-            handleSend(transcript);
-        };
-        recognition.onerror = () => setIsListening(false);
-        recognition.onend = () => setIsListening(false);
-        recognition.start();
+            console.error('Mic error:', err);
+        }
     };
 
     if (!isOpen) return null;
