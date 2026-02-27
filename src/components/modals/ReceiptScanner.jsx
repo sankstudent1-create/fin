@@ -31,7 +31,7 @@ export const ReceiptScanner = ({ isOpen, onClose, onScanComplete }) => {
 
                     // Initialize Gemini
                     const genAI = new GoogleGenerativeAI(apiKey);
-                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
                     const prompt = `Analyze this receipt image. Your task is to extract three pieces of information:
                     1. The total amount paid (number only, no currency symbols).
