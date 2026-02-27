@@ -3,6 +3,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, Image, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// Vision-capable model fallback chain
+const VISION_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-001'];
+
+// Retry helper with exponential backoff for 429 errors
+const callWithRetry = async (fn, retries = 3, delay = 2000) => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('quota');
+            if (is429 && i < retries - 1) {
+                await new Promise(r => setTimeout(r, delay));
+                delay *= 2;
+            } else {
+                throw err;
+            }
+        }
+    }
+};
+
 export const ReceiptScanner = ({ isOpen, onClose, onScanComplete }) => {
     const fileRef = useRef(null);
     const [scanning, setScanning] = useState(false);
@@ -15,11 +35,10 @@ export const ReceiptScanner = ({ isOpen, onClose, onScanComplete }) => {
             setProgressStatus("Uploading image...");
 
             try {
-                // Read file as Base64 format
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onloadend = async () => {
-                    setProgressStatus("Google Gemini is analyzing...");
+                    setProgressStatus("AI is analyzing your receipt...");
                     const base64data = reader.result.split(',')[1];
 
                     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -29,9 +48,7 @@ export const ReceiptScanner = ({ isOpen, onClose, onScanComplete }) => {
                         return;
                     }
 
-                    // Initialize Gemini
                     const genAI = new GoogleGenerativeAI(apiKey);
-                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
                     const prompt = `Analyze this receipt image. Your task is to extract three pieces of information:
                     1. The total amount paid (number only, no currency symbols).
@@ -50,11 +67,38 @@ export const ReceiptScanner = ({ isOpen, onClose, onScanComplete }) => {
                         }
                     ];
 
-                    const result = await model.generateContent([prompt, ...imageParts]);
-                    const response = await result.response;
-                    let text = response.text();
+                    // Try models in fallback order
+                    let text = null;
+                    let lastError = null;
 
-                    // Clean up any potential markdown backticks that Gemini sometimes returns
+                    for (const modelName of VISION_MODELS) {
+                        try {
+                            console.log(`Receipt Scanner: Trying model ${modelName}...`);
+                            setProgressStatus(`Analyzing with ${modelName}...`);
+                            const model = genAI.getGenerativeModel({ model: modelName });
+
+                            const result = await callWithRetry(() => model.generateContent([prompt, ...imageParts]));
+                            const response = await result.response;
+                            text = response.text();
+                            console.log(`Receipt Scanner: ✅ Success with ${modelName}`);
+                            break;
+                        } catch (err) {
+                            console.warn(`Receipt Scanner: ❌ ${modelName} failed:`, err.message?.slice(0, 100));
+                            lastError = err;
+                            continue;
+                        }
+                    }
+
+                    if (!text) {
+                        const is429 = lastError?.message?.includes('429') || lastError?.message?.includes('quota');
+                        alert(is429
+                            ? "Rate limit reached! Please wait about 60 seconds and try again."
+                            : "Could not analyze receipt. Please try again shortly.");
+                        setScanning(false);
+                        return;
+                    }
+
+                    // Clean up any potential markdown backticks
                     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
                     try {

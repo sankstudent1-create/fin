@@ -1,18 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Bot, User, Sparkles, Loader2, Mic } from 'lucide-react';
+import { X, Send, Bot, User, Sparkles, Loader2, Mic, RefreshCw } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Model fallback chain — try each in order if one fails
+const MODEL_CHAIN = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-001', 'gemini-2.0-flash-lite'];
+
+// Retry helper with exponential backoff for 429 errors
+const callWithRetry = async (fn, retries = 3, delay = 2000) => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('quota');
+            if (is429 && i < retries - 1) {
+                console.warn(`Rate limited (429). Retrying in ${delay / 1000}s... (attempt ${i + 2}/${retries})`);
+                await new Promise(r => setTimeout(r, delay));
+                delay *= 2; // exponential backoff
+            } else {
+                throw err;
+            }
+        }
+    }
+};
 
 export const AIChatbot = ({ isOpen, onClose, transactions, userName }) => {
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: `Hi ${userName || 'there'}! I'm your AI Financial Advisor. Ask me anything about your spending, trends, or tips to save money.` }
+        { role: 'assistant', content: `Hi ${userName || 'there'}! 👋 I'm your AI Financial Advisor. Ask me anything about your spending, trends, or tips to save money.\n\nTry asking:\n• "How much did I spend this month?"\n• "What's my top spending category?"\n• "Give me tips to save money"` }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
-
-    // Initialize SpeechRecognition if available
     const [isListening, setIsListening] = useState(false);
+    const [workingModel, setWorkingModel] = useState(null); // Cache the working model name
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,53 +53,98 @@ export const AIChatbot = ({ isOpen, onClose, transactions, userName }) => {
         try {
             const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
             if (!apiKey) {
-                setMessages(prev => [...prev, { role: 'assistant', content: "Error: Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file." }]);
+                setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file." }]);
                 setIsLoading(false);
                 return;
             }
 
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-            // Prepare context
-            const txSummary = transactions.map(t => `${t.date}: ${t.title} - ₹${t.amount} (${t.category}, ${t.type})`).join('\n');
+            // Prepare context from transactions
+            const txSummary = transactions.slice(0, 50).map(t => `${t.date}: ${t.title} - ₹${t.amount} (${t.category}, ${t.type})`).join('\n');
             const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + parseFloat(t.amount), 0);
             const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + parseFloat(t.amount), 0);
+
+            // Category breakdown
+            const catBreakdown = {};
+            transactions.filter(t => t.type === 'expense').forEach(t => {
+                catBreakdown[t.category] = (catBreakdown[t.category] || 0) + parseFloat(t.amount);
+            });
+            const catSummary = Object.entries(catBreakdown)
+                .sort((a, b) => b[1] - a[1])
+                .map(([cat, amt]) => `${cat}: ₹${amt.toFixed(0)}`)
+                .join(', ');
 
             const systemPrompt = `You are a helpful, expert AI Financial Advisor for an app called Orange Finance. 
 The user's name is ${userName || 'User'}. 
 Here is their financial data:
-Total Income: ₹${totalIncome}
-Total Expenses: ₹${totalExpense}
-Balance: ₹${totalIncome - totalExpense}
+Total Income: ₹${totalIncome.toFixed(2)}
+Total Expenses: ₹${totalExpense.toFixed(2)}
+Balance: ₹${(totalIncome - totalExpense).toFixed(2)}
+Category Breakdown (Expenses): ${catSummary || 'No expenses yet'}
 
-Recent Transactions:
-${txSummary.slice(0, 3000)} // Limiting to latest transactions if too many to avoid token limits
+Recent Transactions (latest 50):
+${txSummary || 'No transactions yet'}
 
-Answer the user's questions about their finances accurately, warmly, and concisely. Keep responses short (under 3 paragraphs). Use emojis. If they ask for advice, give practical financial tips based on their actual spending patterns in the data provided. Answer in plain text, but you can use markdown for bolding or bullet points.`;
+Answer the user's questions about their finances accurately, warmly, and concisely. Keep responses short (under 3 paragraphs). Use emojis. If they ask for advice, give practical financial tips based on their actual spending patterns. Answer in plain text.`;
 
-            // Build chat history for context
+            // Build chat history
             const history = messages.slice(1).map(m => ({
                 role: m.role === 'assistant' ? 'model' : 'user',
                 parts: [{ text: m.content }]
             }));
 
-            const chat = model.startChat({
-                history: [
-                    { role: 'user', parts: [{ text: systemPrompt }] },
-                    { role: 'model', parts: [{ text: "Understood. I am ready to help as the AI Financial Advisor." }] },
-                    ...history
-                ]
-            });
+            // Try models in order, use cached working model first
+            const modelsToTry = workingModel
+                ? [workingModel, ...MODEL_CHAIN.filter(m => m !== workingModel)]
+                : MODEL_CHAIN;
 
-            const result = await chat.sendMessage(text);
-            const responseText = result.response.text();
+            let responseText = null;
+            let lastError = null;
 
-            setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
+            for (const modelName of modelsToTry) {
+                try {
+                    console.log(`Trying model: ${modelName}`);
+                    const model = genAI.getGenerativeModel({ model: modelName });
+
+                    const chat = model.startChat({
+                        history: [
+                            { role: 'user', parts: [{ text: systemPrompt }] },
+                            { role: 'model', parts: [{ text: "Understood! I'm ready to help as your AI Financial Advisor. 🧡" }] },
+                            ...history
+                        ]
+                    });
+
+                    const result = await callWithRetry(() => chat.sendMessage(text));
+                    responseText = result.response.text();
+                    setWorkingModel(modelName); // Cache this model for future calls
+                    console.log(`✅ Success with model: ${modelName}`);
+                    break;
+                } catch (err) {
+                    console.warn(`❌ Model ${modelName} failed:`, err.message?.slice(0, 100));
+                    lastError = err;
+                    continue;
+                }
+            }
+
+            if (responseText) {
+                setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
+            } else {
+                // All models failed
+                const is429 = lastError?.message?.includes('429') || lastError?.message?.includes('quota');
+                const errorMsg = is429
+                    ? "⏳ Rate limit reached! The free Gemini API allows 15 requests/minute. Please wait a moment and try again."
+                    : "😔 All AI models are currently unavailable. This usually fixes itself in a minute. Please try again shortly!";
+                setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
+            }
 
         } catch (error) {
             console.error('AI Chat Error:', error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "Oops! I'm having trouble connecting to my brain right now. Please try again later." }]);
+            const is429 = error?.message?.includes('429') || error?.message?.includes('quota');
+            const errorMsg = is429
+                ? "⏳ Rate limit reached! The free Gemini API allows 15 requests/minute. Please wait about 60 seconds and try again."
+                : "😔 Oops! I'm having trouble connecting right now. Please try again in a moment.";
+            setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
         } finally {
             setIsLoading(false);
         }
@@ -109,7 +174,6 @@ Answer the user's questions about their finances accurately, warmly, and concise
             const transcript = event.results[0][0].transcript;
             setInput(transcript);
             setIsListening(false);
-            // Auto send after speaking
             handleSend(transcript);
         };
 
