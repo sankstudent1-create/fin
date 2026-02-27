@@ -341,10 +341,12 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         try {
             // Bypass user's system OS text-to-speech completely and use a Cloud TTS API
             // using the Google Translate proxy API which streams high-quality Indian English voices reliably
-            const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-IN&q=${encodeURIComponent(cleanText)}`;
-
+            // Using multiple parameters to bypass blocks: client=tw-ob or dict-chrome-ex
+            const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=dict-chrome-ex&tl=en-IN&q=${encodeURIComponent(cleanText)}`;
             const cloudAudio = new Audio(url);
-            cloudAudio.crossOrigin = "anonymous";
+
+            // DO NOT set crossOrigin="anonymous", this triggers a CORS preflight that Google blocks!
+            // Without it, the browser fetches the audio in "no-cors" mode perfectly.
             cloudAudio.volume = 1.0;
 
             cloudAudio.onplay = () => {
