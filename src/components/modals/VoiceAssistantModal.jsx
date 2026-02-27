@@ -39,23 +39,13 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
     useEffect(() => {
         // Build diagnostics info
         const support = {
-            speechSynthesis: 'speechSynthesis' in window,
+            speechSynthesis: true, // Now using Cloud TTS
             AudioContext: ('AudioContext' in window || 'webkitAudioContext' in window),
             getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
             MediaRecorder: 'MediaRecorder' in window,
             userAgent: navigator.userAgent.slice(0, 50) + "..."
         };
         setAudioSupport(support);
-
-        // Pre-warm the voices list early
-        if (support.speechSynthesis) {
-            const loadVoices = () => {
-                const v = window.speechSynthesis.getVoices();
-                if (v.length > 0 && logs.length < 5) addLog(`TTS Voices loaded: ${v.length} available.`);
-            };
-            loadVoices();
-            window.speechSynthesis.onvoiceschanged = loadVoices;
-        }
 
         if (!isOpen) {
             stopEverything();
@@ -70,15 +60,14 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         };
     }, [isOpen]);
 
-    // Force unlock TTS on iOS/Safari by playing silent audio
+    // Force unlock HTML5 Audio Context on iOS/Safari by playing silent base64 audio
     const unlockAudio = () => {
-        if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.resume();
-        const silentUtterance = new SpeechSynthesisUtterance('');
-        silentUtterance.volume = 0;
-        window.speechSynthesis.speak(silentUtterance);
-        addLog("Audio contextual unlock triggered natively.", "success");
+        try {
+            const silentAudio = new Audio('data:audio/mp3;base64,//NgxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
+            silentAudio.volume = 0;
+            silentAudio.play().catch(e => console.log(e));
+            addLog("Cloud Audio stream unlocked for mobile.", "success");
+        } catch (e) { }
     };
 
     const initStreamAndListen = async () => {
@@ -145,7 +134,6 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         if (!streamRef.current || !isOpen) return;
 
         isAutoModeRef.current = true;
-        window.speechSynthesis.cancel(); // kill any overlapping TTS
         setState('listening');
         setTranscript('');
         setAiResponse('');
@@ -334,7 +322,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         }
     };
 
-    const speakText = (text) => {
+    const speakText = async (text) => {
         if (!isOpen) return;
         setState('speaking');
 
@@ -348,78 +336,68 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             return;
         }
 
-        addLog(`Starting TTS: "${cleanText}"`);
+        addLog(`Fetching Cloud Stream: "${cleanText}"`);
 
-        // A known fix for Chrome Android synthesis-failed is to cancel any current/zombie utterances
-        window.speechSynthesis.cancel();
-        // Ensure iOS/Safari hasn't killed the speech engine by calling resume
-        window.speechSynthesis.resume();
+        try {
+            // Bypass user's system OS text-to-speech completely and use a Cloud TTS API
+            // using the Google Translate proxy API which streams high-quality Indian English voices reliably
+            const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-IN&q=${encodeURIComponent(cleanText)}`;
 
-        const utterance = new SpeechSynthesisUtterance(cleanText);
+            const cloudAudio = new Audio(url);
+            cloudAudio.crossOrigin = "anonymous";
+            cloudAudio.volume = 1.0;
 
-        // Prioritize Indian English Voices (en-IN)
-        const voices = window.speechSynthesis.getVoices();
-        let preferredVoice = voices.find(v => v.lang.includes('en-IN') || v.lang.includes('en_IN') || v.name.includes('India'));
+            cloudAudio.onplay = () => {
+                addLog("Cloud stream started playing.", "success");
+                if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
+            };
 
-        // Fallbacks
-        if (!preferredVoice) preferredVoice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Female'));
-        if (!preferredVoice) preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Samantha')));
+            const handleComplete = () => {
+                if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
+                if (isAutoModeRef.current && isOpen) {
+                    setTimeout(startListening, 300); // Back into the loop
+                } else {
+                    setState('idle');
+                }
+            };
 
-        if (preferredVoice) {
-            utterance.voice = preferredVoice;
-            utterance.lang = preferredVoice.lang;
-            addLog(`Assigned Voice: ${preferredVoice.name}`, "success");
-        } else {
-            utterance.lang = 'en-US'; // Requires an explicit language to prevent mobile crash
-            addLog(`No preferred voice, using default (${voices.length} voices found).`, "warning");
-        }
+            cloudAudio.onended = () => {
+                addLog("Cloud stream finished playing.", "success");
+                handleComplete();
+            };
 
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
+            cloudAudio.onerror = (e) => {
+                addLog(`Cloud Steam Error! Could not buffer audio. Network block?`, "error");
+                handleComplete();
+            };
 
-        utterance.onstart = () => {
-            addLog("TTS .onstart fired.", "success");
-            // Clear the safety timeout if speech successfully starts
-            if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
-        };
+            // Force play natively
+            await cloudAudio.play();
 
-        const handleComplete = () => {
-            if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
+            // Hardware failsafe if onstart/onend never fires
+            const words = cleanText.split(' ').length;
+            const estimatedDurationMs = Math.max(3000, words * 450);
+
+            window._ttsSafetyTimeout = setTimeout(() => {
+                setState(s => {
+                    if (s === 'speaking') {
+                        addLog(`Safety timeout hit (${estimatedDurationMs}ms). Forcing loop restart.`, "warning");
+                        cloudAudio.pause(); // Kill the zombie audio buffer
+                        if (isAutoModeRef.current && isOpen) setTimeout(startListening, 100);
+                        return 'idle';
+                    }
+                    return s;
+                });
+            }, estimatedDurationMs + 4000);
+
+        } catch (err) {
+            addLog(`Cloud Audio Error: ${err.message}`, "error");
             if (isAutoModeRef.current && isOpen) {
-                setTimeout(startListening, 300); // Back into the loop
+                setTimeout(startListening, 300);
             } else {
                 setState('idle');
             }
-        };
-
-        utterance.onend = () => {
-            addLog("TTS .onend fired.", "success");
-            handleComplete();
-        };
-
-        utterance.onerror = (e) => {
-            addLog(`TTS .onerror Fired! Event: ${e.error}`, "error");
-            handleComplete();
-        };
-
-        window.activeSpeechUtterance = utterance; // GC fix
-        window.speechSynthesis.speak(utterance);
-
-        // Hardware failsafe if onstart/onend never fires (iOS bug)
-        const words = cleanText.split(' ').length;
-        const estimatedDurationMs = Math.max(3000, words * 450);
-
-        window._ttsSafetyTimeout = setTimeout(() => {
-            setState(s => {
-                if (s === 'speaking') {
-                    addLog(`Safety timeout hit (${estimatedDurationMs}ms). Forcing loop restart.`, "warning");
-                    if (isAutoModeRef.current && isOpen) setTimeout(startListening, 100);
-                    return 'idle';
-                }
-                return s;
-            });
-        }, estimatedDurationMs + 4000);
+        }
     };
 
     if (!isOpen) return null;
