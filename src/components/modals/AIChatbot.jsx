@@ -1,22 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Bot, User, Sparkles, Loader2, Mic, RefreshCw } from 'lucide-react';
+import { X, Send, Bot, User, Sparkles, Loader2, Mic, AlertTriangle } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Model fallback chain — try each in order if one fails
-const MODEL_CHAIN = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-001', 'gemini-2.0-flash-lite'];
-
-// Retry helper with exponential backoff for 429 errors
-const callWithRetry = async (fn, retries = 3, delay = 2000) => {
+// Retry helper with exponential backoff
+const callWithRetry = async (fn, retries = 2, delay = 2000) => {
     for (let i = 0; i < retries; i++) {
         try {
             return await fn();
         } catch (err) {
             const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('quota');
             if (is429 && i < retries - 1) {
-                console.warn(`Rate limited (429). Retrying in ${delay / 1000}s... (attempt ${i + 2}/${retries})`);
                 await new Promise(r => setTimeout(r, delay));
-                delay *= 2; // exponential backoff
+                delay *= 2;
             } else {
                 throw err;
             }
@@ -24,15 +20,62 @@ const callWithRetry = async (fn, retries = 3, delay = 2000) => {
     }
 };
 
+// ── Groq API call (free, generous limits) ──
+const callGroq = async (messages, apiKey) => {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: messages,
+            max_tokens: 1024,
+            temperature: 0.7,
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Groq error ${response.status}: ${errorData?.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || "I couldn't generate a response.";
+};
+
+// ── Gemini API call ──
+const callGemini = async (userText, systemPrompt, chatHistory, apiKey) => {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+    const history = chatHistory.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+    }));
+
+    const chat = model.startChat({
+        history: [
+            { role: 'user', parts: [{ text: systemPrompt }] },
+            { role: 'model', parts: [{ text: "Understood! I'm ready to help as your AI Financial Advisor. 🧡" }] },
+            ...history
+        ]
+    });
+
+    const result = await callWithRetry(() => chat.sendMessage(userText));
+    return result.response.text();
+};
+
 export const AIChatbot = ({ isOpen, onClose, transactions, userName }) => {
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: `Hi ${userName || 'there'}! 👋 I'm your AI Financial Advisor. Ask me anything about your spending, trends, or tips to save money.\n\nTry asking:\n• "How much did I spend this month?"\n• "What's my top spending category?"\n• "Give me tips to save money"` }
+        { role: 'assistant', content: `Hi ${userName || 'there'}! 👋 I'm your AI Financial Advisor.\n\nAsk me anything like:\n• "How much did I spend this month?"\n• "What's my top spending category?"\n• "Give me tips to save money"` }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const [isListening, setIsListening] = useState(false);
-    const [workingModel, setWorkingModel] = useState(null); // Cache the working model name
+    const [activeProvider, setActiveProvider] = useState(null); // Track which AI provider worked
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,40 +85,21 @@ export const AIChatbot = ({ isOpen, onClose, transactions, userName }) => {
         scrollToBottom();
     }, [messages, isLoading]);
 
-    const handleSend = async (text = input) => {
-        if (!text.trim()) return;
+    const buildSystemPrompt = () => {
+        const txSummary = transactions.slice(0, 50).map(t => `${t.date}: ${t.title} - ₹${t.amount} (${t.category}, ${t.type})`).join('\n');
+        const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + parseFloat(t.amount), 0);
+        const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + parseFloat(t.amount), 0);
 
-        const userMsg = { role: 'user', content: text };
-        setMessages(prev => [...prev, userMsg]);
-        setInput('');
-        setIsLoading(true);
+        const catBreakdown = {};
+        transactions.filter(t => t.type === 'expense').forEach(t => {
+            catBreakdown[t.category] = (catBreakdown[t.category] || 0) + parseFloat(t.amount);
+        });
+        const catSummary = Object.entries(catBreakdown)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cat, amt]) => `${cat}: ₹${amt.toFixed(0)}`)
+            .join(', ');
 
-        try {
-            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-            if (!apiKey) {
-                setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file." }]);
-                setIsLoading(false);
-                return;
-            }
-
-            const genAI = new GoogleGenerativeAI(apiKey);
-
-            // Prepare context from transactions
-            const txSummary = transactions.slice(0, 50).map(t => `${t.date}: ${t.title} - ₹${t.amount} (${t.category}, ${t.type})`).join('\n');
-            const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + parseFloat(t.amount), 0);
-            const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + parseFloat(t.amount), 0);
-
-            // Category breakdown
-            const catBreakdown = {};
-            transactions.filter(t => t.type === 'expense').forEach(t => {
-                catBreakdown[t.category] = (catBreakdown[t.category] || 0) + parseFloat(t.amount);
-            });
-            const catSummary = Object.entries(catBreakdown)
-                .sort((a, b) => b[1] - a[1])
-                .map(([cat, amt]) => `${cat}: ₹${amt.toFixed(0)}`)
-                .join(', ');
-
-            const systemPrompt = `You are a helpful, expert AI Financial Advisor for an app called Orange Finance. 
+        return `You are a helpful, expert AI Financial Advisor for an app called Orange Finance. 
 The user's name is ${userName || 'User'}. 
 Here is their financial data:
 Total Income: ₹${totalIncome.toFixed(2)}
@@ -87,67 +111,71 @@ Recent Transactions (latest 50):
 ${txSummary || 'No transactions yet'}
 
 Answer the user's questions about their finances accurately, warmly, and concisely. Keep responses short (under 3 paragraphs). Use emojis. If they ask for advice, give practical financial tips based on their actual spending patterns. Answer in plain text.`;
+    };
 
-            // Build chat history
-            const history = messages.slice(1).map(m => ({
-                role: m.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: m.content }]
-            }));
+    const handleSend = async (text = input) => {
+        if (!text.trim()) return;
 
-            // Try models in order, use cached working model first
-            const modelsToTry = workingModel
-                ? [workingModel, ...MODEL_CHAIN.filter(m => m !== workingModel)]
-                : MODEL_CHAIN;
+        const userMsg = { role: 'user', content: text };
+        setMessages(prev => [...prev, userMsg]);
+        setInput('');
+        setIsLoading(true);
 
-            let responseText = null;
-            let lastError = null;
+        const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+        const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        const systemPrompt = buildSystemPrompt();
 
-            for (const modelName of modelsToTry) {
-                try {
-                    console.log(`Trying model: ${modelName}`);
-                    const model = genAI.getGenerativeModel({ model: modelName });
+        let responseText = null;
+        let usedProvider = null;
 
-                    const chat = model.startChat({
-                        history: [
-                            { role: 'user', parts: [{ text: systemPrompt }] },
-                            { role: 'model', parts: [{ text: "Understood! I'm ready to help as your AI Financial Advisor. 🧡" }] },
-                            ...history
-                        ]
-                    });
+        // Strategy: Try last successful provider first, then try the other
+        const providers = activeProvider === 'gemini'
+            ? ['gemini', 'groq']
+            : ['groq', 'gemini']; // Default to Groq first (more reliable free tier)
 
-                    const result = await callWithRetry(() => chat.sendMessage(text));
-                    responseText = result.response.text();
-                    setWorkingModel(modelName); // Cache this model for future calls
-                    console.log(`✅ Success with model: ${modelName}`);
+        for (const provider of providers) {
+            try {
+                if (provider === 'groq' && groqKey) {
+                    console.log('🟢 Trying Groq...');
+                    const groqMessages = [
+                        { role: 'system', content: systemPrompt },
+                        ...messages.slice(1).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
+                        { role: 'user', content: text }
+                    ];
+                    responseText = await callGroq(groqMessages, groqKey);
+                    usedProvider = 'groq';
                     break;
-                } catch (err) {
-                    console.warn(`❌ Model ${modelName} failed:`, err.message?.slice(0, 100));
-                    lastError = err;
-                    continue;
+                } else if (provider === 'gemini' && geminiKey) {
+                    console.log('🟡 Trying Gemini...');
+                    responseText = await callGemini(text, systemPrompt, messages.slice(1), geminiKey);
+                    usedProvider = 'gemini';
+                    break;
                 }
+            } catch (err) {
+                console.warn(`❌ ${provider} failed:`, err.message?.slice(0, 120));
+                continue;
             }
-
-            if (responseText) {
-                setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
-            } else {
-                // All models failed
-                const is429 = lastError?.message?.includes('429') || lastError?.message?.includes('quota');
-                const errorMsg = is429
-                    ? "⏳ Rate limit reached! The free Gemini API allows 15 requests/minute. Please wait a moment and try again."
-                    : "😔 All AI models are currently unavailable. This usually fixes itself in a minute. Please try again shortly!";
-                setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
-            }
-
-        } catch (error) {
-            console.error('AI Chat Error:', error);
-            const is429 = error?.message?.includes('429') || error?.message?.includes('quota');
-            const errorMsg = is429
-                ? "⏳ Rate limit reached! The free Gemini API allows 15 requests/minute. Please wait about 60 seconds and try again."
-                : "😔 Oops! I'm having trouble connecting right now. Please try again in a moment.";
-            setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
-        } finally {
-            setIsLoading(false);
         }
+
+        if (responseText) {
+            setActiveProvider(usedProvider);
+            setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
+        } else {
+            // No keys configured at all, or both failed
+            if (!groqKey && !geminiKey) {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: '⚠️ No AI API key configured!\n\nPlease add at least one of these to your .env file:\n• VITE_GROQ_API_KEY (recommended, free at console.groq.com)\n• VITE_GEMINI_API_KEY (free at aistudio.google.com)'
+                }]);
+            } else {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: '⏳ Both AI providers are currently rate-limited. Please wait about 60 seconds and try again.'
+                }]);
+            }
+        }
+
+        setIsLoading(false);
     };
 
     const toggleVoiceInput = () => {
@@ -163,27 +191,19 @@ Answer the user's questions about their finances accurately, warmly, and concise
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
-
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
         recognition.onstart = () => setIsListening(true);
-
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             setInput(transcript);
             setIsListening(false);
             handleSend(transcript);
         };
-
-        recognition.onerror = (event) => {
-            console.error("Speech recognition error", event.error);
-            setIsListening(false);
-        };
-
+        recognition.onerror = () => setIsListening(false);
         recognition.onend = () => setIsListening(false);
-
         recognition.start();
     };
 
@@ -212,7 +232,9 @@ Answer the user's questions about their finances accurately, warmly, and concise
                             </div>
                             <div>
                                 <h3 className="font-black text-lg leading-tight">AI Advisor</h3>
-                                <p className="text-xs text-orange-100 font-medium">Powered by Gemini</p>
+                                <p className="text-xs text-orange-100 font-medium">
+                                    {activeProvider === 'groq' ? 'Powered by Llama 3.3' : activeProvider === 'gemini' ? 'Powered by Gemini' : 'AI Financial Advisor'}
+                                </p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-2 bg-black/10 hover:bg-black/20 rounded-full transition-colors active:scale-95">
