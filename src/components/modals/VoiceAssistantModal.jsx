@@ -359,7 +359,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         try {
             const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
-            // Use Groq's PlayAI TTS API - same API key as Whisper & Llama
+            // Use Groq's Orpheus TTS API - same API key as Whisper & Llama
             const ttsRes = await fetch('https://api.groq.com/openai/v1/audio/speech', {
                 method: 'POST',
                 headers: {
@@ -367,9 +367,9 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: 'playai-tts',
+                    model: 'canopylabs/orpheus-v1-english',
                     input: cleanText,
-                    voice: 'Fritz-PlayAI',
+                    voice: 'troy',
                     response_format: 'wav',
                 }),
             });
