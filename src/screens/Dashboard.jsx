@@ -126,18 +126,84 @@ export const Dashboard = ({ session }) => {
         setTimeout(() => setToast(null), prefs.popup_duration || 3000);
     };
 
-    // --- SMART AUTO-CATEGORIZATION ---
+    // --- WORD-TO-NUMBER CONVERTER ---
+    const wordToNumber = (text) => {
+        const ones = {
+            zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+            ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
+            seventeen: 17, eighteen: 18, nineteen: 19
+        };
+        const tens = { twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+        const scales = {
+            hundred: 100, thousand: 1000, lakh: 100000, lac: 100000, lakhs: 100000, million: 1000000,
+            crore: 10000000, crores: 10000000, k: 1000
+        };
+        let t = text.toLowerCase().replace(/[,₹$]/g, '').replace(/\band\b/g, ' ')
+            .replace(/\ba\s+(hundred|thousand|lakh|lac|million|crore)/g, 'one $1').trim();
+        const directNum = t.match(/^(\d+(?:\.\d+)?)$/);
+        if (directNum) return parseFloat(directNum[1]);
+        const mixedPattern = /(\d+(?:\.\d+)?)\s*(hundred|thousand|lakh|lakhs|lac|million|crore|crores|k)\b/gi;
+        let mixedMatch, mixedResult = 0, hasMixed = false;
+        while ((mixedMatch = mixedPattern.exec(t)) !== null) {
+            hasMixed = true;
+            mixedResult += parseFloat(mixedMatch[1]) * (scales[mixedMatch[2].toLowerCase()] || 1);
+        }
+        if (hasMixed) {
+            const remaining = t.replace(/(\d+(?:\.\d+)?)\s*(hundred|thousand|lakh|lakhs|lac|million|crore|crores|k)\b/gi, '').trim();
+            const trail = remaining.match(/(\d+(?:\.\d+)?)/);
+            if (trail) mixedResult += parseFloat(trail[1]);
+            return mixedResult;
+        }
+        const words = t.split(/\s+/);
+        let result = 0, current = 0, hasWordNum = false;
+        for (const word of words) {
+            if (ones[word] !== undefined) { current += ones[word]; hasWordNum = true; }
+            else if (tens[word] !== undefined) { current += tens[word]; hasWordNum = true; }
+            else if (word === 'hundred') { current = (current || 1) * 100; hasWordNum = true; }
+            else if (scales[word] && scales[word] >= 1000) { current = (current || 1) * scales[word]; result += current; current = 0; hasWordNum = true; }
+        }
+        result += current;
+        if (hasWordNum && result > 0) return result;
+        const digitMatch = text.match(/(\d+(?:\.\d+)?)/);
+        return digitMatch ? parseFloat(digitMatch[1]) : 0;
+    };
+
+    // --- SMART AUTO-CATEGORIZATION (default + user custom categories) ---
     const autoCategorize = (title) => {
         if (!title) return 'Other';
         const t = title.toLowerCase();
-        if (t.includes('starbucks') || t.includes('food') || t.includes('swiggy') || t.includes('zomato') || t.includes('restaurant') || t.includes('cafe')) return 'Food';
-        if (t.includes('uber') || t.includes('ola') || t.includes('taxi') || t.includes('bus') || t.includes('train') || t.includes('fuel') || t.includes('petrol')) return 'Transport';
-        if (t.includes('amazon') || t.includes('flipkart') || t.includes('clothes') || t.includes('grocery') || t.includes('walmart') || t.includes('myntra')) return 'Shopping';
-        if (t.includes('netflix') || t.includes('spotify') || t.includes('subscription') || t.includes('movie') || t.includes('prime')) return 'Entertainment';
-        if (t.includes('bill') || t.includes('electricity') || t.includes('water') || t.includes('wifi') || t.includes('recharge')) return 'Bills';
-        if (t.includes('health') || t.includes('doctor') || t.includes('pharmacy') || t.includes('medical')) return 'Health';
-        if (t.includes('salary') || t.includes('wage') || t.includes('bonus')) return 'Salary';
-        return txForm.category; // keep existing if no match
+        const kwMap = {
+            'Food': ['starbucks', 'food', 'swiggy', 'zomato', 'restaurant', 'cafe', 'coffee', 'pizza', 'burger', 'dining', 'eat', 'lunch', 'dinner', 'breakfast', 'snack', 'bakery', 'kitchen', 'biryani', 'dominos', 'mcdonalds', 'kfc'],
+            'Transport': ['uber', 'ola', 'taxi', 'cab', 'bus', 'train', 'metro', 'fuel', 'petrol', 'diesel', 'parking', 'flight', 'auto', 'rickshaw', 'rapido'],
+            'Shopping': ['amazon', 'flipkart', 'clothes', 'grocery', 'walmart', 'myntra', 'shopping', 'mall', 'store', 'dmart', 'reliance', 'bigbasket', 'meesho', 'ajio'],
+            'Entertainment': ['netflix', 'spotify', 'subscription', 'movie', 'prime', 'hotstar', 'disney', 'youtube', 'gaming', 'game', 'cinema', 'theatre', 'concert'],
+            'Bills': ['bill', 'electricity', 'water', 'wifi', 'internet', 'recharge', 'broadband', 'jio', 'airtel', 'vi', 'bsnl', 'gas', 'rent', 'emi', 'loan'],
+            'Health': ['health', 'doctor', 'pharmacy', 'medical', 'medicine', 'hospital', 'clinic', 'apollo', 'dental', 'gym', 'fitness'],
+            'Salary': ['salary', 'wage', 'bonus', 'paycheck', 'stipend', 'freelance'],
+            'Travel': ['travel', 'hotel', 'booking', 'trip', 'vacation', 'holiday', 'oyo', 'makemytrip', 'goibibo', 'airbnb'],
+            'Investment': ['invest', 'mutual fund', 'stock', 'share', 'sip', 'fd', 'fixed deposit', 'ppf', 'nps', 'gold', 'crypto', 'bitcoin'],
+            'Education': ['education', 'course', 'tuition', 'school', 'college', 'book', 'udemy', 'coursera', 'exam', 'study'],
+            'Groceries': ['grocery', 'vegetables', 'fruits', 'dmart', 'bigbasket', 'blinkit', 'zepto', 'instamart'],
+            'Fuel': ['fuel', 'petrol', 'diesel', 'cng', 'gas station'],
+            'Insurance': ['insurance', 'lic', 'premium', 'policy'],
+            'Subscriptions': ['subscription', 'monthly', 'annual', 'renewal'],
+            'Personal': ['personal', 'self', 'grooming'],
+            'Gifts': ['gift', 'present', 'birthday', 'anniversary'],
+            'Kids': ['kids', 'child', 'baby', 'diaper', 'toy'],
+            'Pets': ['pet', 'dog', 'cat', 'vet'],
+            'Beauty': ['beauty', 'salon', 'parlour', 'spa', 'cosmetic', 'makeup'],
+        };
+        for (const [cat, kws] of Object.entries(kwMap)) {
+            if (kws.some(kw => t.includes(kw))) return cat;
+        }
+        // Check user-added custom categories
+        if (userCategories && userCategories.length > 0) {
+            for (const cat of userCategories) {
+                const name = (cat.name || cat).toLowerCase();
+                if (t.includes(name)) return cat.name || cat;
+            }
+        }
+        return txForm.category;
     };
 
     const handleVoiceTransaction = async () => {
@@ -223,35 +289,34 @@ export const Dashboard = ({ session }) => {
     const processVoiceText = (rawText) => {
         const text = rawText.toLowerCase();
 
-        // Enhanced amount parsing: "150 rupees", "spent 200", "₹500", "15.50"
-        const amountPatterns = [
-            /(\d+(?:\.\d{1,2})?)\s*(?:rupees?|rs\.?|₹)/i,
-            /(?:spent|paid|cost|for)\s*(?:₹|rs\.?)?\s*(\d+(?:\.\d{1,2})?)/i,
-            /(?:₹|rs\.?)\s*(\d+(?:\.\d{1,2})?)/i,
-            /(\d+(?:\.\d{1,2})?)/,
+        // Extract amount using word-to-number (handles "fifteen", "2 lakh", "fifty thousand", etc.)
+        const amountPhrases = [
+            /(?:spent|paid|cost|for|of|worth|was)\s+(.+?)(?:\s+(?:on|for|at|in|to|rupees?|rs|bucks?)|$)/i,
+            /(?:earned|received|got|salary|income|credited)\s+(.+?)(?:\s+(?:from|as|today|this)|$)/i,
+            /(\d[\d,\.]*\s*(?:lakh|lac|lakhs?|thousand|hundred|k|crore|crores?)?)/i,
         ];
-
-        let amount = '';
-        for (const pattern of amountPatterns) {
+        let amount = 0;
+        for (const pattern of amountPhrases) {
             const match = text.match(pattern);
             if (match) {
-                amount = match[1];
-                break;
+                const parsed = wordToNumber(match[1]);
+                if (parsed > 0) { amount = parsed; break; }
             }
         }
+        if (amount === 0) amount = wordToNumber(text);
 
         const category = autoCategorize(text);
-        const isIncome = /(?:earned|received|got|income|salary|paid me|credited|refund)/i.test(text);
+        const isIncome = /(?:earned|received|got|income|salary|paid me|credited|refund|bonus|stipend|freelance)/i.test(text);
 
         setTxForm(prev => ({
             ...prev,
             title: rawText.charAt(0).toUpperCase() + rawText.slice(1),
-            amount: amount,
+            amount: amount > 0 ? amount.toString() : '',
             category: category || 'Other',
             type: isIncome ? 'income' : 'expense'
         }));
 
-        showToast(`✅ Voice parsed! ${isIncome ? 'Income' : 'Expense'}: ₹${amount || '—'} → ${category}`, 'success');
+        showToast(`✅ Voice: ${isIncome ? 'Income' : 'Expense'} ₹${amount || '—'} → ${category}`, 'success');
     };
 
     // --- DATA FETCHING ---
