@@ -329,7 +329,7 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
         if (!isOpen) return;
         setState('speaking');
 
-        // Stripping markdown & emojis for TTS engine, replace currencies that break Google TTS
+        // Strip markdown, emojis & currency symbols for clean TTS input
         let cleanText = text.replace(/[*_#`~]/g, '')
             .replace(/₹/g, ' rupees ')
             .replace(/\$/g, ' dollars ')
@@ -342,22 +342,48 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             return;
         }
 
-        addLog(`Fetching Cloud Stream: "${cleanText}"`);
+        addLog(`Requesting Groq TTS: "${cleanText}"`);
+
+        let completed = false;
+        const handleComplete = () => {
+            if (completed) return;
+            completed = true;
+            if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
+            if (isAutoModeRef.current && isOpen) {
+                setTimeout(startListening, 300);
+            } else {
+                setState('idle');
+            }
+        };
 
         try {
-            // Split into <150 char chunks to bypass Google's length limits which cause 404s
-            const wordsMatch = cleanText.split(/\s+/);
-            const playChunks = [];
-            let currentChunk = "";
-            for (const word of wordsMatch) {
-                if ((currentChunk + word).length > 150) {
-                    if (currentChunk.trim()) playChunks.push(currentChunk.trim());
-                    currentChunk = word + " ";
-                } else {
-                    currentChunk += word + " ";
-                }
+            const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
+
+            // Use Groq's PlayAI TTS API - same API key as Whisper & Llama
+            const ttsRes = await fetch('https://api.groq.com/openai/v1/audio/speech', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${GROQ_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: 'playai-tts',
+                    input: cleanText,
+                    voice: 'Fritz-PlayAI',
+                    response_format: 'wav',
+                }),
+            });
+
+            if (!ttsRes.ok) {
+                const errText = await ttsRes.text();
+                throw new Error(`Groq TTS Error ${ttsRes.status}: ${errText.slice(0, 200)}`);
             }
-            if (currentChunk.trim()) playChunks.push(currentChunk.trim());
+
+            addLog("Groq TTS audio received. Playing...", "success");
+
+            // Convert the response to a playable blob URL
+            const audioBlob = await ttsRes.blob();
+            const blobUrl = URL.createObjectURL(audioBlob);
 
             if (!window._cloudAudioPlayer) {
                 window._cloudAudioPlayer = new Audio();
@@ -365,70 +391,46 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             const player = window._cloudAudioPlayer;
             player.volume = 1.0;
 
-            let completed = false;
-            let chunkIndex = 0;
+            // Unbind previous handlers
+            player.onplay = null;
+            player.onended = null;
+            player.onerror = null;
 
-            const handleComplete = () => {
-                if (completed) return;
-                completed = true;
+            player.onplay = () => {
+                addLog("TTS audio started playing.", "success");
                 if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
-                if (isAutoModeRef.current && isOpen) {
-                    setTimeout(startListening, 300); // Back into the loop
-                } else {
-                    setState('idle');
-                }
             };
 
-            const playNextChunk = () => {
-                if (chunkIndex >= playChunks.length) {
-                    handleComplete();
-                    return;
-                }
-
-                // client=tw-ob is the stable widget proxy
-                const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=en-IN&q=${encodeURIComponent(playChunks[chunkIndex])}`;
-
-                // Unbind previous to prevent duplicates
-                player.onplay = null;
-                player.onended = null;
-                player.onerror = null;
-
-                player.onplay = () => {
-                    if (chunkIndex === 0) addLog("Cloud stream started playing.", "success");
-                    if (window._ttsSafetyTimeout) clearTimeout(window._ttsSafetyTimeout);
-                };
-
-                player.onended = () => {
-                    chunkIndex++;
-                    playNextChunk();
-                };
-
-                player.onerror = (e) => {
-                    addLog(`Steam Error on chunk ${chunkIndex + 1}! Network block?`, "error");
-                    chunkIndex++;
-                    playNextChunk();
-                };
-
-                player.src = url;
-                player.play().catch(err => {
-                    addLog(`Chunk ${chunkIndex + 1} Error: ${err.message}`, "error");
-                    chunkIndex++;
-                    playNextChunk();
-                });
+            player.onended = () => {
+                addLog("TTS audio finished.", "success");
+                URL.revokeObjectURL(blobUrl); // Free memory
+                handleComplete();
             };
 
-            playNextChunk();
+            player.onerror = (e) => {
+                addLog(`TTS Playback Error!`, "error");
+                URL.revokeObjectURL(blobUrl);
+                handleComplete();
+            };
 
-            // Hardware failsafe if onstart/onend never fires
+            player.src = blobUrl;
+            player.play().catch(err => {
+                addLog(`Audio Play Error: ${err.message}`, "error");
+                URL.revokeObjectURL(blobUrl);
+                handleComplete();
+            });
+
+            // Safety timeout
             const totalWords = cleanText.split(' ').length;
-            const estimatedDurationMs = Math.max(3000, totalWords * 450);
+            const estimatedDurationMs = Math.max(5000, totalWords * 500);
 
             window._ttsSafetyTimeout = setTimeout(() => {
                 if (completed) return;
                 setState(s => {
                     if (s === 'speaking') {
-                        addLog(`Safety timeout hit (${estimatedDurationMs}ms). Forcing loop restart.`, "warning");
-                        player.pause(); // Kill the zombie audio buffer
+                        addLog(`Safety timeout hit (${estimatedDurationMs}ms). Forcing restart.`, "warning");
+                        player.pause();
+                        URL.revokeObjectURL(blobUrl);
                         handleComplete();
                         return 'idle';
                     }
@@ -437,12 +439,8 @@ export const VoiceAssistantModal = ({ isOpen, onClose, userName, transactions })
             }, estimatedDurationMs + 5000);
 
         } catch (err) {
-            addLog(`Cloud Audio Error: ${err.message}`, "error");
-            if (isAutoModeRef.current && isOpen) {
-                setTimeout(startListening, 300);
-            } else {
-                setState('idle');
-            }
+            addLog(`TTS Error: ${err.message}`, "error");
+            handleComplete();
         }
     };
 
