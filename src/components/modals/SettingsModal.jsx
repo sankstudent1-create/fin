@@ -7,7 +7,7 @@ import {
     Lock, Fingerprint, ChevronRight, AlertTriangle,
     Bell, Clock, Sparkles, Timer, MessageSquare, Camera,
     Check, Loader2, Edit3, Image, ChevronLeft, Play, ZoomIn,
-    Mail, KeyRound
+    Mail, KeyRound, Eye, EyeOff, ShieldCheck
 } from 'lucide-react';
 import { supabase } from '../../config/supabase';
 import {
@@ -165,6 +165,23 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
     const [confirmPassword, setConfirmPassword] = useState('');
     const [pwdLoading, setPwdLoading] = useState(false);
     const [pwdMsg, setPwdMsg] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+    const [showNewPwd, setShowNewPwd] = useState(false);
+    const [emailCurrentPwd, setEmailCurrentPwd] = useState('');
+    const [showEmailPwd, setShowEmailPwd] = useState(false);
+    const [pwdVerified, setPwdVerified] = useState(false);
+    const [emailPwdVerified, setEmailPwdVerified] = useState(false);
+
+    // Re-authenticate user by verifying current password
+    const verifyCurrentPassword = async (pwd) => {
+        if (!user?.email || !pwd.trim()) return false;
+        const { error } = await supabase.auth.signInWithPassword({
+            email: user.email,
+            password: pwd.trim(),
+        });
+        return !error;
+    };
 
     const handleResetPassword = async () => {
         if (!user?.email || resetLoading) return;
@@ -181,6 +198,19 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
 
     const handleChangeEmail = async () => {
         if (!newEmail.trim() || emailLoading) return;
+        if (!emailPwdVerified) {
+            setEmailLoading(true);
+            setEmailMsg('');
+            const valid = await verifyCurrentPassword(emailCurrentPwd);
+            setEmailLoading(false);
+            if (!valid) {
+                setEmailMsg('❌ Current password is incorrect.');
+                return;
+            }
+            setEmailPwdVerified(true);
+            setEmailMsg('✅ Password verified! Now enter your new email.');
+            return;
+        }
         setEmailLoading(true);
         setEmailMsg('');
         const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
@@ -188,14 +218,29 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
         if (error) {
             setEmailMsg(`❌ ${error.message}`);
         } else {
-            setEmailMsg('✅ Confirmation email sent to your new address! Check both old & new inboxes.');
+            setEmailMsg('✅ Confirmation sent to both old & new email! Confirm on both to complete.');
             setNewEmail('');
-            setTimeout(() => { setEmailMsg(''); setChangeEmailMode(false); }, 5000);
+            setEmailCurrentPwd('');
+            setEmailPwdVerified(false);
+            setTimeout(() => { setEmailMsg(''); setChangeEmailMode(false); }, 6000);
         }
     };
 
     const handleUpdatePassword = async () => {
         if (!newPassword.trim() || pwdLoading) return;
+        if (!pwdVerified) {
+            setPwdLoading(true);
+            setPwdMsg('');
+            const valid = await verifyCurrentPassword(currentPassword);
+            setPwdLoading(false);
+            if (!valid) {
+                setPwdMsg('❌ Current password is incorrect.');
+                return;
+            }
+            setPwdVerified(true);
+            setPwdMsg('✅ Password verified! Now set your new password.');
+            return;
+        }
         if (newPassword.length < 6) { setPwdMsg('❌ Password must be at least 6 characters.'); return; }
         if (newPassword !== confirmPassword) { setPwdMsg('❌ Passwords do not match.'); return; }
         setPwdLoading(true);
@@ -208,6 +253,8 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
             setPwdMsg('✅ Password updated successfully!');
             setNewPassword('');
             setConfirmPassword('');
+            setCurrentPassword('');
+            setPwdVerified(false);
             setTimeout(() => { setPwdMsg(''); setChangePwdMode(false); }, 3000);
         }
     };
@@ -541,17 +588,17 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                 <div className="space-y-5">
                     <SectionLabel>Account Protection</SectionLabel>
 
-                    {/* ── Change Password (inline) ── */}
+                    {/* ── Change Password (inline with current password verification) ── */}
                     <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
                         <button
-                            onClick={() => { setChangePwdMode(!changePwdMode); setPwdMsg(''); }}
+                            onClick={() => { setChangePwdMode(!changePwdMode); setPwdMsg(''); setPwdVerified(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }}
                             className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-all group"
                         >
                             <div className="flex items-center gap-3">
                                 <div className="p-2.5 bg-slate-50 text-slate-600 rounded-xl group-hover:bg-slate-100 transition-colors"><KeyRound size={18} /></div>
                                 <div className="text-left">
                                     <p className="font-semibold text-slate-800 text-sm">Change Password</p>
-                                    <p className="text-[10px] text-slate-400">Set a new password for your account</p>
+                                    <p className="text-[10px] text-slate-400">Verify identity, then set new password</p>
                                 </div>
                             </div>
                             <ChevronRight size={16} className={`text-slate-300 transition-transform ${changePwdMode ? 'rotate-90' : ''}`} />
@@ -563,51 +610,107 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                     className="overflow-hidden"
                                 >
                                     <div className="px-4 pb-4 space-y-3 border-t border-slate-100 pt-3">
+                                        {/* Step 1: Current Password */}
                                         <div className="relative">
-                                            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <ShieldCheck size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${pwdVerified ? 'text-emerald-500' : 'text-amber-500'}`} />
                                             <input
-                                                type="password" placeholder="New Password (min 6 chars)"
-                                                value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-orange-400 focus:bg-white outline-none transition-all"
+                                                type={showCurrentPwd ? 'text' : 'password'}
+                                                placeholder={pwdVerified ? '✅ Current password verified' : '🔐 Enter current password first'}
+                                                value={currentPassword}
+                                                onChange={e => setCurrentPassword(e.target.value)}
+                                                disabled={pwdVerified}
+                                                onKeyDown={e => e.key === 'Enter' && !pwdVerified && handleUpdatePassword()}
+                                                className={`w-full border-2 rounded-xl py-3 pl-10 pr-10 font-semibold text-sm outline-none transition-all ${pwdVerified
+                                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                        : 'bg-amber-50 border-amber-200 text-slate-800 focus:border-amber-400 focus:bg-white'
+                                                    }`}
                                             />
+                                            {!pwdVerified && (
+                                                <button type="button" onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                                    {showCurrentPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                </button>
+                                            )}
                                         </div>
-                                        <div className="relative">
-                                            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input
-                                                type="password" placeholder="Confirm New Password"
-                                                value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                                                onKeyDown={e => e.key === 'Enter' && handleUpdatePassword()}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-orange-400 focus:bg-white outline-none transition-all"
-                                            />
-                                        </div>
-                                        {pwdMsg && (
-                                            <p className={`text-xs font-semibold ${pwdMsg.startsWith('✅') ? 'text-emerald-600' : 'text-rose-500'}`}>{pwdMsg}</p>
+
+                                        {!pwdVerified && (
+                                            <>
+                                                {pwdMsg && (
+                                                    <p className={`text-xs font-semibold ${pwdMsg.startsWith('✅') ? 'text-emerald-600' : 'text-rose-500'}`}>{pwdMsg}</p>
+                                                )}
+                                                <button
+                                                    onClick={handleUpdatePassword}
+                                                    disabled={pwdLoading || !currentPassword.trim()}
+                                                    className="w-full bg-amber-500 text-white font-bold py-3 rounded-xl text-sm hover:bg-amber-600 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                                >
+                                                    {pwdLoading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                                                    {pwdLoading ? 'Verifying...' : 'Verify Current Password'}
+                                                </button>
+                                            </>
                                         )}
-                                        <button
-                                            onClick={handleUpdatePassword}
-                                            disabled={pwdLoading || !newPassword.trim()}
-                                            className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-sm hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                                        >
-                                            {pwdLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                                            {pwdLoading ? 'Updating...' : 'Update Password'}
-                                        </button>
+
+                                        {/* Step 2: New Password (only after verification) */}
+                                        {pwdVerified && (
+                                            <>
+                                                <div className="relative">
+                                                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                    <input
+                                                        type={showNewPwd ? 'text' : 'password'}
+                                                        placeholder="New Password (min 6 chars)"
+                                                        value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                                        autoFocus
+                                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-10 font-semibold text-slate-800 text-sm focus:border-orange-400 focus:bg-white outline-none transition-all"
+                                                    />
+                                                    <button type="button" onClick={() => setShowNewPwd(!showNewPwd)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                                        {showNewPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                    </button>
+                                                </div>
+                                                <div className="relative">
+                                                    <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                    <input
+                                                        type={showNewPwd ? 'text' : 'password'}
+                                                        placeholder="Confirm New Password"
+                                                        value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                                                        onKeyDown={e => e.key === 'Enter' && handleUpdatePassword()}
+                                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-orange-400 focus:bg-white outline-none transition-all"
+                                                    />
+                                                </div>
+                                                {newPassword && confirmPassword && (
+                                                    <p className={`text-[10px] font-bold ${newPassword === confirmPassword ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {newPassword === confirmPassword ? '✅ Passwords match' : '❌ Passwords don\'t match'}
+                                                    </p>
+                                                )}
+                                                {pwdMsg && pwdMsg !== '✅ Password verified! Now set your new password.' && (
+                                                    <p className={`text-xs font-semibold ${pwdMsg.startsWith('✅') ? 'text-emerald-600' : 'text-rose-500'}`}>{pwdMsg}</p>
+                                                )}
+                                                <button
+                                                    onClick={handleUpdatePassword}
+                                                    disabled={pwdLoading || !newPassword.trim() || newPassword !== confirmPassword || newPassword.length < 6}
+                                                    className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-sm hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                                >
+                                                    {pwdLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                                    {pwdLoading ? 'Updating...' : 'Update Password'}
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
 
-                    {/* ── Change Email (inline) ── */}
+                    {/* ── Change Email (with current password verification) ── */}
                     <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
                         <button
-                            onClick={() => { setChangeEmailMode(!changeEmailMode); setEmailMsg(''); }}
+                            onClick={() => { setChangeEmailMode(!changeEmailMode); setEmailMsg(''); setEmailPwdVerified(false); setEmailCurrentPwd(''); setNewEmail(''); }}
                             className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-all group"
                         >
                             <div className="flex items-center gap-3">
                                 <div className="p-2.5 bg-cyan-50 text-cyan-600 rounded-xl group-hover:bg-cyan-100 transition-colors"><Mail size={18} /></div>
                                 <div className="text-left">
                                     <p className="font-semibold text-slate-800 text-sm">Change Email</p>
-                                    <p className="text-[10px] text-slate-400">Update the email linked to your account</p>
+                                    <p className="text-[10px] text-slate-400">Verify identity, then update email</p>
                                 </div>
                             </div>
                             <ChevronRight size={16} className={`text-slate-300 transition-transform ${changeEmailMode ? 'rotate-90' : ''}`} />
@@ -623,27 +726,72 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                             <span className="text-[10px] font-bold text-slate-400 uppercase">Current:</span>
                                             <span className="text-xs font-semibold text-slate-600 truncate">{user?.email}</span>
                                         </div>
+
+                                        {/* Step 1: Verify Current Password */}
                                         <div className="relative">
-                                            <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <ShieldCheck size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${emailPwdVerified ? 'text-emerald-500' : 'text-amber-500'}`} />
                                             <input
-                                                type="email" placeholder="New Email Address"
-                                                value={newEmail} onChange={e => setNewEmail(e.target.value)}
-                                                onKeyDown={e => e.key === 'Enter' && handleChangeEmail()}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-cyan-400 focus:bg-white outline-none transition-all"
+                                                type={showEmailPwd ? 'text' : 'password'}
+                                                placeholder={emailPwdVerified ? '✅ Identity verified' : '🔐 Enter current password'}
+                                                value={emailCurrentPwd}
+                                                onChange={e => setEmailCurrentPwd(e.target.value)}
+                                                disabled={emailPwdVerified}
+                                                className={`w-full border-2 rounded-xl py-3 pl-10 pr-10 font-semibold text-sm outline-none transition-all ${emailPwdVerified
+                                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                        : 'bg-amber-50 border-amber-200 text-slate-800 focus:border-amber-400 focus:bg-white'
+                                                    }`}
                                             />
+                                            {!emailPwdVerified && (
+                                                <button type="button" onClick={() => setShowEmailPwd(!showEmailPwd)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                                    {showEmailPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                </button>
+                                            )}
                                         </div>
-                                        {emailMsg && (
-                                            <p className={`text-xs font-semibold ${emailMsg.startsWith('✅') ? 'text-emerald-600' : 'text-rose-500'}`}>{emailMsg}</p>
+
+                                        {!emailPwdVerified && (
+                                            <>
+                                                {emailMsg && (
+                                                    <p className={`text-xs font-semibold ${emailMsg.startsWith('✅') ? 'text-emerald-600' : 'text-rose-500'}`}>{emailMsg}</p>
+                                                )}
+                                                <button
+                                                    onClick={() => handleChangeEmail()}
+                                                    disabled={emailLoading || !emailCurrentPwd.trim()}
+                                                    className="w-full bg-amber-500 text-white font-bold py-3 rounded-xl text-sm hover:bg-amber-600 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                                >
+                                                    {emailLoading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                                                    {emailLoading ? 'Verifying...' : 'Verify Identity'}
+                                                </button>
+                                            </>
                                         )}
-                                        <button
-                                            onClick={handleChangeEmail}
-                                            disabled={emailLoading || !newEmail.trim()}
-                                            className="w-full bg-cyan-600 text-white font-bold py-3 rounded-xl text-sm hover:bg-cyan-700 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                                        >
-                                            {emailLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                                            {emailLoading ? 'Sending...' : 'Send Confirmation Email'}
-                                        </button>
-                                        <p className="text-[10px] text-slate-400 leading-relaxed">You'll receive a confirmation link on both your old and new email addresses.</p>
+
+                                        {/* Step 2: New Email (only after verification) */}
+                                        {emailPwdVerified && (
+                                            <>
+                                                <div className="relative">
+                                                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                    <input
+                                                        type="email" placeholder="New Email Address"
+                                                        value={newEmail} onChange={e => setNewEmail(e.target.value)}
+                                                        onKeyDown={e => e.key === 'Enter' && handleChangeEmail()}
+                                                        autoFocus
+                                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-cyan-400 focus:bg-white outline-none transition-all"
+                                                    />
+                                                </div>
+                                                {emailMsg && emailMsg !== '✅ Password verified! Now enter your new email.' && (
+                                                    <p className={`text-xs font-semibold ${emailMsg.startsWith('✅') ? 'text-emerald-600' : 'text-rose-500'}`}>{emailMsg}</p>
+                                                )}
+                                                <button
+                                                    onClick={handleChangeEmail}
+                                                    disabled={emailLoading || !newEmail.trim()}
+                                                    className="w-full bg-cyan-600 text-white font-bold py-3 rounded-xl text-sm hover:bg-cyan-700 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                                >
+                                                    {emailLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                                                    {emailLoading ? 'Sending...' : 'Send Confirmation Email'}
+                                                </button>
+                                                <p className="text-[10px] text-slate-400 leading-relaxed">📩 Confirmation will be sent to both old and new email. You must confirm on both.</p>
+                                            </>
+                                        )}
                                     </div>
                                 </motion.div>
                             )}
