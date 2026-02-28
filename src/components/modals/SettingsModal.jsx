@@ -6,7 +6,8 @@ import {
     Sun, Moon, Monitor, Trash2, Download, Volume2, QrCode,
     Lock, Fingerprint, ChevronRight, AlertTriangle,
     Bell, Clock, Sparkles, Timer, MessageSquare, Camera,
-    Check, Loader2, Edit3, Image, ChevronLeft, Play, ZoomIn
+    Check, Loader2, Edit3, Image, ChevronLeft, Play, ZoomIn,
+    Mail, KeyRound
 } from 'lucide-react';
 import { supabase } from '../../config/supabase';
 import {
@@ -151,6 +152,65 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
     };
 
     const handleSignOut = async () => { await supabase.auth.signOut(); window.location.reload(); };
+
+    // ── Security: Reset Password, Change Email, Update Password ─────────
+    const [resetSent, setResetSent] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [changeEmailMode, setChangeEmailMode] = useState(false);
+    const [newEmail, setNewEmail] = useState('');
+    const [emailLoading, setEmailLoading] = useState(false);
+    const [emailMsg, setEmailMsg] = useState('');
+    const [changePwdMode, setChangePwdMode] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [pwdLoading, setPwdLoading] = useState(false);
+    const [pwdMsg, setPwdMsg] = useState('');
+
+    const handleResetPassword = async () => {
+        if (!user?.email || resetLoading) return;
+        setResetLoading(true);
+        const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+            redirectTo: 'https://fin.swinfosystems.online',
+        });
+        setResetLoading(false);
+        if (!error) {
+            setResetSent(true);
+            setTimeout(() => setResetSent(false), 5000);
+        }
+    };
+
+    const handleChangeEmail = async () => {
+        if (!newEmail.trim() || emailLoading) return;
+        setEmailLoading(true);
+        setEmailMsg('');
+        const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+        setEmailLoading(false);
+        if (error) {
+            setEmailMsg(`❌ ${error.message}`);
+        } else {
+            setEmailMsg('✅ Confirmation email sent to your new address! Check both old & new inboxes.');
+            setNewEmail('');
+            setTimeout(() => { setEmailMsg(''); setChangeEmailMode(false); }, 5000);
+        }
+    };
+
+    const handleUpdatePassword = async () => {
+        if (!newPassword.trim() || pwdLoading) return;
+        if (newPassword.length < 6) { setPwdMsg('❌ Password must be at least 6 characters.'); return; }
+        if (newPassword !== confirmPassword) { setPwdMsg('❌ Passwords do not match.'); return; }
+        setPwdLoading(true);
+        setPwdMsg('');
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        setPwdLoading(false);
+        if (error) {
+            setPwdMsg(`❌ ${error.message}`);
+        } else {
+            setPwdMsg('✅ Password updated successfully!');
+            setNewPassword('');
+            setConfirmPassword('');
+            setTimeout(() => { setPwdMsg(''); setChangePwdMode(false); }, 3000);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -302,8 +362,8 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                                     playSound(key, prefs.sound_volume / 100, prefs.sound_duration);
                                                 }}
                                                 className={`flex items-center gap-2 p-2.5 rounded-xl border-2 text-left transition-all ${prefs.sound_effect === key
-                                                        ? 'border-violet-400 bg-violet-50'
-                                                        : 'border-slate-100 bg-white hover:border-slate-200'
+                                                    ? 'border-violet-400 bg-violet-50'
+                                                    : 'border-slate-100 bg-white hover:border-slate-200'
                                                     }`}>
                                                 <span className="text-base leading-none">{label.split(' ')[0]}</span>
                                                 <div className="flex-1 min-w-0">
@@ -426,8 +486,8 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                             ].map(t => (
                                 <button key={t.id} onClick={() => updatePref('theme', t.id)}
                                     className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${prefs.theme === t.id
-                                            ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-500/10'
-                                            : 'border-slate-100 bg-white hover:border-slate-200'
+                                        ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-500/10'
+                                        : 'border-slate-100 bg-white hover:border-slate-200'
                                         }`}>
                                     <t.icon size={22} className={prefs.theme === t.id ? 'text-orange-500' : 'text-slate-400'} />
                                     <div>
@@ -451,8 +511,8 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                             ].map(d => (
                                 <button key={d.id} onClick={() => updatePref('ui_density', d.id)}
                                     className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${prefs.ui_density === d.id
-                                            ? 'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-500/10'
-                                            : 'border-slate-100 bg-white hover:border-slate-200'
+                                        ? 'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-500/10'
+                                        : 'border-slate-100 bg-white hover:border-slate-200'
                                         }`}>
                                     {/* Visual preview of density */}
                                     <div className={`w-full bg-slate-100 rounded-lg ${d.padding} space-y-1`}>
@@ -478,21 +538,147 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
 
             // ── SECURITY ─────────────────────────────────────────────────────
             case 'security': return (
-                <div className="space-y-3">
+                <div className="space-y-5">
                     <SectionLabel>Account Protection</SectionLabel>
-                    <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-all group">
+
+                    {/* ── Change Password (inline) ── */}
+                    <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
+                        <button
+                            onClick={() => { setChangePwdMode(!changePwdMode); setPwdMsg(''); }}
+                            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-all group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-slate-50 text-slate-600 rounded-xl group-hover:bg-slate-100 transition-colors"><KeyRound size={18} /></div>
+                                <div className="text-left">
+                                    <p className="font-semibold text-slate-800 text-sm">Change Password</p>
+                                    <p className="text-[10px] text-slate-400">Set a new password for your account</p>
+                                </div>
+                            </div>
+                            <ChevronRight size={16} className={`text-slate-300 transition-transform ${changePwdMode ? 'rotate-90' : ''}`} />
+                        </button>
+                        <AnimatePresence>
+                            {changePwdMode && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="px-4 pb-4 space-y-3 border-t border-slate-100 pt-3">
+                                        <div className="relative">
+                                            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="password" placeholder="New Password (min 6 chars)"
+                                                value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-orange-400 focus:bg-white outline-none transition-all"
+                                            />
+                                        </div>
+                                        <div className="relative">
+                                            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="password" placeholder="Confirm New Password"
+                                                value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && handleUpdatePassword()}
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-orange-400 focus:bg-white outline-none transition-all"
+                                            />
+                                        </div>
+                                        {pwdMsg && (
+                                            <p className={`text-xs font-semibold ${pwdMsg.startsWith('✅') ? 'text-emerald-600' : 'text-rose-500'}`}>{pwdMsg}</p>
+                                        )}
+                                        <button
+                                            onClick={handleUpdatePassword}
+                                            disabled={pwdLoading || !newPassword.trim()}
+                                            className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-sm hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                        >
+                                            {pwdLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                            {pwdLoading ? 'Updating...' : 'Update Password'}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* ── Change Email (inline) ── */}
+                    <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
+                        <button
+                            onClick={() => { setChangeEmailMode(!changeEmailMode); setEmailMsg(''); }}
+                            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-all group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-cyan-50 text-cyan-600 rounded-xl group-hover:bg-cyan-100 transition-colors"><Mail size={18} /></div>
+                                <div className="text-left">
+                                    <p className="font-semibold text-slate-800 text-sm">Change Email</p>
+                                    <p className="text-[10px] text-slate-400">Update the email linked to your account</p>
+                                </div>
+                            </div>
+                            <ChevronRight size={16} className={`text-slate-300 transition-transform ${changeEmailMode ? 'rotate-90' : ''}`} />
+                        </button>
+                        <AnimatePresence>
+                            {changeEmailMode && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="px-4 pb-4 space-y-3 border-t border-slate-100 pt-3">
+                                        <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Current:</span>
+                                            <span className="text-xs font-semibold text-slate-600 truncate">{user?.email}</span>
+                                        </div>
+                                        <div className="relative">
+                                            <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="email" placeholder="New Email Address"
+                                                value={newEmail} onChange={e => setNewEmail(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && handleChangeEmail()}
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-cyan-400 focus:bg-white outline-none transition-all"
+                                            />
+                                        </div>
+                                        {emailMsg && (
+                                            <p className={`text-xs font-semibold ${emailMsg.startsWith('✅') ? 'text-emerald-600' : 'text-rose-500'}`}>{emailMsg}</p>
+                                        )}
+                                        <button
+                                            onClick={handleChangeEmail}
+                                            disabled={emailLoading || !newEmail.trim()}
+                                            className="w-full bg-cyan-600 text-white font-bold py-3 rounded-xl text-sm hover:bg-cyan-700 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                        >
+                                            {emailLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                                            {emailLoading ? 'Sending...' : 'Send Confirmation Email'}
+                                        </button>
+                                        <p className="text-[10px] text-slate-400 leading-relaxed">You'll receive a confirmation link on both your old and new email addresses.</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* ── Reset Password via Email ── */}
+                    <button
+                        onClick={handleResetPassword}
+                        disabled={resetLoading || resetSent}
+                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-100 hover:border-orange-200 hover:bg-orange-50/40 transition-all group disabled:opacity-60"
+                    >
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-slate-50 text-slate-600 rounded-xl group-hover:bg-slate-100 transition-colors"><Lock size={18} /></div>
+                            <div className="p-2.5 bg-orange-50 text-orange-500 rounded-xl group-hover:bg-orange-100 transition-colors">
+                                {resetLoading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
+                            </div>
                             <div className="text-left">
-                                <p className="font-semibold text-slate-800 text-sm">Change Password</p>
-                                <p className="text-[10px] text-slate-400">Update your account password</p>
+                                <p className="font-semibold text-slate-800 text-sm">
+                                    {resetSent ? '✅ Reset Email Sent!' : 'Send Reset Password Email'}
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                    {resetSent ? `Check ${user?.email} for the reset link` : 'Receive a password reset link via email'}
+                                </p>
                             </div>
                         </div>
-                        <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500" />
+                        <ChevronRight size={16} className="text-slate-300 group-hover:text-orange-400 transition-colors" />
                     </button>
+
+                    <SectionLabel>Authentication</SectionLabel>
+
                     <SettingRow icon={Fingerprint} title="Biometric Login" desc="Use Face ID or fingerprint" iconColor="text-emerald-500" iconBg="bg-emerald-50">
                         <Toggle checked={prefs.biometric_enabled} onChange={() => updatePref('biometric_enabled', !prefs.biometric_enabled)} color="emerald" />
                     </SettingRow>
+
+                    {/* Session Info */}
                     <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
                         <p className="text-xs font-semibold text-slate-500 mb-2">Current Session</p>
                         <p className="text-sm font-semibold text-slate-800 truncate">{user?.email}</p>
