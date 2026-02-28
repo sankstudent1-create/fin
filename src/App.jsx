@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './config/supabase';
 import { AuthScreen } from './screens/AuthScreen';
+import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 import { Dashboard } from './screens/Dashboard';
 import { SupportModal } from './components/modals/SupportModal';
 
@@ -43,6 +44,7 @@ const SystemSetup = () => {
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recoveryMode, setRecoveryMode] = useState(false);
 
   useEffect(() => {
     // Check for cached session first for instant offline access
@@ -65,7 +67,17 @@ export default function App() {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('%c🔄 Auth Event:', 'color:#f97316;font-weight:bold', event);
+
+      // PASSWORD_RECOVERY: user clicked reset link → show "Set New Password" screen
+      if (event === 'PASSWORD_RECOVERY') {
+        setSession(session);
+        setRecoveryMode(true);
+        setLoading(false);
+        return; // Don't go to dashboard, stay on reset screen
+      }
+
       setSession(session);
       if (session) {
         localStorage.setItem('supabase.auth.token', JSON.stringify({ currentSession: session }));
@@ -81,20 +93,29 @@ export default function App() {
   const [showSupport, setShowSupport] = useState(false);
 
   useEffect(() => {
-    if (session) {
+    if (session && !recoveryMode) {
       const hasSeenSupport = localStorage.getItem(`support_seen_${session.user.id}`);
       if (!hasSeenSupport) {
         setShowSupport(true);
         localStorage.setItem(`support_seen_${session.user.id}`, 'true');
       }
     }
-  }, [session]);
+  }, [session, recoveryMode]);
+
+  // Handle recovery complete → go to dashboard
+  const handleRecoveryComplete = () => {
+    setRecoveryMode(false);
+    // Clean up the URL hash fragments Supabase adds
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  };
 
   return (
     <>
       <SystemSetup />
       <AnimatePresence>
-        {showSupport && session && (
+        {showSupport && session && !recoveryMode && (
           <SupportModal isOpen={showSupport} onClose={() => setShowSupport(false)} user={session.user} />
         )}
       </AnimatePresence>
@@ -110,6 +131,8 @@ export default function App() {
             </div>
             <p className="text-gray-400 font-bold text-xs uppercase tracking-widest animate-pulse">Initializing Fin...</p>
           </motion.div>
+        ) : recoveryMode && session ? (
+          <ResetPasswordScreen key="recovery" onComplete={handleRecoveryComplete} />
         ) : (
           !session ? <AuthScreen key="auth" supabase={supabase} /> : <Dashboard key="dash" session={session} supabase={supabase} />
         )}
@@ -117,3 +140,4 @@ export default function App() {
     </>
   );
 }
+
