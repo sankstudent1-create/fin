@@ -12,6 +12,8 @@ export const AuthScreen = () => {
     const [fullName, setFullName] = useState('');
     const [error, setError] = useState(null);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotSent, setForgotSent] = useState(false);
     const [supabaseDown, setSupabaseDown] = useState(false);
 
     // Track online/offline
@@ -97,6 +99,27 @@ export const AuthScreen = () => {
             const msg = friendlyError(err);
             if (msg) setError(msg);
         }
+    };
+
+    const handleForgotPassword = async () => {
+        if (!email.trim()) {
+            setError('Please enter your email address first, then click Forgot Password.');
+            return;
+        }
+        setForgotLoading(true);
+        setError(null);
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+                redirectTo: 'https://fin.swinfosystems.online',
+            });
+            if (error) throw error;
+            setForgotSent(true);
+            setTimeout(() => setForgotSent(false), 8000);
+        } catch (err) {
+            const msg = friendlyError(err);
+            if (msg) setError(msg);
+        }
+        setForgotLoading(false);
     };
 
     return (
@@ -221,6 +244,24 @@ export const AuthScreen = () => {
                             />
                         </div>
                     </div>
+
+                    {/* Forgot Password */}
+                    {isLogin && (
+                        <div className="flex justify-end -mt-1">
+                            {forgotSent ? (
+                                <p className="text-xs font-bold text-emerald-600">✅ Reset link sent to {email}! Check your inbox.</p>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleForgotPassword}
+                                    disabled={forgotLoading}
+                                    className="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline transition-all disabled:opacity-50"
+                                >
+                                    {forgotLoading ? 'Sending...' : 'Forgot Password?'}
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     <button
                         type="submit"
