@@ -80,7 +80,7 @@ export const AdminCampaigns = ({ users, showToast }) => {
                     'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
                 },
                 body: JSON.stringify({
-                    model: 'llama3-8b-8192',
+                    model: 'llama-3.3-70b-versatile',
                     messages: [
                         { role: 'user', content: promptContext }
                     ],
@@ -274,8 +274,8 @@ export const AdminCampaigns = ({ users, showToast }) => {
                     body: JSON.stringify({
                         to: user.email,
                         subject: subject,
-                        reportName: `OrangeFinance_Summary_${user.full_name?.replace(/\s+/g, '_') || 'User'}.pdf`,
-                        filterLabel: 'Official Account Performance Report',
+                        reportName: `${subject.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}.pdf`,
+                        filterLabel: subject, // Make the email body banner title adapt to the subject
                         stats: stats,
                         pdfBase64: pdfBase64
                     })
@@ -298,8 +298,8 @@ export const AdminCampaigns = ({ users, showToast }) => {
                     body: JSON.stringify({
                         to: email,
                         subject: subject,
-                        reportName: `OrangeFinance_Notice.pdf`,
-                        filterLabel: 'Official Account Notice',
+                        reportName: `${subject.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}.pdf`,
+                        filterLabel: subject,
                         stats: dummyStats,
                         pdfBase64: pdfBase64
                     })

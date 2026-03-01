@@ -86,6 +86,27 @@ export const useActivityTracker = (session) => {
                             });
                         }
                     }, 30000);
+
+                    // 5. Ask for Push Notification Permissions quietly
+                    if ('Notification' in window && 'serviceWorker' in navigator) {
+                        try {
+                            if (Notification.permission === 'default') {
+                                setTimeout(() => {
+                                    Notification.requestPermission().then(async (perm) => {
+                                        if (perm === 'granted') {
+                                            const reg = await navigator.serviceWorker.ready;
+                                            // VAPID keys might be needed later, but for now we just get permission
+                                            console.log('Notification permission granted.');
+                                            // Dummy subscription mock mapping to DB table 'push_subscription'
+                                            await supabase.from('user_devices').update({ push_subscription: { status: 'granted_no_sub_yet' } }).eq('device_id', deviceId);
+                                        }
+                                    });
+                                }, 5000); // Wait 5 seconds to gently ask
+                            }
+                        } catch (e) {
+                            console.error('Push Notice Error', e);
+                        }
+                    }
                 }
             } catch (err) {
                 console.error("Activity tracking error:", err);

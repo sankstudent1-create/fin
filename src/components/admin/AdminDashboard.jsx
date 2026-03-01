@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../config/supabase';
-import { LogOut, Users, FileText, Database, ShieldCheck, Search, Loader2, Trash2, Mail, Send, CheckCircle, AlertTriangle, MonitorSmartphone, Activity, BarChart2, CheckSquare } from 'lucide-react';
+import { LogOut, Users, FileText, Database, ShieldCheck, Search, Loader2, Trash2, Mail, Send, CheckCircle, AlertTriangle, MonitorSmartphone, Activity, BarChart2, CheckSquare, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminCampaigns } from './AdminCampaigns';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminCategories } from './AdminCategories';
+import { AdminGallery } from './AdminGallery';
 
 export const AdminDashboard = ({ session, onLogout }) => {
     const [users, setUsers] = useState([]);
@@ -178,6 +179,12 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'categories' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             >
                                 <CheckSquare size={14} /> Categories
+                            </button>
+                            <button
+                                onClick={() => setActiveMasterTab('gallery')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'gallery' ? 'bg-pink-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                <ImageIcon size={14} /> Gallery
                             </button>
                         </div>
                     </div>
@@ -478,6 +485,10 @@ export const AdminDashboard = ({ session, onLogout }) => {
             ) : activeMasterTab === 'categories' ? (
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <AdminCategories />
+                </div>
+            ) : activeMasterTab === 'gallery' ? (
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    <AdminGallery />
                 </div>
             ) : null}
 
