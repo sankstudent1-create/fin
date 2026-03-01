@@ -16,9 +16,45 @@ export const AdminCampaigns = ({ users, showToast }) => {
     const [search, setSearch] = useState('');
 
     // Campaign details
+    const [subject, setSubject] = useState('Official Account Summary & Status');
     const [customMessage, setCustomMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [sendProgress, setSendProgress] = useState(0);
+
+    const templates = [
+        {
+            label: 'Keep Investing (Tips)',
+            subject: 'Unlock Your Future: Smart Investing Strategies',
+            message: 'Consistency is the key to wealth generation. Even small investments, when compounded over time, can yield magnificent results. As part of Orange Finance, we strongly advise automating a portion of your monthly savings directly into diverse investment vehicles. Stay strong and keep investing for your financial future.'
+        },
+        {
+            label: 'Keep Saving (Encouragement)',
+            subject: 'Great Job: Keep Building Your Savings',
+            message: 'We noticed your disciplined approach to managing your finances! Saving effectively is the most crucial step toward financial independence. Ensure you always maintain a 6-month emergency fund, and continue making intelligent spending decisions. We are proud of your progress on Orange Finance.'
+        },
+        {
+            label: 'Annual Status Report',
+            subject: 'Confidential: Your Annual Financial Report',
+            message: 'Enclosed is the official comprehensive review of your entire financial trajectory over the past year. We have carefully aggregated your income and expenses to provide a transparent overview. Please review to refine your budgeting plans for the upcoming year.'
+        },
+        {
+            label: 'Monthly Status Report',
+            subject: 'Confidential: Your Monthly Financial Report',
+            message: 'Enclosed is your detailed transaction summary for the preceding month. Please review your balance and ensure your expenses align closely with your designated budgeting goals.'
+        },
+        {
+            label: 'Festival / Occasion Greetings',
+            subject: 'Happy Festivities from Orange Finance!',
+            message: 'The entire executive team at Orange Finance wishes you and your family abundant joy and prosperity this festive season! As you celebrate, remember that true wealth belongs to those who spread happiness. We value your continued trust and membership with us. Have a wonderful celebration!'
+        }
+    ];
+
+    const applyTemplate = (e) => {
+        const val = e.target.value;
+        if (val === '') return;
+        setSubject(templates[val].subject);
+        setCustomMessage(templates[val].message);
+    };
 
     useEffect(() => {
         loadAllStats();
@@ -103,7 +139,7 @@ export const AdminCampaigns = ({ users, showToast }) => {
         const root = ReactDOM.createRoot(container);
         await new Promise((resolve) => {
             root.render(
-                <AdminCEOLetter user={user} stats={stats} customMessage={customMessage} />
+                <AdminCEOLetter user={user} stats={stats} customMessage={customMessage} subject={subject} />
             );
             setTimeout(resolve, 800); // Wait for render
         });
@@ -148,7 +184,7 @@ export const AdminCampaigns = ({ users, showToast }) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         to: user.email,
-                        subject: 'Important File: Orange Finance Account Performance Summary',
+                        subject: subject,
                         reportName: `OrangeFinance_Summary_${user.full_name?.replace(/\s+/g, '_') || 'User'}.pdf`,
                         filterLabel: 'Official Account Performance Report',
                         stats: stats,
@@ -278,7 +314,29 @@ export const AdminCampaigns = ({ users, showToast }) => {
                         This campaign attaches a premium, watermarked PDF on the CEO letterpad. Each PDF is <b>auto-generated per user</b> containing their exact Income, Expense, and Balance data dynamically.
                     </p>
 
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Custom Body Message (Optional)</label>
+                    <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Quick Templates</label>
+                        <select
+                            onChange={applyTemplate}
+                            className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500"
+                        >
+                            <option value="">-- Choose a predefined template --</option>
+                            {templates.map((tpl, idx) => (
+                                <option key={idx} value={idx}>{tpl.label}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Notice Subject</label>
+                    <input
+                        type="text"
+                        className="w-full mb-4 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="e.g. Important: Account Summary"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                    />
+
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Letter Body</label>
                     <textarea
                         className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
                         placeholder="Write a specialized message to appear inside the CEO letter body..."
@@ -298,8 +356,8 @@ export const AdminCampaigns = ({ users, showToast }) => {
                             onClick={handleSendCampaign}
                             disabled={selectedUserIds.size === 0}
                             className={`w-full mt-6 py-4 rounded-xl flex items-center justify-center gap-2 text-sm font-black transition-all shadow-xl ${selectedUserIds.size > 0
-                                    ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'
-                                    : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                                ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                                 }`}
                         >
                             <Send size={16} /> Launch Campaign to {selectedUserIds.size} Users
