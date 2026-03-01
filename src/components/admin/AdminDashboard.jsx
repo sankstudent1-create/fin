@@ -23,6 +23,8 @@ export const AdminDashboard = ({ session, onLogout }) => {
     const [userDevices, setUserDevices] = useState([]);
     const [userSessions, setUserSessions] = useState([]);
     const [loadingTx, setLoadingTx] = useState(false);
+    const [pushModalOpen, setPushModalOpen] = useState(false);
+    const [pushMessage, setPushMessage] = useState('');
 
     useEffect(() => {
         loadUsers();
@@ -189,14 +191,19 @@ export const AdminDashboard = ({ session, onLogout }) => {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Mobile view dropdown or simple toggle */}
+                        {/* Mobile view dropdown */}
                         <div className="md:hidden">
-                            <button
-                                onClick={() => setActiveMasterTab(activeMasterTab === 'directory' ? 'campaigns' : 'directory')}
-                                className="bg-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs font-bold border border-slate-700"
+                            <select
+                                value={activeMasterTab}
+                                onChange={(e) => setActiveMasterTab(e.target.value)}
+                                className="bg-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs font-bold border border-slate-700 outline-none focus:border-orange-500 appearance-none"
                             >
-                                {activeMasterTab === 'directory' ? 'To Campaigns' : 'To Directory'}
-                            </button>
+                                <option value="directory">Directory</option>
+                                <option value="campaigns">Campaigns</option>
+                                <option value="analytics">Analytics</option>
+                                <option value="categories">Categories</option>
+                                <option value="gallery">Gallery</option>
+                            </select>
                         </div>
                         <button
                             onClick={onLogout}
@@ -413,28 +420,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={async () => {
-                                                    const msg = window.prompt("Enter the alert message to broadcast to this user:");
-                                                    if (!msg) return;
-                                                    setLoadingTx(true);
-                                                    try {
-                                                        const res = await fetch('/api/send-push', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({
-                                                                title: 'Message from Orange Finance HQ',
-                                                                body: msg,
-                                                                targetUserIds: [selectedUser.id]
-                                                            })
-                                                        });
-                                                        const data = await res.json();
-                                                        if (!data.success) throw new Error(data.error || 'Push unacknowledged');
-                                                        showToast(`Push Delivered (${data.sentCount} devices reached).`, 'success');
-                                                    } catch (err) {
-                                                        showToast(err.message || "Failed to trigger push.", "error");
-                                                    }
-                                                    setLoadingTx(false);
-                                                }}
+                                                onClick={() => setPushModalOpen(true)}
                                                 className="px-5 py-2.5 bg-purple-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-purple-700 transition-all flex items-center gap-2"
                                             >
                                                 <Send size={14} /> Send Alert
@@ -529,6 +515,86 @@ export const AdminDashboard = ({ session, onLogout }) => {
                     <AdminGallery />
                 </div>
             ) : null}
+
+            {/* Push Notification Modal */}
+            <AnimatePresence>
+                {pushModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setPushModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-6 border-b border-slate-100 flex items-center gap-4">
+                                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
+                                    <MonitorSmartphone size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-900 leading-tight">Send Push Alert</h2>
+                                    <p className="text-xs font-bold text-slate-500 mt-1 truncate">To: {selectedUser?.email}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-6">
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-3">Notification Message</label>
+                                <textarea
+                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none transition-all"
+                                    placeholder="Type the alert message to broadcast directly to their screens..."
+                                    value={pushMessage}
+                                    onChange={(e) => setPushMessage(e.target.value)}
+                                    autoFocus
+                                />
+
+                                <div className="flex items-center justify-end gap-3 mt-6">
+                                    <button
+                                        onClick={() => { setPushModalOpen(false); setPushMessage(''); }}
+                                        className="px-6 py-3 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        disabled={!pushMessage.trim() || loadingTx}
+                                        onClick={async () => {
+                                            setLoadingTx(true);
+                                            try {
+                                                const res = await fetch('/api/send-push', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        title: 'Message from Orange Finance HQ',
+                                                        body: pushMessage.trim(),
+                                                        targetUserIds: [selectedUser.id]
+                                                    })
+                                                });
+                                                const data = await res.json();
+                                                if (!data.success) throw new Error(data.error || 'Push unacknowledged');
+                                                showToast(`Push Delivered (${data.sentCount} devices reached).`, 'success');
+                                                setPushModalOpen(false);
+                                                setPushMessage('');
+                                            } catch (err) {
+                                                showToast(err.message || "Failed to trigger push.", "error");
+                                            }
+                                            setLoadingTx(false);
+                                        }}
+                                        className="px-6 py-3 rounded-xl text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {loadingTx ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                        Broadcast Alert
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Toast */}
             <AnimatePresence>
