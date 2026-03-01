@@ -5,7 +5,7 @@ import {
     Home, BarChart3, Settings, Wallet, TrendingUp, TrendingDown,
     Plus, Search, Calendar, ChevronDown, ChevronLeft, Download, Share2,
     Receipt, ScanLine, Headphones, Loader2, X, Check, ShieldCheck,
-    FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic
+    FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic, MonitorSmartphone
 } from 'lucide-react';
 import { useActivityTracker } from '../hooks/useActivityTracker';
 import { AIChatbot } from '../components/modals/AIChatbot';
