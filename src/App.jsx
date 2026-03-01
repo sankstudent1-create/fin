@@ -7,6 +7,8 @@ import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 import { Dashboard } from './screens/Dashboard';
 import { SupportModal } from './components/modals/SupportModal';
 
+import { AdminScreen } from './screens/admin/AdminScreen';
+
 // --- SYSTEM MANAGER (PWA & SETUP) ---
 const SystemSetup = () => {
   useEffect(() => {
@@ -45,8 +47,14 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [recoveryMode, setRecoveryMode] = useState(false);
+  const [isAdminRoute, setIsAdminRoute] = useState(false);
 
   useEffect(() => {
+    // Check if we are on the admin path
+    if (window.location.pathname.startsWith('/admin')) {
+      setIsAdminRoute(true);
+    }
+
     // Check for cached session first for instant offline access
     const cachedSession = localStorage.getItem('supabase.auth.token');
     if (cachedSession) {
@@ -93,14 +101,14 @@ export default function App() {
   const [showSupport, setShowSupport] = useState(false);
 
   useEffect(() => {
-    if (session && !recoveryMode) {
+    if (session && !recoveryMode && !isAdminRoute) {
       const hasSeenSupport = localStorage.getItem(`support_seen_${session.user.id}`);
       if (!hasSeenSupport) {
         setShowSupport(true);
         localStorage.setItem(`support_seen_${session.user.id}`, 'true');
       }
     }
-  }, [session, recoveryMode]);
+  }, [session, recoveryMode, isAdminRoute]);
 
   // Handle recovery complete → go to dashboard
   const handleRecoveryComplete = () => {
@@ -110,6 +118,16 @@ export default function App() {
       window.history.replaceState(null, '', window.location.pathname);
     }
   };
+
+  // Skip rendering the normal app if we are exactly on the admin route
+  if (isAdminRoute) {
+    return (
+      <>
+        <SystemSetup />
+        <AdminScreen />
+      </>
+    );
+  }
 
   return (
     <>
@@ -140,4 +158,3 @@ export default function App() {
     </>
   );
 }
-
