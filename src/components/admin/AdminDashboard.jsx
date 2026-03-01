@@ -220,15 +220,28 @@ export const AdminDashboard = ({ session, onLogout }) => {
                     {/* Users List Sidebar */}
                     <div className="w-full md:w-[350px] flex flex-col gap-4">
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-                            <div className="relative mb-4">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="Search users by email..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all text-slate-700"
-                                />
+
+                            <div className="flex items-center gap-2 mb-4">
+                                <button
+                                    onClick={() => {
+                                        setSelectedUser(null);
+                                        setPushModalOpen(true);
+                                    }}
+                                    className="px-4 py-3 bg-purple-100 text-purple-600 rounded-2xl text-xs font-bold hover:bg-purple-200 transition-all flex items-center gap-2 shrink-0"
+                                    title="Broadcast push notification to everyone"
+                                >
+                                    <MonitorSmartphone size={16} /> Broadcast
+                                </button>
+                                <div className="flex-1 relative">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search users by email..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all text-slate-700"
+                                    />
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-between mb-2 px-2">
@@ -514,7 +527,8 @@ export const AdminDashboard = ({ session, onLogout }) => {
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <AdminGallery />
                 </div>
-            ) : null}
+            ) : null
+            }
 
             {/* Push Notification Modal */}
             <AnimatePresence>
@@ -538,8 +552,10 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                     <MonitorSmartphone size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-black text-slate-900 leading-tight">Send Push Alert</h2>
-                                    <p className="text-xs font-bold text-slate-500 mt-1 truncate">To: {selectedUser?.email}</p>
+                                    <h2 className="text-xl font-black text-slate-900 leading-tight">{selectedUser ? 'Send Push Alert' : 'Broadcast to All'}</h2>
+                                    <p className="text-xs font-bold text-slate-500 mt-1 truncate">
+                                        {selectedUser ? `To: ${selectedUser.email}` : `To: All Registered Users (${users.length})`}
+                                    </p>
                                 </div>
                             </div>
 
@@ -571,7 +587,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                                     body: JSON.stringify({
                                                         title: 'Message from Orange Finance HQ',
                                                         body: pushMessage.trim(),
-                                                        targetUserIds: [selectedUser.id]
+                                                        targetUserIds: selectedUser ? [selectedUser.id] : users.map(u => u.id)
                                                     })
                                                 });
                                                 const data = await res.json();
@@ -611,6 +627,6 @@ export const AdminDashboard = ({ session, onLogout }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 };
