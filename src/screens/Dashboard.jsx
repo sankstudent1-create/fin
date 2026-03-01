@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Home, BarChart3, Settings, Wallet, TrendingUp, TrendingDown,
-    Plus, Search, Calendar, ChevronDown, Download, Share2,
+    Plus, Search, Calendar, ChevronDown, ChevronLeft, Download, Share2,
     Receipt, ScanLine, Headphones, Loader2, X, Check,
     FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic
 } from 'lucide-react';
@@ -15,7 +15,10 @@ import { TransactionItem } from '../components/dashboard/TransactionItem';
 import { TrendBarChart } from '../components/dashboard/TrendBarChart';
 import { AnalyticsDashboard } from '../components/dashboard/Analytics';
 import { CalculatorModal } from '../components/dashboard/Calculators';
-import { PrintView } from '../components/dashboard/PrintView';
+import { PrintView, PrintStyles, AnalyticsReport as PrintableReport } from '../components/dashboard/PrintView';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import ReactDOM from 'react-dom/client';
 import { SettingsModal, getUserPrefs } from '../components/modals/SettingsModal';
 import { ReceiptScanner } from '../components/modals/ReceiptScanner';
 import { SupportModal } from '../components/modals/SupportModal';
@@ -51,13 +54,7 @@ const FILTER_OPTIONS = [
     { id: 'lastMonth', label: 'Last Month', days: null },
 ];
 
-// PDF variant options with theme colors for the selector
-const PDF_VARIANTS = [
-    { id: 'classic', label: 'Classic', desc: 'Professional & clean', emoji: '📄', gradient: 'from-slate-800 to-slate-600' },
-    { id: 'creative', label: 'Creative', desc: 'Fun & colorful', emoji: '🎨', gradient: 'from-orange-500 to-rose-500' },
-    { id: 'ocean', label: 'Ocean', desc: 'Dark & elegant', emoji: '🌊', gradient: 'from-indigo-600 to-blue-500' },
-    { id: 'emerald', label: 'Emerald', desc: 'Clean & simple', emoji: '💎', gradient: 'from-emerald-500 to-teal-500' },
-];
+// Removed PDF_VARIANTS since only one premium style is needed
 
 export const Dashboard = ({ session }) => {
     // State
@@ -117,6 +114,7 @@ export const Dashboard = ({ session }) => {
 
     // PDF / sharing state
     const [isPrinting, setIsPrinting] = useState(false);
+    const [previewZoom, setPreviewZoom] = useState(1);
     const [printVariant, setPrintVariant] = useState('classic');
     const [isSharing, setIsSharing] = useState(false);
     const [calculatorPrintData, setCalculatorPrintData] = useState(null);
@@ -580,18 +578,55 @@ export const Dashboard = ({ session }) => {
 
     // --- PDF & SHARING (FIXED) ---
 
-    // Analytics Report → uses window.print() with PrintView (hide everything else via CSS)
-    const handlePrintReport = (variant) => {
-        setPrintVariant(variant);
-        setCalculatorPrintData(null);
-        setIsPrinting(true);
-        // Close any open modals so they don't bleed into print
-        setShowCalculator(null);
-        setShowThemePicker(false);
-        setTimeout(() => {
-            window.print();
-            setIsPrinting(false);
-        }, 600);
+    // High-quality PDF Generator (html2canvas)
+    const generateHighQualityPDF = async () => {
+        const container = document.createElement('div');
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
+        document.body.appendChild(container);
+
+        const root = ReactDOM.createRoot(container);
+        await new Promise((resolve) => {
+            root.render(
+                <div id="print-root-export">
+                    <PrintStyles />
+                    <PrintableReport
+                        user={user}
+                        stats={stats}
+                        transactions={filteredTransactions}
+                        filterLabel={filterLabel}
+                    />
+                </div>
+            );
+            setTimeout(resolve, 1500);
+        });
+
+        const element = container.querySelector('#print-root-export');
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            windowWidth: 794,
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = 210;
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        const pageHeight = 297;
+        let yOffset = 0;
+
+        while (yOffset < pdfHeight) {
+            if (yOffset > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfWidth, pdfHeight);
+            yOffset += pageHeight;
+        }
+
+        root.unmount();
+        document.body.removeChild(container);
+
+        const pdfBlob = pdf.output('blob');
+        return new File([pdfBlob], `OrangeFin_Report_${(filterLabel || 'All_Time').replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
     };
 
     // Calculator PDF → uses window.print() via PrintView (same premium design as analytics)
@@ -620,10 +655,11 @@ export const Dashboard = ({ session }) => {
         }, 600);
     };
 
-    // Download analytics report as PDF file using jsPDF
-    const handleDownloadReport = () => {
+    // Download analytics report as high-quality PDF
+    const handleDownloadReport = async () => {
+        setIsSharing(true); // Reuse isSharing state for loading spinner on the UI
         try {
-            const file = getPDFFile(filteredTransactions, stats, user, filterLabel);
+            const file = await generateHighQualityPDF();
             const url = URL.createObjectURL(file);
             const a = document.createElement('a');
             a.href = url;
@@ -637,22 +673,37 @@ export const Dashboard = ({ session }) => {
             console.error('Download error:', err);
             showToast('Download failed', 'error');
         }
+        setIsSharing(false);
     };
 
     // Share report
     const handleShare = async () => {
         setIsSharing(true);
         try {
-            const file = getPDFFile(filteredTransactions, stats, user, filterLabel);
+            const file = await generateHighQualityPDF();
             if (navigator.canShare?.({ files: [file] })) {
-                await navigator.share({ files: [file], title: 'Financial Report', text: 'My financial report from Orange Finance' });
+                await navigator.share({
+                    files: [file],
+                    title: 'Financial Report',
+                    text: 'My financial report from Orange Finance'
+                });
             } else {
                 // fallback to download
-                const doc = createPDF(filteredTransactions, stats, user, filterLabel);
-                doc.save(`Fin_Report_${Date.now()}.pdf`);
+                const url = URL.createObjectURL(file);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('Report downloaded (Share not supported)! 📊');
             }
         } catch (err) {
-            if (err.name !== 'AbortError') console.error('Share error:', err);
+            if (err.name !== 'AbortError') {
+                console.error('Share error:', err);
+                showToast('Share failed: ' + err.message, 'error');
+            }
         }
         setIsSharing(false);
     };
@@ -949,61 +1000,36 @@ export const Dashboard = ({ session }) => {
                                     </div>
                                 </div>
 
-                                {/* PDF Theme Selector — IMPROVED UI */}
-                                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
-                                                <Palette size={20} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black text-slate-900">Print Themes</h3>
-                                                <p className="text-[10px] text-slate-400 font-medium">Choose a style, then view or print</p>
-                                            </div>
+                                {/* Report Actions */}
+                                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
+                                            <FileText size={20} />
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handlePrintReport(printVariant)}
-                                                className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-orange-500/20 transition-all active:scale-95"
-                                            >
-                                                <Printer size={14} /> Print
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setCalculatorPrintData(null);
-                                                    setPrintVariant(printVariant);
-                                                    setIsPrinting(true);
-                                                }}
-                                                className="flex items-center gap-2 bg-white text-slate-600 px-5 py-2.5 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
-                                            >
-                                                <Eye size={14} /> Preview
-                                            </button>
+                                        <div>
+                                            <h3 className="text-sm font-black text-slate-900">Financial Report</h3>
+                                            <p className="text-[10px] text-slate-400 font-medium">Export or preview your data</p>
                                         </div>
                                     </div>
-
-                                    {/* Theme Grid */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        {PDF_VARIANTS.map(v => (
-                                            <button
-                                                key={v.id}
-                                                onClick={() => setPrintVariant(v.id)}
-                                                className={`relative group p-4 rounded-2xl text-center transition-all border-2 ${printVariant === v.id
-                                                    ? 'border-orange-400 bg-orange-50 shadow-lg shadow-orange-500/10 scale-[1.02]'
-                                                    : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm'
-                                                    }`}
-                                            >
-                                                {/* Active indicator */}
-                                                {printVariant === v.id && (
-                                                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shadow-md">
-                                                        <Check size={10} className="text-white" strokeWidth={3} />
-                                                    </div>
-                                                )}
-                                                {/* Color swatch */}
-                                                <div className={`w-full h-8 rounded-xl bg-gradient-to-r ${v.gradient} mb-3 shadow-sm`} />
-                                                <span className="text-xs font-black text-slate-700 block">{v.label}</span>
-                                                <span className="text-[9px] font-medium text-slate-400 block mt-0.5">{v.desc}</span>
-                                            </button>
-                                        ))}
+                                    <div className="flex gap-2 w-full sm:w-auto">
+                                        <button
+                                            onClick={handleDownloadReport}
+                                            disabled={isSharing}
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-orange-500/20 transition-all active:scale-95 min-w-[120px]"
+                                        >
+                                            {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                            {isSharing ? 'Generating...' : 'Download'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setCalculatorPrintData(null);
+                                                setPreviewZoom(1);
+                                                setIsPrinting(true);
+                                            }}
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white text-slate-600 px-5 py-2.5 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+                                        >
+                                            <Eye size={14} /> Preview
+                                        </button>
                                     </div>
                                 </div>
 
@@ -1361,42 +1387,72 @@ export const Dashboard = ({ session }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[9998] bg-white overflow-y-auto no-print"
+                        className="fixed inset-0 z-[9998] bg-slate-100 overflow-y-auto no-print flex flex-col"
                     >
                         {/* Preview toolbar */}
-                        <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 px-6 py-3 flex items-center justify-between no-print">
+                        <div className="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 px-6 py-3 flex items-center justify-between no-print">
                             <div className="flex items-center gap-3">
-                                <Eye size={18} className="text-slate-400" />
-                                <span className="text-sm font-bold text-slate-600">
-                                    Preview — <span className="text-orange-500">{PDF_VARIANTS.find(v => v.id === printVariant)?.label}</span>
-                                </span>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => { window.print(); }}
-                                    className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all"
-                                >
-                                    <Printer size={14} /> Print This
-                                </button>
                                 <button
                                     onClick={() => setIsPrinting(false)}
-                                    className="flex items-center gap-2 bg-slate-100 text-slate-600 px-5 py-2 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all"
+                                    className="p-2 -ml-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
                                 >
-                                    <X size={14} /> Close
+                                    <ChevronLeft size={20} />
                                 </button>
+                                <Eye size={18} className="text-orange-500" />
+                                <span className="text-sm font-bold text-slate-800">
+                                    Report Preview
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                {/* Zoom controls */}
+                                <div className="hidden sm:flex items-center bg-slate-100 rounded-lg p-1">
+                                    <button
+                                        onClick={() => setPreviewZoom(z => Math.max(0.5, z - 0.25))}
+                                        className="p-1 px-2 hover:bg-white rounded-md text-slate-500 font-bold transition-colors"
+                                    >-</button>
+                                    <span className="text-xs font-bold w-12 text-center text-slate-600">{Math.round(previewZoom * 100)}%</span>
+                                    <button
+                                        onClick={() => setPreviewZoom(z => Math.min(2, z + 0.25))}
+                                        className="p-1 px-2 hover:bg-white rounded-md text-slate-500 font-bold transition-colors"
+                                    >+</button>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleDownloadReport}
+                                        disabled={isSharing}
+                                        className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white px-5 py-2 rounded-xl text-xs font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                                    >
+                                        {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                        <span className="hidden sm:inline">{isSharing ? 'Generating...' : 'Download'}</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setIsPrinting(false)}
+                                        className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all"
+                                    >
+                                        <X size={14} /> <span className="hidden sm:inline">Close</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        {/* Render full PrintView here for preview */}
-                        <div className="max-w-4xl mx-auto">
-                            <PrintView
-                                user={user}
-                                stats={stats}
-                                transactions={filteredTransactions}
-                                filterLabel={filterLabel}
-                                calculatorData={null}
-                                isPrinting={true}
-                                variant={printVariant}
-                            />
+
+                        {/* Render full PrintView here for preview with zoom */}
+                        <div className="flex-1 overflow-auto p-4 sm:p-8 flex items-start justify-center">
+                            <div
+                                className="bg-white shadow-xl max-w-[210mm] w-full transition-transform origin-top"
+                                style={{ transform: `scale(${previewZoom})`, marginBottom: `${(previewZoom - 1) * 100}%` }}
+                            >
+                                <PrintView
+                                    user={user}
+                                    stats={stats}
+                                    transactions={filteredTransactions}
+                                    filterLabel={filterLabel}
+                                    calculatorData={null}
+                                    isPrinting={true}
+                                    variant="classic"
+                                />
+                            </div>
                         </div>
                     </motion.div>
                 )}
