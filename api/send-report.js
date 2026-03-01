@@ -17,13 +17,26 @@ export default async function handler(req, res) {
         }
 
         // SMTP config from Vercel env variables
+        const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+
+        // Auto-detect SSL: port 465 = SSL, port 587 = STARTTLS
+        const isSecure = smtpPort === 465;
+
+        if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            return res.status(500).json({ error: 'SMTP credentials not configured. Add SMTP_HOST, SMTP_USER, SMTP_PASS to Vercel env.' });
+        }
+
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: process.env.SMTP_SECURE === 'true',
+            port: smtpPort,
+            secure: isSecure,
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
+            },
+            tls: {
+                // Don't fail on self-signed certs
+                rejectUnauthorized: false,
             },
         });
 
