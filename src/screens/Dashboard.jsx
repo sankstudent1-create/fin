@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Home, BarChart3, Settings, Wallet, TrendingUp, TrendingDown,
     Plus, Search, Calendar, ChevronDown, ChevronLeft, Download, Share2,
-    Receipt, ScanLine, Headphones, Loader2, X, Check,
+    Receipt, ScanLine, Headphones, Loader2, X, Check, ShieldCheck,
     FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic
 } from 'lucide-react';
+import { useActivityTracker } from '../hooks/useActivityTracker';
 import { AIChatbot } from '../components/modals/AIChatbot';
 import { VoiceAssistantModal } from '../components/modals/VoiceAssistantModal';
 import { supabase } from '../config/supabase';
@@ -57,9 +58,13 @@ const FILTER_OPTIONS = [
 // Removed PDF_VARIANTS since only one premium style is needed
 
 export const Dashboard = ({ session }) => {
+    // Analytics/Activity Tracking
+    useActivityTracker(session);
+
     // State
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [activeTab, setActiveTab] = useState('home');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterPeriod, setFilterPeriod] = useState('30d');
@@ -108,6 +113,18 @@ export const Dashboard = ({ session }) => {
             }, 300);
         }
     }, []);
+
+    // Check if user is admin
+    useEffect(() => {
+        const checkAdmin = async () => {
+            if (!session?.user) return;
+            const { data, error } = await supabase.rpc('is_admin');
+            if (!error && data) {
+                setIsAdmin(true);
+            }
+        };
+        checkAdmin();
+    }, [session]);
 
     // Transaction form state
     const [txForm, setTxForm] = useState({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] });
@@ -814,6 +831,14 @@ export const Dashboard = ({ session }) => {
                             >
                                 <Headphones size={20} />
                             </button>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => window.location.href = '/admin'}
+                                    className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-100 transition-all border border-rose-100"
+                                >
+                                    <ShieldCheck size={20} />
+                                </button>
+                            )}
                             <button
                                 onClick={() => setShowScanner(true)}
                                 className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"

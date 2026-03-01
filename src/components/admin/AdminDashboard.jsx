@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../config/supabase';
-import { LogOut, Users, FileText, Database, ShieldCheck, Search, Loader2, Trash2, Mail, Send, CheckCircle, AlertTriangle } from 'lucide-react';
+import { LogOut, Users, FileText, Database, ShieldCheck, Search, Loader2, Trash2, Mail, Send, CheckCircle, AlertTriangle, MonitorSmartphone, Activity, BarChart2, CheckSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminCampaigns } from './AdminCampaigns';
+import { AdminAnalytics } from './AdminAnalytics';
+import { AdminCategories } from './AdminCategories';
 
 export const AdminDashboard = ({ session, onLogout }) => {
     const [users, setUsers] = useState([]);
@@ -15,8 +17,10 @@ export const AdminDashboard = ({ session, onLogout }) => {
     const [activeMasterTab, setActiveMasterTab] = useState('directory'); // 'directory' | 'campaigns'
 
     // Selected user tabs
-    const [activeUserTab, setActiveUserTab] = useState('data'); // 'data' | 'actions'
+    const [activeUserTab, setActiveUserTab] = useState('data'); // 'data' | 'actions' | 'tracking'
     const [userTransactions, setUserTransactions] = useState([]);
+    const [userDevices, setUserDevices] = useState([]);
+    const [userSessions, setUserSessions] = useState([]);
     const [loadingTx, setLoadingTx] = useState(false);
 
     useEffect(() => {
@@ -58,6 +62,14 @@ export const AdminDashboard = ({ session, onLogout }) => {
         setSelectedUser(user);
         setActiveUserTab('data');
         loadUserTransactions(user.id);
+        loadUserTracking(user.id);
+    };
+
+    const loadUserTracking = async (userId) => {
+        const { data: devices } = await supabase.from('user_devices').select('*').eq('user_id', userId).order('last_active', { ascending: false });
+        const { data: sessions } = await supabase.from('app_sessions').select('*').eq('user_id', userId).order('session_start', { ascending: false });
+        setUserDevices(devices || []);
+        setUserSessions(sessions || []);
     };
 
     const handleDeleteUser = async (userId) => {
@@ -154,6 +166,18 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'campaigns' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             >
                                 <Mail size={14} /> Campaigns
+                            </button>
+                            <button
+                                onClick={() => setActiveMasterTab('analytics')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'analytics' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                <Activity size={14} /> Analytics
+                            </button>
+                            <button
+                                onClick={() => setActiveMasterTab('categories')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'categories' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                <CheckSquare size={14} /> Categories
                             </button>
                         </div>
                     </div>
@@ -272,6 +296,12 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                     >
                                         <Send size={14} /> Admin Actions
                                     </button>
+                                    <button
+                                        onClick={() => setActiveUserTab('tracking')}
+                                        className={`px-6 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeUserTab === 'tracking' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        <MonitorSmartphone size={14} /> Sessions & Devices
+                                    </button>
                                 </div>
 
                                 {/* Tab Content */}
@@ -367,6 +397,62 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                         </div>
                                     </div>
                                 )}
+
+                                {activeUserTab === 'tracking' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Devices Used</h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {userDevices.map(device => (
+                                                    <div key={device.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-xl flex items-center justify-center font-bold">
+                                                            <MonitorSmartphone size={16} />
+                                                        </div>
+                                                        <div className="flex-1 truncate">
+                                                            <p className="text-xs font-black text-slate-900 truncate">{device.device_name || 'Unknown Device'}</p>
+                                                            <p className="text-[10px] text-slate-500 font-bold tracking-wider">{device.browser} • {device.os}</p>
+                                                            <p className="text-[10px] text-slate-400 mt-1">Last active: {new Date(device.last_active).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {userDevices.length === 0 && <p className="text-xs text-slate-500 italic">No device data logged yet.</p>}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Login Sessions</h3>
+                                            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                                                <table className="w-full text-left border-collapse">
+                                                    <thead>
+                                                        <tr className="bg-slate-900 text-white text-[10px] uppercase tracking-widest">
+                                                            <th className="p-3 font-black">Date & Time</th>
+                                                            <th className="p-3 font-black">IP Address</th>
+                                                            <th className="p-3 font-black">Location</th>
+                                                            <th className="p-3 font-black text-right">Time Spent</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {userSessions.map((session, i) => (
+                                                            <tr key={session.id} className={`text-xs font-bold border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                                                                <td className="p-3 text-slate-600">{new Date(session.session_start).toLocaleString()}</td>
+                                                                <td className="p-3 text-slate-600 font-mono text-[10px]">{session.ip_address || '—'}</td>
+                                                                <td className="p-3 text-slate-600 truncate max-w-[120px]">{session.geo_location || '—'}</td>
+                                                                <td className="p-3 text-right text-indigo-600 font-mono">
+                                                                    {session.time_spent_seconds
+                                                                        ? `${Math.floor(session.time_spent_seconds / 60)}m ${session.time_spent_seconds % 60}s`
+                                                                        : '< 1m'}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                        {userSessions.length === 0 && (
+                                                            <tr><td colSpan="4" className="text-center p-4 text-xs text-slate-500">No session data logged yet.</td></tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="h-full bg-slate-100 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-12 min-h-[500px]">
@@ -381,11 +467,19 @@ export const AdminDashboard = ({ session, onLogout }) => {
                         )}
                     </div>
                 </div>
-            ) : (
+            ) : activeMasterTab === 'campaigns' ? (
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <AdminCampaigns users={users} showToast={showToast} />
                 </div>
-            )}
+            ) : activeMasterTab === 'analytics' ? (
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    <AdminAnalytics />
+                </div>
+            ) : activeMasterTab === 'categories' ? (
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    <AdminCategories />
+                </div>
+            ) : null}
 
             {/* Toast */}
             <AnimatePresence>

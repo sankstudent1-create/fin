@@ -6,6 +6,7 @@ import { AuthScreen } from './screens/AuthScreen';
 import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 import { Dashboard } from './screens/Dashboard';
 import { SupportModal } from './components/modals/SupportModal';
+import { BannerModal } from './components/modals/BannerModal';
 
 import { AdminScreen } from './screens/admin/AdminScreen';
 
@@ -134,7 +135,7 @@ export default function App() {
       <SystemSetup />
       <AnimatePresence>
         {showSupport && session && !recoveryMode && (
-          <SupportModal isOpen={showSupport} onClose={() => setShowSupport(false)} user={session.user} />
+          <BannerModal isOpen={showSupport} onClose={() => setShowSupport(false)} />
         )}
       </AnimatePresence>
       <AnimatePresence mode="wait">
