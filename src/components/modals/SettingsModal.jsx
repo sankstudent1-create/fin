@@ -15,6 +15,10 @@ import {
     loadSoundPrefs, saveSoundPrefs, playSound
 } from '../../hooks/useSoundEngine';
 import { createPDF } from '../../utils/pdfGenerator';
+import { AnalyticsReport as PrintableReport, PrintStyles } from '../dashboard/PrintView';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import ReactDOM from 'react-dom/client';
 
 // ─── Preferences ────────────────────────────────────────────────────────────
 const PREFS_KEY = 'orange_fin_prefs';
@@ -165,22 +169,69 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
         setEmailSent(false);
 
         try {
-            // Generate PDF using existing jsPDF generator
-            const doc = createPDF(transactions, stats, user, filterLabel);
-            const pdfBlob = doc.output('blob');
+            // Step 1: Render the premium AnalyticsReport off-screen
+            const container = document.createElement('div');
+            container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
+            document.body.appendChild(container);
 
-            // Convert blob to base64
-            const reader = new FileReader();
+            // Create React root and render the same PrintView used by print()
+            const root = ReactDOM.createRoot(container);
+            await new Promise((resolve) => {
+                root.render(
+                    <div id="print-root-email">
+                        <PrintStyles />
+                        <PrintableReport
+                            user={user}
+                            stats={stats}
+                            transactions={transactions}
+                            filterLabel={filterLabel}
+                        />
+                    </div>
+                );
+                // Wait for fonts + rendering to settle
+                setTimeout(resolve, 1500);
+            });
+
+            // Step 2: Capture with html2canvas at 2x resolution
+            const element = container.querySelector('#print-root-email');
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                windowWidth: 794, // A4 width in px at 96dpi
+            });
+
+            // Step 3: Convert to PDF (A4 dimensions)
+            const imgData = canvas.toDataURL('image/jpeg', 0.92);
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = 210;
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            // If content is taller than one page, split across pages
+            const pageHeight = 297; // A4 height in mm
+            let yOffset = 0;
+
+            while (yOffset < pdfHeight) {
+                if (yOffset > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfWidth, pdfHeight);
+                yOffset += pageHeight;
+            }
+
+            // Cleanup
+            root.unmount();
+            document.body.removeChild(container);
+
+            // Step 4: Convert PDF to base64
+            const pdfBlob = pdf.output('blob');
             const base64 = await new Promise((resolve, reject) => {
-                reader.onloadend = () => {
-                    const base64data = reader.result.split(',')[1];
-                    resolve(base64data);
-                };
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
                 reader.onerror = reject;
                 reader.readAsDataURL(pdfBlob);
             });
 
-            // Send to our Vercel serverless function
+            // Step 5: Send to serverless function
             const res = await fetch('/api/send-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -462,10 +513,10 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                             onClick={handleEmailReport}
                             disabled={sendingEmail || transactions.length === 0}
                             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${emailSent
-                                    ? 'bg-emerald-500 text-white'
-                                    : emailError
-                                        ? 'bg-rose-100 text-rose-600'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 disabled:opacity-50'
+                                ? 'bg-emerald-500 text-white'
+                                : emailError
+                                    ? 'bg-rose-100 text-rose-600'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 disabled:opacity-50'
                                 }`}
                         >
                             {sendingEmail ? (

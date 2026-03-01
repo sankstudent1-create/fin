@@ -10,7 +10,7 @@ const fmtDay = (d) => new Date(d).toLocaleDateString('en-IN', { weekday: 'long',
 /* ================================================================== */
 /*  INLINE PRINT STYLES                                                 */
 /* ================================================================== */
-const PrintStyles = () => (
+export const PrintStyles = () => (
     <style>{`
         /* Fonts are preloaded in index.html (already cached) */
         @page { size: A4 portrait; margin: 0; }
@@ -560,7 +560,7 @@ const CategoryBreakdown = ({ transactions, type }) => {
 /* ================================================================== */
 /*  ANALYTICS REPORT  (2 pages)                                         */
 /* ================================================================== */
-const AnalyticsReport = ({ user, stats, transactions, filterLabel }) => (
+export const AnalyticsReport = ({ user, stats, transactions, filterLabel }) => (
     <>
         {/* Single flowing page */}
         <div className="print-page" style={{ paddingBottom: '10mm' }}>
