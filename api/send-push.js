@@ -32,7 +32,12 @@ export default async function handler(req, res) {
         webPush.setVapidDetails(subject, publicVapidKey, privateVapidKey);
 
         const authHeader = req.headers.authorization;
-        const supabase = createClient(supabaseUrl, supabaseServiceKey, authHeader ? {
+        const fallbackKey = process.env.VITE_SUPABASE_ANON_KEY;
+        // MUST pass a valid api key (either service role or anon) to satisfy Supabase, 
+        // while the Authorization header (Bearer) provides the actual user context/RLS bypass
+        const chosenKey = process.env.SUPABASE_SERVICE_ROLE_KEY || fallbackKey;
+
+        const supabase = createClient(supabaseUrl, chosenKey, authHeader ? {
             global: { headers: { Authorization: authHeader } }
         } : {});
 
