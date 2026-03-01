@@ -25,7 +25,10 @@ export const AdminScreen = () => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             if (s) {
                 setSession(s);
-                verifyAdmin(s.user.id);
+                // Only trigger a hard reload/verify on actual sign-in. Ignore token refreshes (which happen on tab focus).
+                if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && !isAdmin)) {
+                    verifyAdmin(s.user.id, false);
+                }
             } else {
                 setSession(null);
                 setIsAdmin(null);
@@ -36,8 +39,8 @@ export const AdminScreen = () => {
         return () => subscription.unsubscribe();
     }, []);
 
-    const verifyAdmin = async (userId) => {
-        setLoading(true);
+    const verifyAdmin = async (userId, silent = false) => {
+        if (!silent) setLoading(true);
         // We use our secure RPC function to check if they are in the admins table
         const { data, error } = await supabase.rpc('is_admin');
 
@@ -50,7 +53,7 @@ export const AdminScreen = () => {
             await supabase.auth.signOut();
             alert('Access Denied. You are not registered as an Admin.');
         }
-        setLoading(false);
+        if (!silent) setLoading(false);
     };
 
     if (loading) {

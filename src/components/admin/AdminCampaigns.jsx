@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../config/supabase';
-import { Loader2, Mail, Users, ArrowRight, Filter, SortDesc, Send, CheckCircle, Search, Image as ImageIcon, X } from 'lucide-react';
+import { Loader2, Mail, Users, ArrowRight, Filter, SortDesc, Send, CheckCircle, Search, Image as ImageIcon, X, Sparkles } from 'lucide-react';
 import { AdminCEOLetter } from './AdminCEOLetter';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -23,6 +23,10 @@ export const AdminCampaigns = ({ users, showToast }) => {
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [sendProgress, setSendProgress] = useState(0);
+
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [customEmails, setCustomEmails] = useState('');
 
     const templates = [
         {
@@ -54,8 +58,50 @@ export const AdminCampaigns = ({ users, showToast }) => {
             subject: 'Happy Festivities from Orange Finance!',
             message: 'The entire executive team at Orange Finance wishes you and your family abundant joy and prosperity this festive season! As you celebrate, remember that true wealth belongs to those who spread happiness. We value your continued trust and membership with us. Have a wonderful celebration!',
             includeStats: false
+        },
+        {
+            label: 'Custom Official Notice',
+            subject: 'Official Notice from Orange Finance',
+            message: '',
+            includeStats: false
         }
     ];
+
+    const generateAILetter = async () => {
+        if (!aiPrompt.trim()) return;
+        setIsGeneratingAI(true);
+        try {
+            const promptContext = `You are the executive writer for Orange Finance (a smart personal finance tracker app). Write a highly professional, engaging, and personalized notice letter body based on the following instructions: "${aiPrompt}". Do not include salutations (like Dear User) or closing signatures (like Sincerely, CEO), just the direct body paragraphs (max 3 short paragraphs). Adapt the tone for the event or tip requested.`;
+
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'llama3-8b-8192',
+                    messages: [
+                        { role: 'user', content: promptContext }
+                    ],
+                    temperature: 0.7
+                })
+            });
+            const data = await res.json();
+            if (data.choices && data.choices[0]) {
+                const text = data.choices[0].message.content.trim();
+                setCustomMessage(text);
+                showToast('AI Letter Generated Successfully', 'success');
+            } else {
+                showToast('AI API error, no response', 'error');
+            }
+        } catch (e) {
+            console.error('Groq AI error:', e);
+            showToast('Failed to generate AI content. Check your API key limit.', 'error');
+        } finally {
+            setIsGeneratingAI(false);
+        }
+    };
 
     const applyTemplate = (e) => {
         const val = e.target.value;
@@ -201,24 +247,27 @@ export const AdminCampaigns = ({ users, showToast }) => {
     };
 
     const handleSendCampaign = async () => {
-        if (selectedUserIds.size === 0) return alert("Select at least one user.");
-        if (!window.confirm(`Send branded CEO Letter to ${selectedUserIds.size} users?`)) return;
+        const targetUsers = users.filter(u => selectedUserIds.has(u.id));
+
+        // Parse custom bulk emails safely
+        const parsedCustomEmails = customEmails
+            .split(',')
+            .map(e => e.trim())
+            .filter(e => e.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
+
+        const totalToSend = targetUsers.length + parsedCustomEmails.length;
+        if (totalToSend === 0) return alert("Select at least one user or enter valid custom emails (comma separated).");
+        if (!window.confirm(`Send branded CEO Letter to ${totalToSend} total recipients?`)) return;
 
         setIsSending(true);
         setSendProgress(0);
         let successCount = 0;
 
-        const targetUsers = users.filter(u => selectedUserIds.has(u.id));
-
         for (let i = 0; i < targetUsers.length; i++) {
             const user = targetUsers[i];
             const stats = allUserStats[user.id] || { income: 0, expense: 0, balance: 0 };
-
             try {
-                // 1. Generate unique PDF for this user
                 const pdfBase64 = await generateCEOLetterPDF(user, stats);
-
-                // 2. Send via Email API
                 const res = await fetch('/api/send-report', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -231,22 +280,39 @@ export const AdminCampaigns = ({ users, showToast }) => {
                         pdfBase64: pdfBase64
                     })
                 });
+                if (res.ok) successCount++;
+            } catch (err) { console.error(`Error processing ${user.email}:`, err); }
+            setSendProgress(Math.floor(((i + 1) / totalToSend) * 100));
+        }
 
-                if (res.ok) {
-                    successCount++;
-                } else {
-                    console.error(`Failed to send to ${user.email}`);
-                }
-            } catch (err) {
-                console.error(`Error processing ${user.email}:`, err);
-            }
-
-            setSendProgress(Math.floor(((i + 1) / targetUsers.length) * 100));
+        // Process Custom Emails
+        for (let i = 0; i < parsedCustomEmails.length; i++) {
+            const email = parsedCustomEmails[i];
+            const dummyUser = { email, full_name: 'Valued Member' };
+            const dummyStats = { income: 0, expense: 0, balance: 0 };
+            try {
+                const pdfBase64 = await generateCEOLetterPDF(dummyUser, dummyStats);
+                const res = await fetch('/api/send-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: email,
+                        subject: subject,
+                        reportName: `OrangeFinance_Notice.pdf`,
+                        filterLabel: 'Official Account Notice',
+                        stats: dummyStats,
+                        pdfBase64: pdfBase64
+                    })
+                });
+                if (res.ok) successCount++;
+            } catch (err) { console.error(`Error processing custom ${email}:`, err); }
+            setSendProgress(Math.floor(((targetUsers.length + i + 1) / totalToSend) * 100));
         }
 
         setIsSending(false);
-        showToast(`Campaign Complete: Sent ${successCount} out of ${targetUsers.length} emails.`, 'success');
+        showToast(`Campaign Complete: Sent ${successCount} out of ${totalToSend} emails.`, 'success');
         setSelectedUserIds(new Set()); // Clear selection
+        setCustomEmails('');
     };
 
     return (
@@ -337,9 +403,24 @@ export const AdminCampaigns = ({ users, showToast }) => {
                     </div>
                 )}
 
-                <div className="mt-4 flex items-center justify-between text-sm font-bold text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <span>Showing {sortedAndFilteredUsers.length} targeted users.</span>
-                    <span className="text-orange-500 flex items-center gap-2"><CheckCircle size={16} /> {selectedUserIds.size} Selected for Campaign</span>
+                <div className="mt-4 flex flex-col gap-2 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div className="flex items-center justify-between text-sm font-bold text-slate-500">
+                        <span>Showing {sortedAndFilteredUsers.length} targeted users.</span>
+                        <span className="text-orange-500 flex items-center gap-2">
+                            <CheckCircle size={16} /> {selectedUserIds.size} Selected for Campaign
+                        </span>
+                    </div>
+
+                    <div className="w-full mt-2">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 select-none">Custom Bulk Delivery (Comma separated emails)</label>
+                        <textarea
+                            value={customEmails}
+                            onChange={(e) => setCustomEmails(e.target.value)}
+                            placeholder="user1@example.com, bulk@test.com"
+                            className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-mono resize-none focus:outline-none focus:border-orange-500 transition-colors"
+                            rows={2}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -423,13 +504,40 @@ export const AdminCampaigns = ({ users, showToast }) => {
                         )}
                     </div>
 
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Letter Body</label>
-                    <textarea
-                        className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        placeholder="Write a specialized message to appear inside the CEO letter body..."
-                        value={customMessage}
-                        onChange={(e) => setCustomMessage(e.target.value)}
-                    />
+                    <div className="mb-4">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                            Letter Body (AI Enhanced)
+                        </label>
+
+                        <div className="mb-3 p-3 bg-indigo-50/50 border border-indigo-100/50 rounded-xl space-y-2">
+                            <label className="block text-[10px] font-black text-indigo-500 uppercase tracking-widest">✨ AI Content Generator</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={aiPrompt}
+                                    onChange={e => setAiPrompt(e.target.value)}
+                                    placeholder="Write a Holi event letter giving 3 financial tips..."
+                                    className="flex-1 px-3 py-2 bg-white border border-indigo-100 rounded-lg text-xs font-bold outline-none focus:border-indigo-400"
+                                    onKeyDown={e => e.key === 'Enter' ? generateAILetter() : null}
+                                />
+                                <button
+                                    onClick={generateAILetter}
+                                    disabled={isGeneratingAI || !aiPrompt.trim()}
+                                    className="px-4 py-2 bg-indigo-500 text-white font-bold text-xs rounded-lg hover:bg-indigo-600 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isGeneratingAI ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                    Generate
+                                </button>
+                            </div>
+                        </div>
+
+                        <textarea
+                            className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="Write a specialized message to appear inside the CEO letter body..."
+                            value={customMessage}
+                            onChange={(e) => setCustomMessage(e.target.value)}
+                        />
+                    </div>
 
                     {isSending ? (
                         <div className="mt-6">
@@ -441,13 +549,13 @@ export const AdminCampaigns = ({ users, showToast }) => {
                     ) : (
                         <button
                             onClick={handleSendCampaign}
-                            disabled={selectedUserIds.size === 0}
-                            className={`w-full mt-6 py-4 rounded-xl flex items-center justify-center gap-2 text-sm font-black transition-all shadow-xl ${selectedUserIds.size > 0
+                            disabled={(selectedUserIds.size === 0 && !customEmails.trim()) || isSending}
+                            className={`w-full mt-6 py-4 rounded-xl flex items-center justify-center gap-2 text-sm font-black transition-all shadow-xl ${(selectedUserIds.size > 0 || customEmails.trim())
                                 ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'
                                 : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                                 }`}
                         >
-                            <Send size={16} /> Launch Campaign to {selectedUserIds.size} Users
+                            <Send size={16} /> Launch Campaign
                         </button>
                     )}
                 </div>
