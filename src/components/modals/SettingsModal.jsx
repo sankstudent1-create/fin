@@ -7,13 +7,14 @@ import {
     Lock, Fingerprint, ChevronRight, AlertTriangle,
     Bell, Clock, Sparkles, Timer, MessageSquare, Camera,
     Check, Loader2, Edit3, Image, ChevronLeft, Play, ZoomIn,
-    Mail, KeyRound, Eye, EyeOff, ShieldCheck
+    Mail, KeyRound, Eye, EyeOff, ShieldCheck, Send
 } from 'lucide-react';
 import { supabase } from '../../config/supabase';
 import {
     SOUND_EFFECTS, DEFAULT_SOUND_PREFS,
     loadSoundPrefs, saveSoundPrefs, playSound
 } from '../../hooks/useSoundEngine';
+import { createPDF } from '../../utils/pdfGenerator';
 
 // ─── Preferences ────────────────────────────────────────────────────────────
 const PREFS_KEY = 'orange_fin_prefs';
@@ -58,7 +59,7 @@ const SectionLabel = ({ children }) => (
 );
 
 // ─── MAIN MODAL ──────────────────────────────────────────────────────────────
-export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload, onOpenDigitalID }) => {
+export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload, onOpenDigitalID, transactions = [], stats = {}, filterLabel = '' }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const [prefs, setPrefs] = useState(loadPrefs());
     const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || '');
@@ -67,6 +68,11 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
     const [deletingAvatar, setDeletingAvatar] = useState(false);
     const [localAvatar, setLocalAvatar] = useState(avatarUrl || '');
     const fileRef = useRef(null);
+
+    // Email Report state
+    const [sendingEmail, setSendingEmail] = useState(false);
+    const [emailSent, setEmailSent] = useState(false);
+    const [emailError, setEmailError] = useState('');
 
     // Keep localAvatar in sync when avatarUrl prop changes
     useEffect(() => { setLocalAvatar(avatarUrl || ''); }, [avatarUrl]);
@@ -151,6 +157,56 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
         document.body.appendChild(a); a.click(); a.remove();
     };
 
+    // ── Email Report ─────────────────────────────────────────────────────────
+    const handleEmailReport = async () => {
+        if (sendingEmail) return;
+        setSendingEmail(true);
+        setEmailError('');
+        setEmailSent(false);
+
+        try {
+            // Generate PDF using existing jsPDF generator
+            const doc = createPDF(transactions, stats, user, filterLabel);
+            const pdfBlob = doc.output('blob');
+
+            // Convert blob to base64
+            const reader = new FileReader();
+            const base64 = await new Promise((resolve, reject) => {
+                reader.onloadend = () => {
+                    const base64data = reader.result.split(',')[1];
+                    resolve(base64data);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(pdfBlob);
+            });
+
+            // Send to our Vercel serverless function
+            const res = await fetch('/api/send-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: user?.email,
+                    reportName: `OrangeFin_Report_${filterLabel.replace(/\s+/g, '_')}.pdf`,
+                    filterLabel,
+                    stats,
+                    pdfBase64: base64,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Failed to send email');
+
+            setEmailSent(true);
+            setTimeout(() => setEmailSent(false), 5000);
+        } catch (err) {
+            console.error('Email report error:', err);
+            setEmailError(err.message || 'Failed to send report');
+            setTimeout(() => setEmailError(''), 5000);
+        } finally {
+            setSendingEmail(false);
+        }
+    };
     const handleSignOut = async () => { await supabase.auth.signOut(); window.location.reload(); };
 
     // ── Security: Reset Password, Change Email, Update Password ─────────
@@ -379,6 +435,54 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                         </div>
                         <ChevronRight size={16} className="text-slate-300 group-hover:text-orange-400 transition-colors" />
                     </button>
+
+                    {/* Email Report */}
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">📧 Email Report</p>
+                        <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                            Send your financial report as a premium PDF to your registered email. Includes income, expenses, and full transaction history.
+                        </p>
+
+                        {/* Email preview */}
+                        <div className="flex items-center gap-3 bg-white/80 rounded-xl px-4 py-3 mb-3 border border-blue-100">
+                            <Mail size={16} className="text-blue-500 flex-shrink-0" />
+                            <span className="font-semibold text-slate-600 text-sm truncate flex-1">{user?.email}</span>
+                        </div>
+
+                        {/* Period info */}
+                        <div className="flex items-center gap-2 mb-4 text-xs text-slate-500">
+                            <Clock size={12} className="text-blue-400" />
+                            <span className="font-semibold">Period: {filterLabel || 'All Time'}</span>
+                            <span className="text-slate-300">•</span>
+                            <span>{transactions.length} transactions</span>
+                        </div>
+
+                        {/* Send Button */}
+                        <button
+                            onClick={handleEmailReport}
+                            disabled={sendingEmail || transactions.length === 0}
+                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${emailSent
+                                    ? 'bg-emerald-500 text-white'
+                                    : emailError
+                                        ? 'bg-rose-100 text-rose-600'
+                                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 disabled:opacity-50'
+                                }`}
+                        >
+                            {sendingEmail ? (
+                                <><Loader2 size={16} className="animate-spin" /> Generating & Sending...</>
+                            ) : emailSent ? (
+                                <><Check size={16} /> Report Sent! Check your inbox ✉️</>
+                            ) : emailError ? (
+                                <><AlertTriangle size={16} /> {emailError}</>
+                            ) : (
+                                <><Send size={16} /> Email My Report</>
+                            )}
+                        </button>
+
+                        {transactions.length === 0 && (
+                            <p className="text-[10px] text-amber-600 mt-2 text-center font-semibold">No transactions in the current period to report.</p>
+                        )}
+                    </div>
                 </div>
             );
 
@@ -621,8 +725,8 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                                 disabled={pwdVerified}
                                                 onKeyDown={e => e.key === 'Enter' && !pwdVerified && handleUpdatePassword()}
                                                 className={`w-full border-2 rounded-xl py-3 pl-10 pr-10 font-semibold text-sm outline-none transition-all ${pwdVerified
-                                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                                        : 'bg-amber-50 border-amber-200 text-slate-800 focus:border-amber-400 focus:bg-white'
+                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                    : 'bg-amber-50 border-amber-200 text-slate-800 focus:border-amber-400 focus:bg-white'
                                                     }`}
                                             />
                                             {!pwdVerified && (
@@ -737,8 +841,8 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                                 onChange={e => setEmailCurrentPwd(e.target.value)}
                                                 disabled={emailPwdVerified}
                                                 className={`w-full border-2 rounded-xl py-3 pl-10 pr-10 font-semibold text-sm outline-none transition-all ${emailPwdVerified
-                                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                                        : 'bg-amber-50 border-amber-200 text-slate-800 focus:border-amber-400 focus:bg-white'
+                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                    : 'bg-amber-50 border-amber-200 text-slate-800 focus:border-amber-400 focus:bg-white'
                                                     }`}
                                             />
                                             {!emailPwdVerified && (

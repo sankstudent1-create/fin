@@ -1293,6 +1293,9 @@ export const Dashboard = ({ session }) => {
                     avatarUrl={avatarUrl}
                     onAvatarUpload={handleAvatarUpload}
                     onOpenDigitalID={() => { setShowSettings(false); setShowDigitalID(true); }}
+                    transactions={filteredTransactions}
+                    stats={stats}
+                    filterLabel={filterLabel}
                 />
 
                 {/* Scanner Modal */}
