@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../config/supabase';
-import { Loader2, Mail, Users, ArrowRight, Filter, SortDesc, Send, CheckCircle, Search } from 'lucide-react';
+import { Loader2, Mail, Users, ArrowRight, Filter, SortDesc, Send, CheckCircle, Search, Image as ImageIcon, X } from 'lucide-react';
 import { AdminCEOLetter } from './AdminCEOLetter';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -18,6 +18,9 @@ export const AdminCampaigns = ({ users, showToast }) => {
     // Campaign details
     const [subject, setSubject] = useState('Official Account Summary & Status');
     const [customMessage, setCustomMessage] = useState('');
+    const [includeStats, setIncludeStats] = useState(true);
+    const [imageUrl, setImageUrl] = useState('');
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [sendProgress, setSendProgress] = useState(0);
 
@@ -25,27 +28,32 @@ export const AdminCampaigns = ({ users, showToast }) => {
         {
             label: 'Keep Investing (Tips)',
             subject: 'Unlock Your Future: Smart Investing Strategies',
-            message: 'Consistency is the key to wealth generation. Even small investments, when compounded over time, can yield magnificent results. As part of Orange Finance, we strongly advise automating a portion of your monthly savings directly into diverse investment vehicles. Stay strong and keep investing for your financial future.'
+            message: 'Consistency is the key to wealth generation. Even small investments, when compounded over time, can yield magnificent results. As part of Orange Finance, we strongly advise automating a portion of your monthly savings directly into diverse investment vehicles. Stay strong and keep investing for your financial future.',
+            includeStats: true
         },
         {
             label: 'Keep Saving (Encouragement)',
             subject: 'Great Job: Keep Building Your Savings',
-            message: 'We noticed your disciplined approach to managing your finances! Saving effectively is the most crucial step toward financial independence. Ensure you always maintain a 6-month emergency fund, and continue making intelligent spending decisions. We are proud of your progress on Orange Finance.'
+            message: 'We noticed your disciplined approach to managing your finances! Saving effectively is the most crucial step toward financial independence. Ensure you always maintain a 6-month emergency fund, and continue making intelligent spending decisions. We are proud of your progress on Orange Finance.',
+            includeStats: true
         },
         {
             label: 'Annual Status Report',
             subject: 'Confidential: Your Annual Financial Report',
-            message: 'Enclosed is the official comprehensive review of your entire financial trajectory over the past year. We have carefully aggregated your income and expenses to provide a transparent overview. Please review to refine your budgeting plans for the upcoming year.'
+            message: 'Enclosed is the official comprehensive review of your entire financial trajectory over the past year. We have carefully aggregated your income and expenses to provide a transparent overview. Please review to refine your budgeting plans for the upcoming year.',
+            includeStats: true
         },
         {
             label: 'Monthly Status Report',
             subject: 'Confidential: Your Monthly Financial Report',
-            message: 'Enclosed is your detailed transaction summary for the preceding month. Please review your balance and ensure your expenses align closely with your designated budgeting goals.'
+            message: 'Enclosed is your detailed transaction summary for the preceding month. Please review your balance and ensure your expenses align closely with your designated budgeting goals.',
+            includeStats: true
         },
         {
             label: 'Festival / Occasion Greetings',
             subject: 'Happy Festivities from Orange Finance!',
-            message: 'The entire executive team at Orange Finance wishes you and your family abundant joy and prosperity this festive season! As you celebrate, remember that true wealth belongs to those who spread happiness. We value your continued trust and membership with us. Have a wonderful celebration!'
+            message: 'The entire executive team at Orange Finance wishes you and your family abundant joy and prosperity this festive season! As you celebrate, remember that true wealth belongs to those who spread happiness. We value your continued trust and membership with us. Have a wonderful celebration!',
+            includeStats: false
         }
     ];
 
@@ -54,6 +62,38 @@ export const AdminCampaigns = ({ users, showToast }) => {
         if (val === '') return;
         setSubject(templates[val].subject);
         setCustomMessage(templates[val].message);
+        setIncludeStats(templates[val].includeStats);
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('Image size should be less than 2MB', 'error');
+            return;
+        }
+
+        setIsUploadingImage(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+            const filePath = `campaigns/${fileName}`;
+
+            // We upload to 'campaigns' bucket. User must create this public bucket.
+            const { error: uploadError } = await supabase.storage.from('campaigns').upload(filePath, file);
+            if (uploadError) throw uploadError;
+
+            const { data: urlData } = supabase.storage.from('campaigns').getPublicUrl(filePath);
+            setImageUrl(urlData.publicUrl);
+            showToast('Image attached successfully', 'success');
+        } catch (error) {
+            console.error('Image upload error:', error);
+            showToast("Failed to upload image. Ensure you created a public 'campaigns' storage bucket in Supabase.", "error");
+        } finally {
+            setIsUploadingImage(false);
+            e.target.value = ''; // Reset input
+        }
     };
 
     useEffect(() => {
@@ -139,7 +179,7 @@ export const AdminCampaigns = ({ users, showToast }) => {
         const root = ReactDOM.createRoot(container);
         await new Promise((resolve) => {
             root.render(
-                <AdminCEOLetter user={user} stats={stats} customMessage={customMessage} subject={subject} />
+                <AdminCEOLetter user={user} stats={stats} customMessage={customMessage} subject={subject} includeStats={includeStats} imageUrl={imageUrl} />
             );
             setTimeout(resolve, 800); // Wait for render
         });
@@ -335,6 +375,53 @@ export const AdminCampaigns = ({ users, showToast }) => {
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
                     />
+
+                    <div className="flex items-center gap-4 mb-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={includeStats}
+                                onChange={(e) => setIncludeStats(e.target.checked)}
+                                className="w-4 h-4 rounded text-orange-500 focus:ring-orange-500 border-slate-300"
+                            />
+                            Show User's Financial Stats in CEO Letter
+                        </label>
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1"><ImageIcon size={14} /> Embed Image (Optional)</label>
+                        {imageUrl ? (
+                            <div className="relative w-full h-32 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden flex items-center justify-center">
+                                <img src={imageUrl} alt="Campaign Attachment" className="max-h-full max-w-full object-contain p-2" />
+                                <button
+                                    onClick={() => setImageUrl('')}
+                                    className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full shadow-lg hover:bg-rose-600 transition-colors"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="relative w-full p-4 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer group">
+                                {isUploadingImage ? (
+                                    <Loader2 size={24} className="animate-spin text-orange-500" />
+                                ) : (
+                                    <>
+                                        <ImageIcon size={24} className="mb-2 text-slate-400 group-hover:text-orange-500 transition-colors" />
+                                        <span className="text-xs font-bold text-slate-600">Click to upload image</span>
+                                        <span className="text-[10px] text-slate-400 mt-1">&lt; 2MB (Needs public 'campaigns' bucket)</span>
+                                    </>
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    disabled={isUploadingImage}
+                                    title=""
+                                    onChange={handleImageUpload}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                />
+                            </div>
+                        )}
+                    </div>
 
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Letter Body</label>
                     <textarea
