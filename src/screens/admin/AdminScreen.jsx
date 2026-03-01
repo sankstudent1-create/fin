@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../config/supabase';
 import { AdminLogin } from '../../components/admin/AdminLogin';
 import { AdminDashboard } from '../../components/admin/AdminDashboard';
@@ -8,6 +8,7 @@ export const AdminScreen = () => {
     const [session, setSession] = useState(null);
     const [isAdmin, setIsAdmin] = useState(null);
     const [loading, setLoading] = useState(true);
+    const hasVerified = useRef(false);
 
     useEffect(() => {
         const checkAdminSession = async () => {
@@ -26,12 +27,13 @@ export const AdminScreen = () => {
             if (s) {
                 setSession(s);
                 // Only trigger a hard reload/verify on actual sign-in. Ignore token refreshes (which happen on tab focus).
-                if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && !isAdmin)) {
+                if (!hasVerified.current && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
                     verifyAdmin(s.user.id, false);
                 }
             } else {
                 setSession(null);
                 setIsAdmin(null);
+                hasVerified.current = false;
                 setLoading(false);
             }
         });
@@ -46,9 +48,11 @@ export const AdminScreen = () => {
 
         if (data === true) {
             setIsAdmin(true);
+            hasVerified.current = true;
         } else {
             console.warn('User is not an admin', error);
             setIsAdmin(false);
+            hasVerified.current = false;
             // Sign out the non-admin user trying to access admin panel
             await supabase.auth.signOut();
             alert('Access Denied. You are not registered as an Admin.');

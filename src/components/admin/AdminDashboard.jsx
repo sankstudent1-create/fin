@@ -399,7 +399,45 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                                 }}
                                                 className="px-5 py-2.5 bg-yellow-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-yellow-700 transition-all"
                                             >
-                                                Send Reset Link
+                                            </button>
+                                        </div>
+
+                                        <div className="p-5 border border-purple-200 rounded-2xl flex items-center justify-between bg-purple-50">
+                                            <div className="flex gap-4 items-center">
+                                                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center">
+                                                    <MonitorSmartphone size={20} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-black text-purple-900">Direct Push Notification</h4>
+                                                    <p className="text-xs font-medium text-purple-700 mt-0.5">Send a real-time system alert directly to their device screen.</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={async () => {
+                                                    const msg = window.prompt("Enter the alert message to broadcast to this user:");
+                                                    if (!msg) return;
+                                                    setLoadingTx(true);
+                                                    try {
+                                                        const res = await fetch('/api/send-push', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                                title: 'Message from Orange Finance HQ',
+                                                                body: msg,
+                                                                targetUserIds: [selectedUser.id]
+                                                            })
+                                                        });
+                                                        const data = await res.json();
+                                                        if (!data.success) throw new Error(data.error || 'Push unacknowledged');
+                                                        showToast(`Push Delivered (${data.sentCount} devices reached).`, 'success');
+                                                    } catch (err) {
+                                                        showToast(err.message || "Failed to trigger push.", "error");
+                                                    }
+                                                    setLoadingTx(false);
+                                                }}
+                                                className="px-5 py-2.5 bg-purple-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-purple-700 transition-all flex items-center gap-2"
+                                            >
+                                                <Send size={14} /> Send Alert
                                             </button>
                                         </div>
                                     </div>

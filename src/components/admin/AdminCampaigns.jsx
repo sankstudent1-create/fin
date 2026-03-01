@@ -277,7 +277,9 @@ export const AdminCampaigns = ({ users, showToast }) => {
                         reportName: `${subject.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}.pdf`,
                         filterLabel: subject, // Make the email body banner title adapt to the subject
                         stats: stats,
-                        pdfBase64: pdfBase64
+                        pdfBase64: pdfBase64,
+                        includeStats: includeStats,
+                        customMessage: customMessage
                     })
                 });
                 if (res.ok) successCount++;
@@ -301,7 +303,9 @@ export const AdminCampaigns = ({ users, showToast }) => {
                         reportName: `${subject.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}.pdf`,
                         filterLabel: subject,
                         stats: dummyStats,
-                        pdfBase64: pdfBase64
+                        pdfBase64: pdfBase64,
+                        includeStats: includeStats,
+                        customMessage: customMessage
                     })
                 });
                 if (res.ok) successCount++;

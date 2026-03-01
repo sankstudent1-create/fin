@@ -69,15 +69,15 @@ export const AdminCEOLetter = ({ user, stats, customMessage, subject, includeSta
             </div>
 
             {/* Footer / Signature */}
-            <div style={{ marginTop: '70px', paddingBottom: '40px' }}>
+            <div style={{ marginTop: '20px', marginBottom: '80px' }}>
                 <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '500' }}>Sincerely,</p>
                 {/* Auto Generated Sign */}
-                <div style={{ fontFamily: "'Alex Brush', cursive", fontSize: '48px', color: '#0f172a', marginBottom: '5px', transform: 'rotate(-4deg)' }}>
+                <div style={{ fontFamily: "'Alex Brush', cursive", fontSize: '48px', color: '#0f172a', marginBottom: '10px', transform: 'rotate(-4deg)' }}>
                     Sanket
                 </div>
                 <p style={{ margin: 0, fontWeight: '900', fontSize: '14px', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '1px' }}>Sanket</p>
                 <p style={{ margin: 0, fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.5px' }}>Chief Executive Officer</p>
-                <p style={{ margin: '0 0 30px 0', fontSize: '11px', color: '#f97316', fontWeight: 'bold' }}>Orange Finance HQ</p>
+                <p style={{ margin: 0, fontSize: '11px', color: '#f97316', fontWeight: 'bold' }}>Orange Finance HQ</p>
             </div>
 
             {/* Watermark */}

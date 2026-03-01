@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        const { to, subject, reportName, filterLabel, stats, pdfBase64 } = req.body;
+        const { to, subject, reportName, filterLabel, stats, pdfBase64, includeStats = true, customMessage = '' } = req.body;
 
         if (!to || !pdfBase64) {
             return res.status(400).json({ error: 'Missing required fields: to, pdfBase64' });
@@ -97,39 +97,46 @@ export default async function handler(req, res) {
 
                                 <!-- Body Content -->
                                 <tr>
-                                    <td style="padding:36px 40px 20px;">
-                                        <p style="margin:0 0 16px;font-family:'Outfit',sans-serif;font-size:16px;color:#334155;line-height:1.7;font-weight:600;">
-                                            Hi there! 📊
-                                        </p>
-                                        <p style="margin:0 0 24px;font-family:'Outfit',sans-serif;font-size:15px;color:#475569;line-height:1.7;">
-                                            Your financial intelligence report from <strong style="color:#f97316;">Orange Finance</strong> is attached below as a PDF. Here's a quick summary:
-                                        </p>
+                                        <td style="padding:36px 40px 20px;">
+                                        ${includeStats ? `
+                                            <p style="margin:0 0 16px;font-family:'Outfit',sans-serif;font-size:16px;color:#334155;line-height:1.7;font-weight:600;">
+                                                Hi there! 📊
+                                            </p>
+                                            <p style="margin:0 0 24px;font-family:'Outfit',sans-serif;font-size:15px;color:#475569;line-height:1.7;">
+                                                Your financial intelligence report from <strong style="color:#f97316;">Orange Finance</strong> is attached below as a PDF. Here's a quick summary:
+                                            </p>
 
-                                        <!-- Stats Cards -->
-                                        ${stats ? `
-                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-                                            <tr>
-                                                <td width="33%" style="padding:4px;">
-                                                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px;text-align:center;">
-                                                        <p style="margin:0;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:1px;">Income</p>
-                                                        <p style="margin:4px 0 0;font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#15803d;">₹${stats.income?.toLocaleString() || '0'}</p>
-                                                    </div>
-                                                </td>
-                                                <td width="33%" style="padding:4px;">
-                                                    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px;text-align:center;">
-                                                        <p style="margin:0;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:1px;">Expense</p>
-                                                        <p style="margin:4px 0 0;font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#b91c1c;">₹${stats.expense?.toLocaleString() || '0'}</p>
-                                                    </div>
-                                                </td>
-                                                <td width="33%" style="padding:4px;">
-                                                    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px;text-align:center;">
-                                                        <p style="margin:0;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:#ea580c;text-transform:uppercase;letter-spacing:1px;">Net</p>
-                                                        <p style="margin:4px 0 0;font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#c2410c;">₹${stats.balance?.toLocaleString() || '0'}</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        ` : ''}
+                                            <!-- Stats Cards -->
+                                            ${stats ? `
+                                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                                                <tr>
+                                                    <td width="33%" style="padding:4px;">
+                                                        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px;text-align:center;">
+                                                            <p style="margin:0;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:1px;">Income</p>
+                                                            <p style="margin:4px 0 0;font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#15803d;">₹${stats.income?.toLocaleString() || '0'}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td width="33%" style="padding:4px;">
+                                                        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px;text-align:center;">
+                                                            <p style="margin:0;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:1px;">Expense</p>
+                                                            <p style="margin:4px 0 0;font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#b91c1c;">₹${stats.expense?.toLocaleString() || '0'}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td width="33%" style="padding:4px;">
+                                                        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px;text-align:center;">
+                                                            <p style="margin:0;font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:#ea580c;text-transform:uppercase;letter-spacing:1px;">Net</p>
+                                                            <p style="margin:4px 0 0;font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:#c2410c;">₹${stats.balance?.toLocaleString() || '0'}</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            ` : ''}
+                                        ` : `
+                                            <p style="margin:0 0 16px;font-family:'Outfit',sans-serif;font-size:16px;color:#334155;line-height:1.7;font-weight:600;">
+                                                Hi there! 👋
+                                            </p>
+                                            <p style="margin:0 0 24px;font-family:'Outfit',sans-serif;font-size:15px;color:#475569;line-height:1.7;white-space:pre-wrap;">${customMessage || 'We have sent you an official communication from Orange Finance.'}</p>
+                                        `}
 
                                         <p style="margin:0 0 8px;font-family:'Outfit',sans-serif;font-size:13px;color:#64748b;line-height:1.6;">
                                             📎 <strong>PDF Report attached</strong> — open it for the complete transaction history and analysis.

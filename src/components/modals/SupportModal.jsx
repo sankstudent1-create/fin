@@ -57,8 +57,10 @@ export const SupportModal = ({ isOpen, onClose, user }) => {
         });
         if (finalAmt) params.set('am', finalAmt.toString());
 
-        // Use the generic upi:// scheme for "Any UPI App" or the specific app scheme
-        const url = `upi://pay?${params.toString()}`;
+        // Use the explicit app scheme (e.g. phonepe://pay) instead of hardcoded upi://pay
+        // This stops Whatsapp from intercepting generic upi:// links on iOS!
+        const schemeBase = app.scheme === 'tez://upi/' ? 'tez://upi/pay' : app.scheme;
+        const url = `${schemeBase}?${params.toString()}`;
 
         // Try to open via intent on Android
         if (/android/i.test(navigator.userAgent) && app.pkg) {
