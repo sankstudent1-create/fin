@@ -138,24 +138,20 @@ export default function App() {
           <BannerModal isOpen={showSupport} onClose={() => setShowSupport(false)} />
         )}
       </AnimatePresence>
-      <AnimatePresence mode="wait">
-        {loading && !session ? (
-          <motion.div
-            key="loader"
-            initial={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="min-h-screen flex flex-col items-center justify-center bg-bg-warm transition-all"
-          >
-            <div className="w-20 h-20 bg-gradient-to-tr from-orange-500 to-rose-500 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse mb-6">
-              <Loader2 className="animate-spin text-white" size={40} />
-            </div>
-            <p className="text-gray-400 font-bold text-xs uppercase tracking-widest animate-pulse">Initializing Fin...</p>
-          </motion.div>
-        ) : recoveryMode && session ? (
-          <ResetPasswordScreen key="recovery" onComplete={handleRecoveryComplete} />
-        ) : (
-          !session ? <AuthScreen key="auth" supabase={supabase} /> : <Dashboard key="dash" session={session} supabase={supabase} />
-        )}
-      </AnimatePresence>
+      {loading && !session ? (
+        <div
+          className="min-h-screen flex flex-col items-center justify-center bg-bg-warm transition-all"
+        >
+          <div className="w-20 h-20 bg-gradient-to-tr from-orange-500 to-rose-500 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse mb-6">
+            <Loader2 className="animate-spin text-white" size={40} />
+          </div>
+          <p className="text-gray-400 font-bold text-xs uppercase tracking-widest animate-pulse">Initializing Fin...</p>
+        </div>
+      ) : recoveryMode && session ? (
+        <ResetPasswordScreen onComplete={handleRecoveryComplete} />
+      ) : (
+        !session ? <AuthScreen supabase={supabase} /> : <Dashboard session={session} supabase={supabase} />
+      )}
     </>
   );
 }
