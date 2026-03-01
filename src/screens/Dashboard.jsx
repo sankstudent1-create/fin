@@ -159,10 +159,40 @@ export const Dashboard = ({ session }) => {
                 const perm = await Notification.requestPermission();
                 if (perm === 'granted') {
                     const devId = localStorage.getItem('device_id');
+                    let pushSub = null;
+
+                    try {
+                        const swReg = await navigator.serviceWorker.ready;
+
+                        const urlBase64ToUint8Array = (base64String) => {
+                            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                            const rawData = window.atob(base64);
+                            const outputArray = new Uint8Array(rawData.length);
+                            for (let i = 0; i < rawData.length; ++i) {
+                                outputArray[i] = rawData.charCodeAt(i);
+                            }
+                            return outputArray;
+                        };
+
+                        const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+                        if (vapidPublicKey) {
+                            pushSub = await swReg.pushManager.subscribe({
+                                userVisibleOnly: true,
+                                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+                            });
+                        } else {
+                            console.warn("VITE_VAPID_PUBLIC_KEY is missing in env vars.");
+                        }
+                    } catch (e) {
+                        console.error('Failed to subscribe to push Manager:', e);
+                    }
+
                     if (session?.user?.id && devId) {
                         try {
+                            const payload = pushSub ? JSON.parse(JSON.stringify(pushSub)) : { status: 'granted_no_sub_yet' };
                             await supabase.from('user_devices')
-                                .update({ push_subscription: { status: 'granted_no_sub_yet' } })
+                                .update({ push_subscription: payload })
                                 .eq('device_id', devId)
                                 .eq('user_id', session.user.id);
                         } catch (e) { console.error('DB push update err', e); }
