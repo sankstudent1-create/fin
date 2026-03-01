@@ -63,7 +63,7 @@ const SectionLabel = ({ children }) => (
 );
 
 // ─── MAIN MODAL ──────────────────────────────────────────────────────────────
-export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload, onOpenDigitalID, transactions = [], stats = {}, filterLabel = '' }) => {
+export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload, onOpenDigitalID, transactions = [], allTransactions = [], stats = {}, filterLabel = '' }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const [prefs, setPrefs] = useState(loadPrefs());
     const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || '');
@@ -77,6 +77,7 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
     const [sendingEmail, setSendingEmail] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
     const [emailError, setEmailError] = useState('');
+    const [emailPeriod, setEmailPeriod] = useState('current'); // 'current', 'month', 'year', 'all'
 
     // Keep localAvatar in sync when avatarUrl prop changes
     useEffect(() => { setLocalAvatar(avatarUrl || ''); }, [avatarUrl]);
@@ -169,6 +170,40 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
         setEmailSent(false);
 
         try {
+            // Determine transactions and stats based on selected period
+            let reportTxs = transactions;
+            let reportLabel = filterLabel || 'All Time';
+            let reportStats = stats;
+
+            if (emailPeriod !== 'current') {
+                const now = new Date();
+                const d = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+                const currentMonth = d.toISOString().slice(0, 7);
+                const currentYear = d.toISOString().slice(0, 4);
+
+                if (emailPeriod === 'month') {
+                    reportTxs = allTransactions.filter(t => t.date.startsWith(currentMonth));
+                    reportLabel = 'This Month';
+                } else if (emailPeriod === 'year') {
+                    reportTxs = allTransactions.filter(t => t.date.startsWith(currentYear));
+                    reportLabel = 'This Year';
+                } else if (emailPeriod === 'all') {
+                    reportTxs = allTransactions;
+                    reportLabel = 'All Time';
+                }
+
+                // Recalculate stats for custom period
+                const newStats = { income: 0, expense: 0, balance: 0 };
+                reportTxs.forEach(t => {
+                    if (t.type === 'income') newStats.income += parseFloat(t.amount);
+                    else newStats.expense += parseFloat(t.amount);
+                });
+                newStats.balance = newStats.income - newStats.expense;
+                reportStats = newStats;
+            }
+
+            if (reportTxs.length === 0) throw new Error('No transactions in selected period.');
+
             // Step 1: Render the premium AnalyticsReport off-screen
             const container = document.createElement('div');
             container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
@@ -182,9 +217,9 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                         <PrintStyles />
                         <PrintableReport
                             user={user}
-                            stats={stats}
-                            transactions={transactions}
-                            filterLabel={filterLabel}
+                            stats={reportStats}
+                            transactions={reportTxs}
+                            filterLabel={reportLabel}
                         />
                     </div>
                 );
@@ -237,9 +272,9 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     to: user?.email,
-                    reportName: `OrangeFin_Report_${filterLabel.replace(/\s+/g, '_')}.pdf`,
-                    filterLabel,
-                    stats,
+                    reportName: `OrangeFin_Report_${reportLabel.replace(/\s+/g, '_')}.pdf`,
+                    filterLabel: reportLabel,
+                    stats: reportStats,
                     pdfBase64: base64,
                 }),
             });
@@ -500,12 +535,22 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                             <span className="font-semibold text-slate-600 text-sm truncate flex-1">{user?.email}</span>
                         </div>
 
-                        {/* Period info */}
-                        <div className="flex items-center gap-2 mb-4 text-xs text-slate-500">
-                            <Clock size={12} className="text-blue-400" />
-                            <span className="font-semibold">Period: {filterLabel || 'All Time'}</span>
-                            <span className="text-slate-300">•</span>
-                            <span>{transactions.length} transactions</span>
+                        {/* Period config */}
+                        <div className="flex items-center justify-between mb-4 bg-white/50 border border-blue-50 p-2 rounded-xl">
+                            <div className="flex items-center gap-2">
+                                <Clock size={14} className="text-blue-400" />
+                                <span className="text-xs font-bold text-slate-600">Period</span>
+                            </div>
+                            <select
+                                value={emailPeriod}
+                                onChange={(e) => setEmailPeriod(e.target.value)}
+                                className="bg-transparent text-xs font-bold text-blue-600 outline-none cursor-pointer appearance-none pr-4 min-w-[120px] text-right"
+                            >
+                                <option value="current">Current View ({filterLabel || 'All'})</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
+                                <option value="all">All Time History</option>
+                            </select>
                         </div>
 
                         {/* Send Button */}

@@ -72,7 +72,7 @@ export const AdminGallery = () => {
                                 <img src={img.publicUrl} alt={img.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
                                     <p className="text-[10px] font-bold text-white truncate w-full mb-1" title={img.name}>{img.name}</p>
-                                    <p className="text-[10px] text-slate-300 font-medium tracking-wider mb-2">{(img.metadata?.size / 1024).toFixed(1)} KB</p>
+                                    <p className="text-[10px] text-slate-300 font-medium tracking-wider mb-2">{((img.metadata?.size || 0) / 1024).toFixed(1)} KB</p>
                                     <div className="flex gap-2">
                                         <a href={img.publicUrl} target="_blank" rel="noreferrer" className="flex-1 py-1.5 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-lg flex items-center justify-center text-white transition-colors">
                                             <ExternalLink size={14} />

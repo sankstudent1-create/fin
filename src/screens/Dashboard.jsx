@@ -1389,6 +1389,7 @@ export const Dashboard = ({ session }) => {
                     onAvatarUpload={handleAvatarUpload}
                     onOpenDigitalID={() => { setShowSettings(false); setShowDigitalID(true); }}
                     transactions={filteredTransactions}
+                    allTransactions={transactions}
                     stats={stats}
                     filterLabel={filterLabel}
                 />
