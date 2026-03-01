@@ -34,10 +34,10 @@ CREATE POLICY "Admin full UPDATE on transactions" ON public.transactions FOR UPD
 CREATE POLICY "Admin full DELETE on transactions" ON public.transactions FOR DELETE USING (public.is_admin());
 
 -- 4. Extend Categories Policies for Admins
-CREATE POLICY "Admin full SELECT on categories" ON public.custom_categories FOR SELECT USING (public.is_admin());
-CREATE POLICY "Admin full INSERT on categories" ON public.custom_categories FOR INSERT WITH CHECK (public.is_admin());
-CREATE POLICY "Admin full UPDATE on categories" ON public.custom_categories FOR UPDATE USING (public.is_admin());
-CREATE POLICY "Admin full DELETE on categories" ON public.custom_categories FOR DELETE USING (public.is_admin());
+CREATE POLICY "Admin full SELECT on categories" ON public.categories FOR SELECT USING (public.is_admin());
+CREATE POLICY "Admin full INSERT on categories" ON public.categories FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin full UPDATE on categories" ON public.categories FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Admin full DELETE on categories" ON public.categories FOR DELETE USING (public.is_admin());
 
 
 -- =========================================================================
