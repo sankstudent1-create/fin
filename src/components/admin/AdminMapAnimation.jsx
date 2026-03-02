@@ -83,17 +83,17 @@ export const AdminMapAnimation = ({ sessions }) => {
             <div className="flex items-center justify-between mb-2">
                 <div>
                     <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                        <MapPin className="text-indigo-500" /> Active Users Map
+                        <MapPin className="text-orange-500" /> Active Users Map
                     </h2>
                     <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Live Geographic Distribution</p>
                 </div>
-                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
-                    <Users size={24} className="text-indigo-500" />
+                <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center">
+                    <Users size={24} className="text-orange-500" />
                 </div>
             </div>
 
             {/* Map Container */}
-            <div className="relative w-full h-[400px] bg-indigo-50/30 rounded-3xl overflow-hidden mt-6 border border-slate-100 flex items-center justify-center">
+            <div className="relative w-full h-[400px] bg-orange-50/30 rounded-3xl overflow-hidden mt-6 border border-slate-100 flex items-center justify-center">
                 <ComposableMap
                     projection="geoMercator"
                     projectionConfig={{
@@ -137,13 +137,13 @@ export const AdminMapAnimation = ({ sessions }) => {
                             >
                                 <motion.circle
                                     r={6}
-                                    fill="#6366f1" // indigo-500
+                                    fill="#f97316" // orange-500
                                     className="cursor-pointer"
                                     animate={{ r: [6, 12, 6] }}
                                     transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                                     style={{ opacity: 0.6 }}
                                 />
-                                <circle r={4} fill="#4f46e5" className="cursor-pointer" /> {/* indigo-600 */}
+                                <circle r={4} fill="#ea580c" className="cursor-pointer" /> {/* orange-600 */}
                             </motion.g>
                         </Marker>
                     ))}
@@ -161,10 +161,10 @@ export const AdminMapAnimation = ({ sessions }) => {
                             exit={{ opacity: 0, y: 10, scale: 0.9 }}
                             className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white p-3 rounded-2xl shadow-xl flex items-center gap-4 z-10 min-w-[200px]"
                         >
-                            <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+                            <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
                                 <span className="relative flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
                                 </span>
                             </div>
                             <div>

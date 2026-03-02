@@ -139,7 +139,7 @@ export const AdminScreen = () => {
                 <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-all transform scale-100">
                     <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 via-rose-500 to-indigo-500" />
                     <div className="mb-8 text-center">
-                        <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                        <div className="w-16 h-16 bg-orange-50 text-orange-500 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-inner shadow-orange-500/20">
                             <ShieldCheck size={32} strokeWidth={2.5} />
                         </div>
                         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Admin Verification</h2>
@@ -147,9 +147,9 @@ export const AdminScreen = () => {
                     </div>
 
                     <form onSubmit={handleOtpSubmit} className="space-y-4">
-                        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center mb-4">
-                            <p className="text-xs font-bold text-indigo-800">2FA Code sent to</p>
-                            <p className="text-sm font-black text-indigo-900 mt-1">{session.user.email}</p>
+                        <div className="bg-orange-50/80 border border-orange-200/50 rounded-2xl p-4 text-center mb-4">
+                            <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">2FA Code sent to</p>
+                            <p className="text-sm font-black text-slate-800 mt-1">{session.user.email}</p>
                         </div>
 
                         <div>
@@ -161,7 +161,7 @@ export const AdminScreen = () => {
                                     value={otp}
                                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                                     placeholder="000000"
-                                    className="w-full py-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-2xl font-black tracking-[0.5em] text-center focus:outline-none focus:border-indigo-500 focus:bg-white transition-all transform"
+                                    className="w-full py-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-2xl font-black tracking-[0.5em] text-center focus:outline-none focus:border-orange-500 focus:bg-white transition-all transform shadow-sm"
                                 />
                             </div>
                         </div>
@@ -169,7 +169,7 @@ export const AdminScreen = () => {
                         <button
                             type="submit"
                             disabled={verifyingOtp || otp.length !== 6}
-                            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white p-3.5 rounded-xl text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-xl shadow-indigo-600/20 mt-6"
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white p-3.5 rounded-xl text-sm font-bold hover:from-orange-600 hover:to-rose-600 disabled:opacity-50 transition-all shadow-lg shadow-orange-500/30 mt-6"
                         >
                             {verifyingOtp ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                             Verify & Enter Dashboard
@@ -180,7 +180,7 @@ export const AdminScreen = () => {
                                 type="button"
                                 disabled={verifyingOtp}
                                 onClick={() => trigger2FAEmail(session.user.id, session.user.email, session.access_token)}
-                                className="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition-colors py-2"
+                                className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors py-2"
                             >
                                 Resend Code
                             </button>

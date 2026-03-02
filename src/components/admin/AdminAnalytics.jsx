@@ -73,13 +73,13 @@ export const AdminAnalytics = () => {
         setSavingSettings(false);
     };
 
-    if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>;
+    if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-orange-500" size={32} /></div>;
 
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-200 flex items-center gap-5">
-                    <div className="w-14 h-14 bg-indigo-100 text-indigo-500 rounded-2xl flex items-center justify-center shadow-inner">
+                    <div className="w-14 h-14 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center shadow-inner">
                         <Activity size={24} />
                     </div>
                     <div>
@@ -115,7 +115,7 @@ export const AdminAnalytics = () => {
             {/* Platform Settings */}
             <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
                 <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
-                    <ImageIcon className="text-indigo-500" /> Homescreen Announcement Settings
+                    <ImageIcon className="text-orange-500" /> Homescreen Announcement Settings
                 </h2>
                 <div className="space-y-4 max-w-2xl">
                     <label className="flex items-center gap-3 cursor-pointer">
@@ -123,7 +123,7 @@ export const AdminAnalytics = () => {
                             type="checkbox"
                             checked={settings.show_support_banner}
                             onChange={e => setSettings({ ...settings, show_support_banner: e.target.checked })}
-                            className="w-5 h-5 rounded text-indigo-500 focus:ring-indigo-500 border-slate-300"
+                            className="w-5 h-5 rounded text-orange-500 focus:ring-orange-500 border-slate-300"
                         />
                         <span className="font-bold text-slate-700">Enable Homescreen Pop-up Modal</span>
                     </label>
@@ -162,7 +162,7 @@ export const AdminAnalytics = () => {
                     <button
                         onClick={handleSaveSettings}
                         disabled={savingSettings}
-                        className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg"
+                        className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg"
                     >
                         {savingSettings ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                         Save Settings
@@ -199,7 +199,7 @@ export const AdminAnalytics = () => {
                                     <td className="p-4 text-slate-600">
                                         {s.geo_location || 'Unknown'} <span className="text-[10px] text-slate-400 ml-1">({s.ip_address || '—'})</span>
                                     </td>
-                                    <td className="p-4 text-right text-indigo-600 font-mono">
+                                    <td className="p-4 text-right text-slate-600 font-mono">
                                         {Math.floor(s.time_spent_seconds / 60)}m {s.time_spent_seconds % 60}s
                                     </td>
                                 </tr>

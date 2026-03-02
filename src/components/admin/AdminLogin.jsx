@@ -182,11 +182,11 @@ export const AdminLogin = ({ onLoginSuccess }) => {
                             onSubmit={handleOtpSubmit}
                             className="space-y-4"
                         >
-                            <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center mb-6">
-                                <p className="text-xs font-bold text-indigo-800">
-                                    2FA Authorization Code sent to
+                            <div className="bg-orange-50/80 border border-orange-200/50 rounded-2xl p-4 text-center mb-6">
+                                <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">
+                                    2FA Code sent to
                                 </p>
-                                <p className="text-sm font-black text-indigo-900 mt-1">{email}</p>
+                                <p className="text-sm font-black text-slate-800 mt-1">{email}</p>
                             </div>
 
                             <div>
@@ -200,7 +200,7 @@ export const AdminLogin = ({ onLoginSuccess }) => {
                                         value={otp}
                                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} // only numbers
                                         placeholder="000000"
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-2xl font-black tracking-[0.5em] text-center focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-2xl font-black tracking-[0.5em] text-center focus:outline-none focus:border-orange-500 focus:bg-white transition-all shadow-sm"
                                     />
                                 </div>
                             </div>
@@ -208,7 +208,7 @@ export const AdminLogin = ({ onLoginSuccess }) => {
                             <button
                                 type="submit"
                                 disabled={loading || otp.length !== 6}
-                                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white p-3.5 rounded-xl text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-xl shadow-indigo-600/20 mt-6"
+                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white p-3.5 rounded-xl text-sm font-bold hover:from-orange-600 hover:to-rose-600 disabled:opacity-50 transition-all shadow-lg shadow-orange-500/30 mt-6"
                             >
                                 {loading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                                 Verify & Authorize

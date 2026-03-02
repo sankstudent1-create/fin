@@ -173,13 +173,13 @@ export const AdminDashboard = ({ session, onLogout }) => {
                             </button>
                             <button
                                 onClick={() => setActiveMasterTab('analytics')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'analytics' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'analytics' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             >
                                 <Activity size={14} /> Analytics
                             </button>
                             <button
                                 onClick={() => setActiveMasterTab('push')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'push' ? 'bg-purple-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'push' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             >
                                 <MonitorSmartphone size={14} /> Push Alerts
                             </button>
@@ -235,7 +235,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                         setSelectedUser(null);
                                         setPushModalOpen(true);
                                     }}
-                                    className="px-4 py-3 bg-purple-100 text-purple-600 rounded-2xl text-xs font-bold hover:bg-purple-200 transition-all flex items-center gap-2 shrink-0"
+                                    className="px-4 py-3 bg-rose-50 text-rose-600 rounded-2xl text-xs font-bold hover:bg-rose-100 transition-all flex items-center gap-2 shrink-0"
                                     title="Broadcast push notification to everyone"
                                 >
                                     <MonitorSmartphone size={16} /> Broadcast
@@ -430,19 +430,19 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                             </button>
                                         </div>
 
-                                        <div className="p-5 border border-purple-200 rounded-2xl flex items-center justify-between bg-purple-50">
+                                        <div className="p-5 border border-orange-200 rounded-2xl flex items-center justify-between bg-orange-50">
                                             <div className="flex gap-4 items-center">
-                                                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center">
+                                                <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center">
                                                     <MonitorSmartphone size={20} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-sm font-black text-purple-900">Direct Push Notification</h4>
-                                                    <p className="text-xs font-medium text-purple-700 mt-0.5">Send a real-time system alert directly to their device screen.</p>
+                                                    <h4 className="text-sm font-black text-orange-900">Direct Push Notification</h4>
+                                                    <p className="text-xs font-medium text-orange-700 mt-0.5">Send a real-time system alert directly to their device screen.</p>
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={() => setPushModalOpen(true)}
-                                                className="px-5 py-2.5 bg-purple-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-purple-700 transition-all flex items-center gap-2"
+                                                className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold text-xs rounded-xl shadow-md hover:from-orange-600 hover:to-rose-600 transition-all flex items-center gap-2"
                                             >
                                                 <Send size={14} /> Send Alert
                                             </button>
@@ -457,7 +457,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {userDevices.map(device => (
                                                     <div key={device.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center gap-4">
-                                                        <div className="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-xl flex items-center justify-center font-bold">
+                                                        <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center font-bold">
                                                             <MonitorSmartphone size={16} />
                                                         </div>
                                                         <div className="flex-1 truncate">
@@ -489,7 +489,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                                                 <td className="p-3 text-slate-600">{new Date(session.session_start).toLocaleString()}</td>
                                                                 <td className="p-3 text-slate-600 font-mono text-[10px]">{session.ip_address || '—'}</td>
                                                                 <td className="p-3 text-slate-600 truncate max-w-[120px]">{session.geo_location || '—'}</td>
-                                                                <td className="p-3 text-right text-indigo-600 font-mono">
+                                                                <td className="p-3 text-right text-slate-600 font-mono">
                                                                     {session.time_spent_seconds
                                                                         ? `${Math.floor(session.time_spent_seconds / 60)}m ${session.time_spent_seconds % 60}s`
                                                                         : '< 1m'}
@@ -560,7 +560,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="p-6 border-b border-slate-100 flex items-center gap-4">
-                                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
+                                <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
                                     <MonitorSmartphone size={24} />
                                 </div>
                                 <div>
@@ -574,7 +574,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                             <div className="p-6">
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-widest mb-3">Notification Message</label>
                                 <textarea
-                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none transition-all"
+                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-rose-500 resize-none transition-all"
                                     placeholder="Type the alert message to broadcast directly to their screens..."
                                     value={pushMessage}
                                     onChange={(e) => setPushMessage(e.target.value)}
@@ -615,7 +615,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                             }
                                             setLoadingTx(false);
                                         }}
-                                        className="px-6 py-3 rounded-xl text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                                        className="px-6 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 transition-colors flex items-center gap-2 disabled:opacity-50"
                                     >
                                         {loadingTx ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                                         Broadcast Alert

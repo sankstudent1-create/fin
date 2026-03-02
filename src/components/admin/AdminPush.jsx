@@ -136,7 +136,7 @@ export const AdminPush = ({ users, showToast }) => {
             <div className="w-full lg:w-2/3 flex flex-col gap-6">
                 <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-3 mb-8">
-                        <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center font-black">
+                        <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center font-black">
                             <MonitorSmartphone size={24} />
                         </div>
                         <div>
@@ -157,7 +157,7 @@ export const AdminPush = ({ users, showToast }) => {
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     placeholder="e.g. Special Offer!"
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-orange-500"
                                 />
                             </div>
                             <div>
@@ -169,7 +169,7 @@ export const AdminPush = ({ users, showToast }) => {
                                     value={linkUrl}
                                     onChange={e => setLinkUrl(e.target.value)}
                                     placeholder="https://..."
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-orange-500"
                                 />
                             </div>
                         </div>
@@ -181,21 +181,21 @@ export const AdminPush = ({ users, showToast }) => {
                                 <span className="text-[10px] font-bold text-slate-400">{message.length}/150 chars</span>
                             </div>
 
-                            <div className="mb-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl flex gap-2">
-                                <Sparkles size={16} className="text-purple-500 shrink-0 mt-1" />
+                            <div className="mb-3 p-3 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-100 rounded-xl flex gap-2">
+                                <Sparkles size={16} className="text-orange-500 shrink-0 mt-1" />
                                 <div className="flex-1 flex gap-2">
                                     <input
                                         type="text"
                                         value={aiPrompt}
                                         onChange={e => setAiPrompt(e.target.value)}
                                         placeholder="AI: Tell users about our new dark mode feature..."
-                                        className="flex-1 bg-white px-3 py-2 rounded-lg border border-purple-200 text-xs font-bold focus:outline-none"
+                                        className="flex-1 bg-white px-3 py-2 rounded-lg border border-orange-200 text-xs font-bold focus:outline-none"
                                         onKeyDown={e => e.key === 'Enter' && generateAIContent()}
                                     />
                                     <button
                                         onClick={generateAIContent}
                                         disabled={isGeneratingAI || !aiPrompt.trim()}
-                                        className="px-4 py-2 bg-purple-600 text-white font-bold text-xs rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                                        className="px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold text-xs rounded-lg hover:from-orange-600 hover:to-rose-600 disabled:opacity-50 transition-colors flex items-center gap-2"
                                     >
                                         {isGeneratingAI ? <Loader2 size={14} className="animate-spin" /> : 'Generate'}
                                     </button>
@@ -207,7 +207,7 @@ export const AdminPush = ({ users, showToast }) => {
                                 onChange={e => setMessage(e.target.value)}
                                 maxLength={150}
                                 placeholder="Type the push notification text here..."
-                                className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 outline-none resize-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 outline-none resize-none focus:ring-2 focus:ring-orange-500 transition-all"
                             />
                         </div>
 
@@ -232,12 +232,12 @@ export const AdminPush = ({ users, showToast }) => {
                                     </div>
                                 ) : (
                                     <div className="flex gap-4">
-                                        <div className="relative flex-1 p-6 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-slate-500 hover:bg-purple-50 hover:border-purple-300 transition-colors cursor-pointer group">
+                                        <div className="relative flex-1 p-6 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-slate-500 hover:bg-orange-50 hover:border-orange-300 transition-colors cursor-pointer group">
                                             {isUploadingImage ? (
-                                                <Loader2 size={24} className="animate-spin text-purple-500" />
+                                                <Loader2 size={24} className="animate-spin text-orange-500" />
                                             ) : (
                                                 <>
-                                                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center mb-3 text-slate-400 group-hover:text-purple-500 group-hover:scale-110 transition-all">
+                                                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center mb-3 text-slate-400 group-hover:text-orange-500 group-hover:scale-110 transition-all">
                                                         <ImageIcon size={20} />
                                                     </div>
                                                     <span className="text-sm font-black text-slate-700">Upload Image</span>
@@ -259,7 +259,7 @@ export const AdminPush = ({ users, showToast }) => {
                                                 value={imageUrl}
                                                 onChange={e => setImageUrl(e.target.value)}
                                                 placeholder="https://example.com/image.jpg"
-                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-purple-500 outline-none"
+                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-orange-500 outline-none"
                                             />
                                         </div>
                                     </div>
@@ -309,11 +309,11 @@ export const AdminPush = ({ users, showToast }) => {
                 </div>
 
                 {/* Info Card */}
-                <div className="bg-purple-50 rounded-[2rem] p-6 border border-purple-100">
-                    <h4 className="text-sm font-black text-purple-900 flex items-center gap-2 mb-2">
-                        <CheckCircle size={16} className="text-purple-500" /> VAPID Ready
+                <div className="bg-orange-50 rounded-[2rem] p-6 border border-orange-100">
+                    <h4 className="text-sm font-black text-orange-900 flex items-center gap-2 mb-2">
+                        <CheckCircle size={16} className="text-orange-500" /> VAPID Ready
                     </h4>
-                    <p className="text-xs text-purple-700 font-medium leading-relaxed mb-6">
+                    <p className="text-xs text-orange-700 font-medium leading-relaxed mb-6">
                         Your push notification center is connected to the web-push VAPID gateway. It will securely broadcast directly to active user devices.
                     </p>
 
@@ -321,8 +321,8 @@ export const AdminPush = ({ users, showToast }) => {
                         onClick={handleSendPush}
                         disabled={isSending || !message.trim()}
                         className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 text-sm font-black transition-all shadow-xl ${message.trim()
-                                ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-purple-600/30 transform hover:-translate-y-1'
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                            ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 shadow-orange-600/30 transform hover:-translate-y-1'
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                             }`}
                     >
                         {isSending ? (
@@ -333,7 +333,7 @@ export const AdminPush = ({ users, showToast }) => {
                     </button>
 
                     {isSending && (
-                        <p className="text-center text-[10px] font-bold text-purple-600 animate-pulse mt-4">
+                        <p className="text-center text-[10px] font-bold text-orange-600 animate-pulse mt-4">
                             Establishing secure gateway connections...
                         </p>
                     )}

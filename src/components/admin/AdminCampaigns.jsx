@@ -513,21 +513,21 @@ export const AdminCampaigns = ({ users, showToast }) => {
                             Letter Body (AI Enhanced)
                         </label>
 
-                        <div className="mb-3 p-3 bg-indigo-50/50 border border-indigo-100/50 rounded-xl space-y-2">
-                            <label className="block text-[10px] font-black text-indigo-500 uppercase tracking-widest">✨ AI Content Generator</label>
+                        <div className="mb-3 p-3 bg-orange-50/50 border border-orange-100/50 rounded-xl space-y-2">
+                            <label className="block text-[10px] font-black text-orange-500 uppercase tracking-widest">✨ AI Content Generator</label>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
                                     value={aiPrompt}
                                     onChange={e => setAiPrompt(e.target.value)}
                                     placeholder="Write a Holi event letter giving 3 financial tips..."
-                                    className="flex-1 px-3 py-2 bg-white border border-indigo-100 rounded-lg text-xs font-bold outline-none focus:border-indigo-400"
+                                    className="flex-1 px-3 py-2 bg-white border border-orange-100 rounded-lg text-xs font-bold outline-none focus:border-orange-400"
                                     onKeyDown={e => e.key === 'Enter' ? generateAILetter() : null}
                                 />
                                 <button
                                     onClick={generateAILetter}
                                     disabled={isGeneratingAI || !aiPrompt.trim()}
-                                    className="px-4 py-2 bg-indigo-500 text-white font-bold text-xs rounded-lg hover:bg-indigo-600 disabled:opacity-50 flex items-center gap-2"
+                                    className="px-4 py-2 bg-orange-500 text-white font-bold text-xs rounded-lg hover:bg-orange-600 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {isGeneratingAI ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                                     Generate
