@@ -35,18 +35,26 @@ export default async function handler(req, res) {
         }
 
         // 2. Send the OTP via Email
+        const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+        const isSecure = smtpPort === 465;
+
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: process.env.SMTP_PORT || 587,
-            secure: false,
+            port: smtpPort,
+            secure: isSecure,
             auth: {
-                user: process.env.VITE_SMTP_USER,
-                pass: process.env.VITE_SMTP_PASS,
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+            tls: {
+                rejectUnauthorized: false, // Don't fail on self-signed certs
             },
         });
 
+        const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
+
         const mailOptions = {
-            from: `"Orange Finance Security" <${process.env.VITE_SMTP_USER}>`,
+            from: `"Orange Finance Security" <${fromEmail}>`,
             to: email,
             subject: 'Admin 2FA Authorization Code',
             html: `
