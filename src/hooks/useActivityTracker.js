@@ -52,15 +52,24 @@ export const useActivityTracker = (session) => {
                     last_active: new Date().toISOString()
                 }, { onConflict: 'device_id' });
 
-                // 2. Try to get IP/Geo info (swfail-safe)
+                let geo_location_data = {
+                    loc: 'Unknown Location',
+                    lat: null,
+                    lon: null
+                };
                 let ip_address = 'Unknown';
-                let geo_location = 'Unknown Location';
                 try {
                     const res = await fetch('https://ipapi.co/json/');
                     if (res.ok) {
                         const data = await res.json();
                         if (data.ip) ip_address = data.ip;
-                        if (data.city) geo_location = `${data.city}, ${data.region}, ${data.country_name}`;
+                        if (data.city) {
+                            geo_location_data = {
+                                loc: `${data.city}, ${data.region}, ${data.country_name}`,
+                                lat: data.latitude,
+                                lon: data.longitude
+                            };
+                        }
                     }
                 } catch (e) {
                     console.log('Geo fetch failed, skipping geo log');
@@ -71,7 +80,7 @@ export const useActivityTracker = (session) => {
                     user_id: session.user.id,
                     device_id: deviceId,
                     ip_address,
-                    geo_location
+                    geo_location: JSON.stringify(geo_location_data)
                 }).select().single();
 
                 if (sessionData && !error) {

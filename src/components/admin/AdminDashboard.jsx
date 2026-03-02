@@ -6,6 +6,7 @@ import { AdminCampaigns } from './AdminCampaigns';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminCategories } from './AdminCategories';
 import { AdminGallery } from './AdminGallery';
+import { AdminPush } from './AdminPush';
 
 export const AdminDashboard = ({ session, onLogout }) => {
     const [users, setUsers] = useState([]);
@@ -177,6 +178,12 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                 <Activity size={14} /> Analytics
                             </button>
                             <button
+                                onClick={() => setActiveMasterTab('push')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'push' ? 'bg-purple-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                <MonitorSmartphone size={14} /> Push Alerts
+                            </button>
+                            <button
                                 onClick={() => setActiveMasterTab('categories')}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeMasterTab === 'categories' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
                             >
@@ -201,6 +208,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                 <option value="directory">Directory</option>
                                 <option value="campaigns">Campaigns</option>
                                 <option value="analytics">Analytics</option>
+                                <option value="push">Push Alerts</option>
                                 <option value="categories">Categories</option>
                                 <option value="gallery">Gallery</option>
                             </select>
@@ -518,6 +526,10 @@ export const AdminDashboard = ({ session, onLogout }) => {
             ) : activeMasterTab === 'analytics' ? (
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <AdminAnalytics />
+                </div>
+            ) : activeMasterTab === 'push' ? (
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    <AdminPush users={users} showToast={showToast} />
                 </div>
             ) : activeMasterTab === 'categories' ? (
                 <div className="max-w-7xl mx-auto px-6 py-8">

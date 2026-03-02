@@ -66,6 +66,7 @@ export default async function handler(req, res) {
             title,
             body,
             icon: icon || 'https://fin.swinfosystems.online/favicon.ico',
+            image: req.body.image || null,
             data: { url: url || '/' }
         });
 

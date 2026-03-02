@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../config/supabase';
 import { Activity, MapPin, MonitorSmartphone, Clock, Loader2, Save, Image as ImageIcon } from 'lucide-react';
+import { AdminMapAnimation } from './AdminMapAnimation';
 
 export const AdminAnalytics = () => {
     const [loading, setLoading] = useState(true);
@@ -107,6 +108,9 @@ export const AdminAnalytics = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Map Animation Section */}
+            <AdminMapAnimation sessions={recentSessions} />
 
             {/* Platform Settings */}
             <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">

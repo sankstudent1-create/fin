@@ -10,12 +10,17 @@ export const AdminScreen = () => {
     const [loading, setLoading] = useState(true);
     const hasVerified = useRef(false);
 
+    // 2FA states for already-logged-in users accessing admin route
+    const [needs2FA, setNeeds2FA] = useState(false);
+    const [otp, setOtp] = useState('');
+    const [verifyingOtp, setVerifyingOtp] = useState(false);
+
     useEffect(() => {
         const checkAdminSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 setSession(session);
-                verifyAdmin(session.user.id);
+                await verifyAdmin(session.user.id);
             } else {
                 setLoading(false);
             }
@@ -26,7 +31,7 @@ export const AdminScreen = () => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             if (s) {
                 setSession(s);
-                // Only trigger a hard reload/verify on actual sign-in. Ignore token refreshes (which happen on tab focus).
+                // Only trigger a hard verify on sign-in event
                 if (!hasVerified.current && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
                     verifyAdmin(s.user.id, false);
                 }
@@ -34,6 +39,7 @@ export const AdminScreen = () => {
                 setSession(null);
                 setIsAdmin(null);
                 hasVerified.current = false;
+                setNeeds2FA(false); // Reset 2FA status
                 setLoading(false);
             }
         });
@@ -41,14 +47,39 @@ export const AdminScreen = () => {
         return () => subscription.unsubscribe();
     }, []);
 
+    const trigger2FAEmail = async (userId, userEmail) => {
+        try {
+            const res = await fetch('/api/send-admin-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userEmail })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                console.log("2FA sent specifically to already logged-in admin.");
+            }
+        } catch (e) {
+            console.error('Failed to send 2FA', e);
+        }
+    };
+
     const verifyAdmin = async (userId, silent = false) => {
         if (!silent) setLoading(true);
-        // We use our secure RPC function to check if they are in the admins table
+        // Secure RPC function to check if they are in the admins table
         const { data, error } = await supabase.rpc('is_admin');
 
         if (data === true) {
             setIsAdmin(true);
             hasVerified.current = true;
+
+            // Just because they are logged in doesn't mean they bypassed 2FA.
+            // If they are coming from dashboard, demand 2FA.
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            setNeeds2FA(true);
+
+            if (currentSession) {
+                trigger2FAEmail(userId, currentSession.user.email);
+            }
         } else {
             console.warn('User is not an admin', error);
             setIsAdmin(false);
@@ -58,6 +89,25 @@ export const AdminScreen = () => {
             alert('Access Denied. You are not registered as an Admin.');
         }
         if (!silent) setLoading(false);
+    };
+
+    const handleOtpSubmit = async (e) => {
+        e.preventDefault();
+        setVerifyingOtp(true);
+        const { data: isValid, error } = await supabase.rpc('verify_admin_otp', {
+            user_email: session.user.email,
+            submitted_code: otp
+        });
+
+        if (error || !isValid) {
+            alert('Invalid or expired 2FA code.');
+            setVerifyingOtp(false);
+            return;
+        }
+
+        // Success!
+        setNeeds2FA(false);
+        setVerifyingOtp(false);
     };
 
     if (loading) {
@@ -70,8 +120,81 @@ export const AdminScreen = () => {
         );
     }
 
-    if (!session || !isAdmin) {
-        return <AdminLogin onLoginSuccess={(s) => { setSession(s); verifyAdmin(s.user.id); }} />;
+    if (!session || (!isAdmin && !needs2FA)) {
+        return <AdminLogin onLoginSuccess={(s) => {
+            // AdminLogin internally handles BOTH password & OTP
+            setSession(s);
+            setIsAdmin(true);
+            setNeeds2FA(false); // Bypasses internal screen since AdminLogin did it
+        }} />;
+    }
+
+    // Secondary 2FA Screen for users accessing /admin while already logged in
+    if (session && isAdmin && needs2FA) {
+        import('framer-motion').then(({ motion }) => window.FramerMotion = motion);
+        const { ShieldCheck } = require('lucide-react');
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+                <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-all transform scale-100">
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 via-rose-500 to-indigo-500" />
+                    <div className="mb-8 text-center">
+                        <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                            <ShieldCheck size={32} strokeWidth={2.5} />
+                        </div>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Admin Verification</h2>
+                        <p className="text-sm font-medium text-slate-500 mt-2">Enter the code sent to your email to continue</p>
+                    </div>
+
+                    <form onSubmit={handleOtpSubmit} className="space-y-4">
+                        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center mb-4">
+                            <p className="text-xs font-bold text-indigo-800">2FA Code sent to</p>
+                            <p className="text-sm font-black text-indigo-900 mt-1">{session.user.email}</p>
+                        </div>
+
+                        <div>
+                            <div className="relative max-w-[240px] mx-auto">
+                                <input
+                                    type="text"
+                                    required
+                                    maxLength={6}
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                    placeholder="000000"
+                                    className="w-full py-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-2xl font-black tracking-[0.5em] text-center focus:outline-none focus:border-indigo-500 focus:bg-white transition-all transform"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={verifyingOtp || otp.length !== 6}
+                            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white p-3.5 rounded-xl text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-xl shadow-indigo-600/20 mt-6"
+                        >
+                            {verifyingOtp ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                            Verify & Enter Dashboard
+                        </button>
+
+                        <div className="flex flex-col gap-2 mt-4 text-center">
+                            <button
+                                type="button"
+                                disabled={verifyingOtp}
+                                onClick={() => trigger2FAEmail(session.user.id, session.user.email)}
+                                className="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition-colors py-2"
+                            >
+                                Resend Code
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => supabase.auth.signOut()}
+                                className="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors py-2"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        );
     }
 
     return <AdminDashboard session={session} onLogout={() => supabase.auth.signOut()} />;
