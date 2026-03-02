@@ -48,11 +48,14 @@ export const AdminScreen = () => {
         return () => subscription.unsubscribe();
     }, []);
 
-    const trigger2FAEmail = async (userId, userEmail) => {
+    const trigger2FAEmail = async (userId, userEmail, token) => {
         try {
             const res = await fetch('/api/send-admin-otp', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ email: userEmail })
             });
             const data = await res.json();
@@ -79,7 +82,7 @@ export const AdminScreen = () => {
             setNeeds2FA(true);
 
             if (currentSession) {
-                trigger2FAEmail(userId, currentSession.user.email);
+                trigger2FAEmail(userId, currentSession.user.email, currentSession.access_token);
             }
         } else {
             console.warn('User is not an admin', error);
@@ -177,7 +180,7 @@ export const AdminScreen = () => {
                             <button
                                 type="button"
                                 disabled={verifyingOtp}
-                                onClick={() => trigger2FAEmail(session.user.id, session.user.email)}
+                                onClick={() => trigger2FAEmail(session.user.id, session.user.email, session.access_token)}
                                 className="text-xs font-bold text-indigo-500 hover:text-indigo-600 transition-colors py-2"
                             >
                                 Resend Code

@@ -49,7 +49,10 @@ export const AdminLogin = ({ onLoginSuccess }) => {
         try {
             const res = await fetch('/api/send-admin-otp', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${data.session?.access_token}`
+                },
                 body: JSON.stringify({ email: email })
             });
             const otpData = await res.json();
