@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../config/supabase';
 import { AdminLogin } from '../../components/admin/AdminLogin';
 import { AdminDashboard } from '../../components/admin/AdminDashboard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const AdminScreen = () => {
     const [session, setSession] = useState(null);
@@ -131,8 +132,6 @@ export const AdminScreen = () => {
 
     // Secondary 2FA Screen for users accessing /admin while already logged in
     if (session && isAdmin && needs2FA) {
-        import('framer-motion').then(({ motion }) => window.FramerMotion = motion);
-        const { ShieldCheck } = require('lucide-react');
         return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
                 <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl relative overflow-hidden transition-all transform scale-100">
