@@ -2,9 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
 
 export default async function handler(req, res) {
+    const authHeader = req.headers.authorization;
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Pass the user's authorization header down to the database so that auth.uid() resolves correctly!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, authHeader ? {
+        global: { headers: { Authorization: authHeader } }
+    } : {});
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -17,10 +22,12 @@ export default async function handler(req, res) {
         const { email } = req.body;
         if (!email) return res.status(400).json({ error: 'Email required' });
 
-        // 1. Generate OTP using the RPC function
-        const { data: otpCode, error: rpcError } = await supabase.rpc('generate_admin_otp', {
-            user_email: email
-        });
+        if (!authHeader) {
+            return res.status(401).json({ error: 'Unauthorized: Missing token' });
+        }
+
+        // 1. Generate OTP using the parameterless RPC function
+        const { data: otpCode, error: rpcError } = await supabase.rpc('generate_admin_otp');
 
         if (rpcError || !otpCode) {
             console.error(rpcError);
