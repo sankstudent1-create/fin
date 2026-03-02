@@ -190,21 +190,38 @@ async function syncPendingTransactions() {
 
 /* ── PUSH NOTIFICATIONS ─────────────────────────────────────────── */
 self.addEventListener('push', (event) => {
-  const data = event.data?.json() || { title: 'Orange Finance', body: 'You have a new notification' };
+  let payload = { title: 'Orange Finance', body: 'You have a new notification' };
+  try {
+    if (event.data) {
+      payload = event.data.json();
+    }
+  } catch (e) {
+    console.error('Error parsing push data', e);
+  }
+
+  const notificationOptions = {
+    body: payload.body || '',
+    icon: payload.icon || '/favicon.ico',
+    badge: 'https://img.icons8.com/color/192/wallet.png',
+    tag: 'orange-finance',
+    renotify: true,
+    data: payload.data || { url: '/' }
+  };
+
+  // Attach rich media image if present in the payload
+  if (payload.image) {
+    notificationOptions.image = payload.image;
+  }
+
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Orange Finance', {
-      body: data.body || '',
-      icon: '/favicon.ico',
-      badge: 'https://img.icons8.com/color/192/wallet.png',
-      tag: 'orange-finance',
-      renotify: true,
-    })
+    self.registration.showNotification(payload.title || 'Orange Finance', notificationOptions)
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const action = event.notification.data?.action || '/';
+  // We passed url into data in the backend api
+  const action = event.notification.data?.url || '/';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       // If an existing window is open, navigate it
