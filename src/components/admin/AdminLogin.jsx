@@ -81,7 +81,6 @@ export const AdminLogin = ({ onLoginSuccess }) => {
 
         // 4. Verify OTP using backend RPC
         const { data: isValid, error: verifyError } = await supabase.rpc('verify_admin_otp', {
-            user_email: email,
             submitted_code: otp
         });
 

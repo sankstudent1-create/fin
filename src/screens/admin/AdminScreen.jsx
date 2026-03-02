@@ -99,7 +99,6 @@ export const AdminScreen = () => {
         e.preventDefault();
         setVerifyingOtp(true);
         const { data: isValid, error } = await supabase.rpc('verify_admin_otp', {
-            user_email: session.user.email,
             submitted_code: otp
         });
 
