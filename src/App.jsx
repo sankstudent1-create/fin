@@ -1179,7 +1179,7 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
 
   // State-Driven Print Engine
   useEffect(() => {
-    if (isPrinting) {
+    if (isPrinting && calculatorPrintData) {
       window.scrollTo(0, 0); // Force reflow pulse
       const timer = setTimeout(() => {
         window.print();
@@ -1189,10 +1189,10 @@ const Dashboard = ({ session, supabase, lang, t, onLangChange }) => {
           setCalculatorPrintData(null);
         }, 1500);
         return () => clearTimeout(clearTimer);
-      }, 1000);
+      }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isPrinting]);
+  }, [isPrinting, calculatorPrintData]);
 
   const handleShare = async (calcTitle = null, calcData = null, calcResult = null) => {
     setIsSharing(true);
