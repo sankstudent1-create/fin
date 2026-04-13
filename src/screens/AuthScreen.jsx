@@ -123,13 +123,19 @@ export const AuthScreen = () => {
     };
 
     return (
-        <div className="min-h-screen w-full font-sans overflow-hidden bg-[#0A0A0B] flex items-center justify-center p-4 sm:p-8 relative selection:bg-orange-500/30">
+        <div className="min-h-screen w-full font-sans overflow-hidden bg-[#050505] flex items-center justify-center p-4 sm:p-8 relative selection:bg-orange-500/30 text-slate-50 antialiased">
             {/* ─── Ambient Background Effects ─── */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay z-0"></div>
-                <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-gradient-to-br from-orange-600/40 via-rose-600/30 to-purple-800/30 rounded-full blur-[120px] mix-blend-screen" />
-                <motion.div animate={{ rotate: -360, scale: [1, 1.3, 1] }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }} className="absolute -bottom-[20%] -left-[10%] w-[900px] h-[900px] bg-gradient-to-tr from-rose-600/30 via-orange-500/30 to-amber-500/20 rounded-full blur-[150px] mix-blend-screen" />
-                <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[40px] z-0"></div>
+                {/* Fixed noise using inline SVG to avoid 403 Forbidden */}
+                <div 
+                    className="absolute inset-0 mix-blend-overlay z-0 opacity-20"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+                ></div>
+                
+                {/* Enhanced mesh gradients for richer colors */}
+                <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-gradient-to-br from-orange-600/40 via-rose-600/30 to-purple-800/30 rounded-full blur-[140px] mix-blend-screen" />
+                <motion.div animate={{ rotate: -360, scale: [1, 1.3, 1] }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }} className="absolute -bottom-[20%] -left-[10%] w-[900px] h-[900px] bg-gradient-to-tr from-rose-600/30 via-orange-500/30 to-amber-500/20 rounded-full blur-[160px] mix-blend-screen" />
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-[40px] z-0"></div>
             </div>
 
             {/* ─── Main Auth Card ─── */}
@@ -138,7 +144,7 @@ export const AuthScreen = () => {
                     initial={{ opacity: 0, y: 40, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.7, type: "spring", bounce: 0.4 }}
-                    className="relative w-full rounded-[2.5rem] bg-white/5 backdrop-blur-3xl border border-white/10 p-8 sm:p-10 shadow-[0_8px_40px_rgba(0,0,0,0.4)] overflow-hidden group/card"
+                    className="relative w-full rounded-[2.5rem] bg-zinc-900/40 backdrop-blur-3xl border border-white/10 p-8 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden group/card"
                 >
                     {/* Inner highlight for premium hardware feel */}
                     <div className="absolute inset-0 rounded-[2.5rem] ring-1 ring-inset ring-white/10 pointer-events-none"></div>
