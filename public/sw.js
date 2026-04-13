@@ -2,8 +2,8 @@
 /*  Orange Finance — Service Worker  v10                               */
 /*  Strategy: Cache-First for static, Network-First for API          */
 /* ================================================================== */
-const CACHE_VERSION = 'of-v11';
-const DATA_CACHE = 'of-data-v11';
+const CACHE_VERSION = 'of-v12';
+const DATA_CACHE = 'of-data-v12';
 
 const STATIC_ASSETS = [
   '/',
@@ -42,14 +42,16 @@ self.addEventListener('install', (event) => {
     ];
     for (const url of externals) {
       try {
-        const res = await fetch(url, { mode: 'no-cors' });
+        // Use CORS for fonts (so CSS works), no-cors for images
+        const mode = url.includes('fonts.googleapis.com') ? 'cors' : 'no-cors';
+        const res = await fetch(url, { mode });
         await cache.put(url, res);
       } catch (e) {
         console.warn('[SW] External cache miss:', url);
       }
     }
 
-    console.log('[SW] Installed v11 ✓');
+    console.log('[SW] Installed v12 ✓');
   })());
   self.skipWaiting();
 });
@@ -64,7 +66,7 @@ self.addEventListener('activate', (event) => {
         .map(k => caches.delete(k))
     );
     await self.clients.claim();
-    console.log('[SW] Activated v11 ✓');
+    console.log('[SW] Activated v12 ✓');
   })());
 });
 
@@ -144,8 +146,9 @@ async function cacheFirst(req, cacheName) {
   const cached = await caches.match(req);
   if (cached) return cached;
   try {
-    const res = await fetch(req, { mode: 'no-cors' });
-    if (res) {
+    // DO NOT force 'no-cors', it breaks CORS requests like Google Fonts
+    const res = await fetch(req);
+    if (res && (res.status === 200 || res.type === 'opaque')) {
       const cache = await caches.open(cacheName);
       cache.put(req, res.clone());
     }
