@@ -15,6 +15,7 @@ export const AdminScreen = () => {
     const [needs2FA, setNeeds2FA] = useState(false);
     const [otp, setOtp] = useState('');
     const [verifyingOtp, setVerifyingOtp] = useState(false);
+    const [otpTimer, setOtpTimer] = useState(0);
 
     useEffect(() => {
         const checkAdminSession = async () => {
@@ -46,7 +47,16 @@ export const AdminScreen = () => {
         });
 
         return () => subscription.unsubscribe();
-    }, []);
+    };
+
+    // OTP countdown timer effect
+    useEffect(() => {
+        if (otpTimer > 0) {
+            const timerId = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
+            return () => clearTimeout(timerId);
+        }
+    }, [otpTimer]);
+    
 
     const trigger2FAEmail = async (userId, userEmail, token) => {
         try {
@@ -61,6 +71,8 @@ export const AdminScreen = () => {
             const data = await res.json();
             if (res.ok && data.success) {
                 console.log("2FA sent specifically to already logged-in admin.");
+                // Start OTP timer (e.g., 60 seconds)
+                setOtpTimer(60);
             }
         } catch (e) {
             console.error('Failed to send 2FA', e);
@@ -109,6 +121,8 @@ export const AdminScreen = () => {
         }
 
         // Success!
+        setOtp('');
+        setOtpTimer(0);
         setNeeds2FA(false);
         setVerifyingOtp(false);
     };
@@ -178,11 +192,11 @@ export const AdminScreen = () => {
                         <div className="flex flex-col gap-2 mt-4 text-center">
                             <button
                                 type="button"
-                                disabled={verifyingOtp}
+                                disabled={verifyingOtp || otpTimer > 0}
                                 onClick={() => trigger2FAEmail(session.user.id, session.user.email, session.access_token)}
                                 className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors py-2"
                             >
-                                Resend Code
+                                Resend Code{otpTimer > 0 ? ` (${otpTimer}s)` : ''}
                             </button>
                             <button
                                 type="button"
