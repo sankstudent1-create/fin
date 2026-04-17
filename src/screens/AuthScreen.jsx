@@ -433,5 +433,6 @@ export const AuthScreen = () => {
                 </motion.div>
             </div>
         </div>
+    </div>
     );
 };
