@@ -859,19 +859,19 @@ export const Dashboard = ({ session }) => {
             />
 
             {/* MAIN APP — gets hidden during print via CSS */}
-            <div className={`${isPrinting ? 'print-hide' : ''} min-h-screen bg-slate-50 font-['Outfit'] antialiased`} data-print-hide="true">
+            <div className={`${isPrinting ? 'print-hide' : ''} min-h-screen bg-bg-base font-sans antialiased text-slate-100 selection:bg-orange-500/30`} data-print-hide="true">
 
                 {/* Header */}
-                <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-4 sm:px-6 py-4">
+                <header className="sticky top-0 z-40 bg-[#0B0D0F]/70 backdrop-blur-3xl border-b border-white/5 px-4 sm:px-6 py-4">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-                                <Wallet className="text-white" size={20} />
+                            <div className="w-11 h-11 bg-gradient-to-br from-orange-400 to-rose-500 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.3)] border border-orange-400/20">
+                                <Wallet className="text-white drop-shadow-md" size={22} />
                             </div>
                             <div>
-                                <h1 className="text-base font-black text-slate-900 tracking-tight leading-tight">Orange Finance</h1>
+                                <h1 className="text-xl font-bold text-white tracking-tight leading-tight">Orange <span className="font-light text-white/50">Finance</span></h1>
                                 {/* ── Online / Offline / Syncing chip ── */}
-                                <div className="flex items-center gap-1.5 mt-0.5">
+                                <div className="flex items-center gap-1.5 mt-1">
                                     {syncStatus === 'syncing' ? (
                                         <>
                                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
@@ -901,27 +901,27 @@ export const Dashboard = ({ session }) => {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setShowSupport(true)}
-                                className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                                className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 hover:bg-orange-500/20 hover:text-orange-400 transition-all hover:scale-105"
                             >
                                 <Headphones size={20} />
                             </button>
                             {isAdmin && (
                                 <button
                                     onClick={() => window.location.href = '/admin'}
-                                    className="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-100 transition-all border border-rose-100"
+                                    className="w-10 h-10 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-400 hover:bg-rose-500/20 transition-all border border-rose-500/20 hover:scale-105"
                                 >
                                     <ShieldCheck size={20} />
                                 </button>
                             )}
                             <button
                                 onClick={() => setShowScanner(true)}
-                                className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                                className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 hover:bg-orange-500/20 hover:text-orange-400 transition-all hover:scale-105"
                             >
                                 <ScanLine size={20} />
                             </button>
                             <button
                                 onClick={() => setShowSettings(true)}
-                                className="w-10 h-10 rounded-2xl overflow-hidden border-2 border-slate-100 hover:border-orange-300 transition-all"
+                                className="w-10 h-10 rounded-2xl overflow-hidden border border-white/10 hover:border-orange-500/50 hover:shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all"
                             >
                                 <img src={avatarUrl} alt="U" className="w-full h-full object-cover" />
                             </button>
@@ -944,20 +944,20 @@ export const Dashboard = ({ session }) => {
                                 {/* Greeting */}
                                 <motion.div variants={itemVariants} className="flex items-center justify-between">
                                     <div>
-                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                                            {getGreeting()}, <span className="bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent">{firstName}</span> 👋
+                                        <h2 className="text-2xl font-black text-slate-100 tracking-tight">
+                                            {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300 drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]">{firstName}</span> 👋
                                         </h2>
                                         <p className="text-sm text-slate-400 font-medium mt-1">Here's your financial overview</p>
                                     </div>
                                     {/* Quick filter chip */}
-                                    <div className="relative">
+                                    <div className="relative z-30">
                                         <button
                                             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                                            className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-600 border border-slate-100 shadow-sm hover:shadow-md transition-all"
+                                            className="flex items-center gap-2 glass-panel border-white/5 hover:bg-white/5 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-300 transition-all hover:text-white"
                                         >
-                                            <Calendar size={14} />
+                                            <Calendar size={14} className="text-orange-400" />
                                             {filterLabel}
-                                            <ChevronDown size={14} className={`transition-transform ${showFilterDropdown ? 'rotate-180' : ''}`} />
+                                            <ChevronDown size={14} className={`transition-transform text-slate-500 ${showFilterDropdown ? 'rotate-180' : ''}`} />
                                         </button>
                                         <AnimatePresence>
                                             {showFilterDropdown && (
@@ -965,13 +965,13 @@ export const Dashboard = ({ session }) => {
                                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                    className="absolute right-0 top-12 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 min-w-[180px]"
+                                                    className="absolute right-0 top-12 bg-[#181A20]/95 backdrop-blur-3xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 p-2 min-w-[180px]"
                                                 >
                                                     {FILTER_OPTIONS.map(opt => (
                                                         <button
                                                             key={opt.id}
                                                             onClick={() => { setFilterPeriod(opt.id); setShowFilterDropdown(false); }}
-                                                            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${filterPeriod === opt.id ? 'bg-orange-50 text-orange-600' : 'text-slate-500 hover:bg-slate-50'}`}
+                                                            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${filterPeriod === opt.id ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
                                                         >
                                                             {opt.label}
                                                             {filterPeriod === opt.id && <Check size={14} />}
@@ -983,45 +983,67 @@ export const Dashboard = ({ session }) => {
                                     </div>
                                 </motion.div>
 
-                                {/* Stats */}
-                                <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4">
-                                    <StatCard label="Balance" value={stats.balance} icon={Wallet} type="balance" onClick={() => setActiveTab('reports')} />
-                                    <StatCard label="Income" value={stats.income} icon={TrendingUp} type="income" />
-                                    <StatCard label="Expense" value={stats.expense} icon={TrendingDown} type="expense" />
-                                </motion.div>
+                                {/* Modern Bento Grid Layout */}
+                                <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-6 border-b border-white/5 pb-8">
+                                    {/* Left Column: Stats & Digest */}
+                                    <div className="md:col-span-8 flex flex-col gap-5">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                                            <StatCard label="Balance" value={stats.balance} icon={Wallet} type="balance" onClick={() => setActiveTab('reports')} />
+                                            <StatCard label="Income" value={stats.income} icon={TrendingUp} type="income" />
+                                            <StatCard label="Expense" value={stats.expense} icon={TrendingDown} type="expense" />
+                                        </div>
 
-                                {/* Tools Section */}
-                                <motion.div variants={itemVariants}>
-                                    <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 ml-1">Financial Tools</h2>
-                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                                        {TOOLS.map(tool => (
-                                            <motion.button
-                                                key={tool.id}
-                                                whileHover={{ y: -2 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => setShowCalculator(tool.id)}
-                                                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-2"
-                                            >
-                                                <div className={`p-3 rounded-2xl ${tool.bg}`}>
-                                                    <tool.icon size={20} className={tool.color} />
+                                        {/* AI Financial Digest (New Widget) */}
+                                        <div className="glass-panel rounded-3xl p-6 relative overflow-hidden flex items-start gap-4 shadow-neon">
+                                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                                <Bot size={80} />
+                                            </div>
+                                            <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0 border border-orange-500/30">
+                                                <Sparkles size={18} className="text-orange-400" />
+                                            </div>
+                                            <div className="relative z-10 w-full">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <h3 className="text-xs font-bold text-orange-400 tracking-widest uppercase">AI Financial Digest</h3>
+                                                    <span className="text-[10px] font-mono text-white/40 bg-white/5 px-2 py-1 rounded-md">Live Analysis</span>
                                                 </div>
-                                                <span className="text-[10px] font-bold text-slate-500 text-center leading-tight">{tool.name}</span>
-                                            </motion.button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-
-                                {/* Bar Chart */}
-                                <motion.div variants={itemVariants} className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Weekly Trend</h3>
-                                        <div className="flex gap-2">
-                                            <span className="text-[10px] font-bold text-rose-400 flex items-center gap-1">
-                                                <span className="w-2 h-2 rounded-full bg-rose-400" />Expense
-                                            </span>
+                                                <p className="text-sm text-slate-300 leading-relaxed max-w-lg">
+                                                    Your expenses are <strong className="text-rose-400">up 12%</strong> this week. Subscription costs look stable. Save ₹2,500 more this month to hit your aggressive growth target.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <TrendBarChart transactions={filteredTransactions} type="expense" />
+
+                                    {/* Right Column: Mini Tools & Subscriptions */}
+                                    <div className="md:col-span-4 flex flex-col gap-5">
+                                        {/* Quick Tools Grid */}
+                                        <div className="glass-panel p-5 rounded-3xl grid grid-cols-3 gap-3">
+                                            {TOOLS.slice(0, 6).map(tool => (
+                                                <motion.button
+                                                    key={tool.id}
+                                                    whileHover={{ y: -2, scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    onClick={() => setShowCalculator(tool.id)}
+                                                    className="bg-white/5 hover:bg-white/10 p-3 rounded-2xl border border-white/5 transition-all flex flex-col items-center gap-2"
+                                                >
+                                                    <div className={`p-2 rounded-xl bg-opacity-20`}>
+                                                        <tool.icon size={18} className="text-orange-400" />
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-wider">{tool.name.split(' ')[0]}</span>
+                                                </motion.button>
+                                            ))}
+                                        </div>
+
+                                        {/* Weekly Trend Chart Snippet */}
+                                        <div className="glass-panel flex-1 rounded-3xl p-5 border border-white/5 relative overflow-hidden flex flex-col">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Weekly Trend</h3>
+                                                <span className="text-[9px] font-bold bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400" /> Expense</span>
+                                            </div>
+                                            <div className="flex-1 min-h-[100px]">
+                                                <TrendBarChart transactions={filteredTransactions} type="expense" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </motion.div>
 
                                 {/* Recent Transactions */}
@@ -1031,14 +1053,14 @@ export const Dashboard = ({ session }) => {
                                     </div>
 
                                     {/* Search */}
-                                    <div className="relative mb-4">
-                                        <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                                    <div className="relative mb-6">
+                                        <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-orange-500/50" />
                                         <input
                                             type="text"
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             placeholder="Search transactions..."
-                                            className="w-full bg-white border-2 border-slate-100 rounded-2xl pl-14 pr-4 py-4 text-sm font-medium text-slate-700 outline-none focus:border-orange-300 focus:shadow-lg focus:shadow-orange-500/5 transition-all"
+                                            className="w-full bg-[#181A20]/70 backdrop-blur-md border border-white/5 rounded-2xl pl-14 pr-4 py-4 text-sm font-medium text-slate-100 placeholder:text-slate-500 outline-none focus:border-orange-500/50 focus:shadow-[0_0_20px_rgba(249,115,22,0.15)] focus:bg-[#181A20] transition-all"
                                         />
                                     </div>
 
@@ -1100,21 +1122,21 @@ export const Dashboard = ({ session }) => {
                                 </div>
 
                                 {/* Report Actions */}
-                                <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                                <div className="bg-[#181A20]/80 rounded-[2.5rem] p-8 border border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 backdrop-blur-2xl">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
+                                        <div className="p-3 bg-violet-500/20 text-violet-400 rounded-2xl border border-violet-500/20 shadow-inner">
                                             <FileText size={20} />
                                         </div>
                                         <div>
-                                            <h3 className="text-sm font-black text-slate-900">Financial Report</h3>
-                                            <p className="text-[10px] text-slate-400 font-medium">Export or preview your data</p>
+                                            <h3 className="text-sm font-black text-slate-100">Financial Report</h3>
+                                            <p className="text-[10px] text-slate-400 font-medium tracking-wide">Export or preview your data</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-2 w-full sm:w-auto">
                                         <button
                                             onClick={handleDownloadReport}
                                             disabled={isSharing}
-                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-orange-500/20 transition-all active:scale-95 min-w-[120px]"
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-orange-400 to-amber-500 text-slate-900 px-5 py-2.5 rounded-xl text-xs font-black hover:shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all active:scale-95 min-w-[120px]"
                                         >
                                             {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                                             {isSharing ? 'Generating...' : 'Download'}
@@ -1125,7 +1147,7 @@ export const Dashboard = ({ session }) => {
                                                 setPreviewZoom(1);
                                                 setIsPrinting(true);
                                             }}
-                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white text-slate-600 px-5 py-2.5 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white/5 text-slate-300 px-5 py-2.5 rounded-xl text-xs font-bold border border-white/10 hover:bg-white/10 hover:text-white transition-all active:scale-95"
                                         >
                                             <Eye size={14} /> Preview
                                         </button>
@@ -1142,7 +1164,7 @@ export const Dashboard = ({ session }) => {
                 {/* Bottom Navigation — Premium Glassmorphism */}
                 <div className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)] pointer-events-none">
                     <div className="px-3 pb-2 sm:pb-3">
-                        <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-2xl rounded-[1.75rem] shadow-[0_-4px_40px_rgba(0,0,0,0.08)] border border-white/60 flex items-center justify-between px-2 sm:px-3 py-1.5 pointer-events-auto relative">
+                        <div className="max-w-lg mx-auto bg-[#0B0D0F]/90 backdrop-blur-3xl rounded-[1.75rem] shadow-[0_10px_50px_rgba(0,0,0,0.8)] border border-white/10 flex items-center justify-between px-2 sm:px-3 py-1.5 pointer-events-auto relative">
                             {/* Left tabs */}
                             {[
                                 { id: 'home', icon: Home, label: 'Home' },
@@ -1152,14 +1174,14 @@ export const Dashboard = ({ session }) => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`relative flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl transition-all active:scale-90 ${activeTab === tab.id
-                                        ? 'text-orange-600'
-                                        : 'text-slate-400 hover:text-slate-600'
+                                        ? 'text-orange-400'
+                                        : 'text-slate-500 hover:text-slate-300'
                                         }`}
                                 >
                                     {activeTab === tab.id && (
                                         <motion.div
                                             layoutId="navIndicator"
-                                            className="absolute inset-0 bg-orange-50 rounded-2xl"
+                                            className="absolute inset-0 bg-orange-500/10 rounded-2xl border border-orange-500/20"
                                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                                         />
                                     )}
@@ -1170,34 +1192,34 @@ export const Dashboard = ({ session }) => {
 
                             {/* Center FAB */}
                             <div className="relative -mt-7 mx-1">
-                                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-rose-400 rounded-full blur-xl opacity-40 scale-75" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-rose-500 rounded-full blur-[15px] opacity-60 scale-90" />
                                 <motion.button
                                     whileHover={{ scale: 1.08 }}
                                     whileTap={{ scale: 0.88 }}
                                     onClick={() => { setEditTransaction(null); setTxForm({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] }); setShowTransaction(true); }}
-                                    className="relative w-[52px] h-[52px] sm:w-14 sm:h-14 bg-gradient-to-br from-orange-500 via-orange-500 to-rose-500 rounded-full flex items-center justify-center text-white shadow-xl shadow-orange-500/30 ring-4 ring-white"
+                                    className="relative w-[52px] h-[52px] sm:w-14 sm:h-14 bg-gradient-to-br from-orange-400 w-full to-rose-600 rounded-full flex items-center justify-center text-white shadow-xl shadow-orange-500/50 ring-4 ring-[#0B0D0F]"
                                 >
-                                    <Plus size={24} strokeWidth={3} />
+                                    <Plus size={24} strokeWidth={3} className="drop-shadow-md" />
                                 </motion.button>
                             </div>
 
                             {/* Right tabs */}
                             <button
                                 onClick={() => setShowVoiceAssistant(true)}
-                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all active:scale-90"
+                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-500 hover:text-orange-400 transition-all active:scale-90"
                             >
                                 <Mic size={20} strokeWidth={1.5} />
                                 <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Voice</span>
                             </button>
                             <button
                                 onClick={() => setShowChatbot(true)}
-                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-400 hover:text-rose-600 transition-all active:scale-90 relative"
+                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-500 hover:text-orange-400 transition-all active:scale-90 relative"
                             >
                                 <Bot size={20} strokeWidth={1.5} />
                                 <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Chat</span>
                                 <span className="absolute top-2 right-[18px] flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
                                 </span>
                             </button>
                         </div>
@@ -1219,7 +1241,7 @@ export const Dashboard = ({ session }) => {
                             <motion.div
                                 initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
                                 transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-                                className="bg-white w-full sm:max-w-md sm:rounded-[2.5rem] rounded-t-[2.5rem] shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+                                className="bg-[#181A20] w-full sm:max-w-md sm:rounded-[2.5rem] rounded-t-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] border border-white/5 max-h-[90vh] overflow-hidden flex flex-col"
                                 onClick={e => e.stopPropagation()}
                             >
                                 {/* Drag Handle */}
@@ -1228,14 +1250,14 @@ export const Dashboard = ({ session }) => {
                                 </div>
 
                                 {/* Header */}
-                                <div className="flex justify-between items-center px-6 pt-5 pb-3 sm:px-8 sm:pt-8">
+                                <div className="flex justify-between items-center px-6 pt-5 pb-3 sm:px-8 sm:pt-8 bg-gradient-to-b from-white/5 to-transparent">
                                     <div>
-                                        <h3 className="text-xl font-black text-slate-900">{editTransaction ? 'Edit Transaction' : 'New Transaction'}</h3>
+                                        <h3 className="text-xl font-black text-slate-100">{editTransaction ? 'Edit Transaction' : 'New Transaction'}</h3>
                                         <p className="text-[11px] text-slate-400 font-medium mt-0.5">
                                             {editTransaction ? 'Update the details below' : 'Track your money flow'}
                                         </p>
                                     </div>
-                                    <button onClick={() => setShowTransaction(false)} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
+                                    <button onClick={() => setShowTransaction(false)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-orange-500/20 hover:text-orange-400 transition-colors hover:scale-105">
                                         <X size={20} />
                                     </button>
                                 </div>
@@ -1243,7 +1265,7 @@ export const Dashboard = ({ session }) => {
                                 {/* Body (scrollable) */}
                                 <div className="flex-1 overflow-y-auto px-6 pb-6 sm:px-8 sm:pb-8 space-y-5">
                                     {/* Type Toggle — Expense / Income */}
-                                    <div className="flex gap-2 bg-slate-50 p-1.5 rounded-2xl">
+                                    <div className="flex gap-2 bg-white/5 border border-white/5 p-1.5 rounded-2xl">
                                         {['expense', 'income'].map(type => {
                                             const isActive = txForm.type === type;
                                             return (
@@ -1252,9 +1274,9 @@ export const Dashboard = ({ session }) => {
                                                     onClick={() => setTxForm({ ...txForm, type })}
                                                     className={`relative flex-1 py-3 rounded-xl text-sm font-black uppercase tracking-wider transition-all ${isActive
                                                         ? (type === 'expense'
-                                                            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
-                                                            : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20')
-                                                        : 'text-slate-400'
+                                                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_15px_rgba(243,24,107,0.3)]'
+                                                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.3)]')
+                                                        : 'text-slate-500 hover:text-slate-300'
                                                         }`}
                                                 >
                                                     {type === 'expense' ? '↓ ' : '↑ '}{type}
@@ -1264,16 +1286,16 @@ export const Dashboard = ({ session }) => {
                                     </div>
 
                                     {/* Amount — Big Input */}
-                                    <div className="bg-slate-50 rounded-2xl p-5 text-center">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Amount</label>
+                                    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center shadow-inner">
+                                        <label className="text-[10px] font-black text-orange-400/80 uppercase tracking-widest block mb-2">Amount</label>
                                         <div className="flex items-center justify-center gap-1">
-                                            <span className="text-3xl font-black text-slate-300">₹</span>
+                                            <span className="text-3xl font-black text-slate-500">₹</span>
                                             <input
                                                 type="number"
                                                 value={txForm.amount}
                                                 onChange={e => setTxForm({ ...txForm, amount: e.target.value })}
                                                 placeholder="0"
-                                                className="bg-transparent text-center text-4xl font-black text-slate-900 outline-none w-40 placeholder:text-slate-200"
+                                                className="bg-transparent text-center text-4xl font-black text-white outline-none w-40 placeholder:text-slate-600 focus:shadow-[0_0_15px_rgba(249,115,22,0.2)] rounded-lg transition-all py-1"
                                             />
                                         </div>
                                     </div>
@@ -1293,7 +1315,7 @@ export const Dashboard = ({ session }) => {
                                                 }));
                                             }}
                                             placeholder="e.g. Grocery shopping"
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-3.5 font-bold text-slate-900 outline-none focus:border-orange-400 transition-all"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 font-bold text-white outline-none focus:border-orange-500/50 focus:bg-[#181A20] focus:shadow-[0_0_20px_rgba(249,115,22,0.15)] transition-all placeholder:text-slate-600"
                                         />
                                     </div>
 

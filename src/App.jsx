@@ -140,7 +140,7 @@ export default function App() {
       </AnimatePresence>
       {loading && !session ? (
         <div
-          className="min-h-screen flex flex-col items-center justify-center bg-bg-warm transition-all"
+          className="min-h-screen flex flex-col items-center justify-center bg-bg-base transition-all"
         >
           <div className="w-20 h-20 bg-gradient-to-tr from-orange-500 to-rose-500 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse mb-6">
             <Loader2 className="animate-spin text-white" size={40} />

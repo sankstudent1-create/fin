@@ -26,7 +26,7 @@ const DonutChart = ({ segments, size = 140, thickness = 22, label, sub }) => {
             <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
                 {/* Track */}
                 <circle cx={C} cy={C} r={R} fill="none"
-                    stroke="#f1f5f9" strokeWidth={thickness} />
+                    stroke="rgba(255,255,255,0.05)" strokeWidth={thickness} />
                 {/* Segments */}
                 {segments.map((seg, i) => {
                     const pct = total > 0 ? seg.value / total : 0;
@@ -50,7 +50,7 @@ const DonutChart = ({ segments, size = 140, thickness = 22, label, sub }) => {
                 position: 'absolute', inset: 0, display: 'flex',
                 flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             }}>
-                <span style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{label}</span>
+                <span style={{ fontSize: 13, fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>{label}</span>
                 {sub && <span style={{ fontSize: 9, color: '#94a3b8', marginTop: 2, fontWeight: 600 }}>{sub}</span>}
             </div>
         </div>
@@ -66,7 +66,7 @@ const MiniDonut = ({ segments, size = 56, thickness = 10 }) => {
     let off = 0;
     return (
         <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
-            <circle cx={C} cy={C} r={R} fill="none" stroke="#f1f5f9" strokeWidth={thickness} />
+            <circle cx={C} cy={C} r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={thickness} />
             {segments.map((seg, i) => {
                 const dash = total > 0 ? (seg.value / total) * cir : 0;
                 const el = (
@@ -148,11 +148,11 @@ export const AnalyticsDashboard = ({ transactions }) => {
             {/* ── ROW 1: Savings Rate + Top Expense ───────────────── */}
             <motion.div variants={fade} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Savings rate card */}
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-7 relative overflow-hidden">
-                    <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-emerald-50 opacity-60" />
+                <div className="bg-[#181A20]/80 rounded-3xl border border-white/5 shadow-md p-7 relative overflow-hidden backdrop-blur-3xl">
+                    <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-emerald-500/10 opacity-60" />
                     <div className="relative z-10">
                         <div className="flex items-center gap-2.5 mb-5">
-                            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl"><Target size={20} /></div>
+                            <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl"><Target size={20} /></div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Savings Rate</p>
                         </div>
                         <div className="flex items-end gap-4 mb-4">
@@ -163,7 +163,7 @@ export const AnalyticsDashboard = ({ transactions }) => {
                                 <p className="text-xs text-slate-400">{fmt(a.savings)} saved</p>
                             </div>
                         </div>
-                        <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${Math.min(Math.max(a.savingsRate, 0), 100)}%` }}
@@ -178,15 +178,15 @@ export const AnalyticsDashboard = ({ transactions }) => {
                 </div>
 
                 {/* Top Expense */}
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-7 relative overflow-hidden">
-                    <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-orange-50 opacity-60" />
+                <div className="bg-[#181A20]/80 rounded-3xl border border-white/5 shadow-md p-7 relative overflow-hidden backdrop-blur-3xl">
+                    <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-orange-500/10 opacity-60" />
                     <div className="relative z-10">
                         <div className="flex items-center gap-2.5 mb-5">
-                            <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl"><Flame size={20} /></div>
+                            <div className="p-2.5 bg-orange-500/20 text-orange-400 rounded-xl"><Flame size={20} /></div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Top Expense</p>
                         </div>
-                        <p className="text-3xl font-black text-slate-900 tracking-tight mb-1">{a.topExpCat[0]}</p>
-                        <p className="text-xl font-bold text-orange-600 mb-3">{fmt(a.topExpCat[1])}</p>
+                        <p className="text-3xl font-black text-white tracking-tight mb-1">{a.topExpCat[0]}</p>
+                        <p className="text-xl font-bold text-orange-400 mb-3">{fmt(a.topExpCat[1])}</p>
                         <p className="text-xs text-slate-400">
                             {a.totalExpense > 0
                                 ? `${((a.topExpCat[1] / a.totalExpense) * 100).toFixed(0)}% of total spending`
@@ -199,9 +199,9 @@ export const AnalyticsDashboard = ({ transactions }) => {
             {/* ── ROW 2: Donut Charts ──────────────────────────────── */}
             <motion.div variants={fade} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Expense donut */}
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                <div className="bg-[#181A20]/80 rounded-3xl border border-white/5 shadow-md p-6 backdrop-blur-3xl">
                     <div className="flex items-center gap-2.5 mb-5">
-                        <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl"><ArrowUpRight size={18} /></div>
+                        <div className="p-2.5 bg-rose-500/20 text-rose-400 rounded-xl"><ArrowUpRight size={18} /></div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expense Breakdown</p>
                     </div>
                     <div className="flex items-center gap-5">
@@ -218,10 +218,10 @@ export const AnalyticsDashboard = ({ transactions }) => {
                                         className="w-2.5 h-2.5 rounded-full flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs font-semibold text-slate-700 truncate">{cat}</span>
-                                            <span className="text-xs font-bold text-slate-900 ml-2 tabular-nums">{fmt(val)}</span>
+                                            <span className="text-xs font-semibold text-slate-300 truncate">{cat}</span>
+                                            <span className="text-xs font-bold text-white ml-2 tabular-nums">{fmt(val)}</span>
                                         </div>
-                                        <div className="w-full h-1 bg-slate-100 rounded-full mt-0.5">
+                                        <div className="w-full h-1 bg-white/10 rounded-full mt-0.5">
                                             <div className="h-full rounded-full transition-all"
                                                 style={{
                                                     width: `${a.totalExpense > 0 ? (val / a.totalExpense) * 100 : 0}%`,
@@ -237,9 +237,9 @@ export const AnalyticsDashboard = ({ transactions }) => {
                 </div>
 
                 {/* Income donut */}
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                <div className="bg-[#181A20]/80 rounded-3xl border border-white/5 shadow-md p-6 backdrop-blur-3xl">
                     <div className="flex items-center gap-2.5 mb-5">
-                        <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl"><ArrowDownLeft size={18} /></div>
+                        <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl"><ArrowDownLeft size={18} /></div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Income Sources</p>
                     </div>
                     <div className="flex items-center gap-5">
@@ -256,10 +256,10 @@ export const AnalyticsDashboard = ({ transactions }) => {
                                         className="w-2.5 h-2.5 rounded-full flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs font-semibold text-slate-700 truncate">{cat}</span>
-                                            <span className="text-xs font-bold text-emerald-700 ml-2 tabular-nums">{fmt(val)}</span>
+                                            <span className="text-xs font-semibold text-slate-300 truncate">{cat}</span>
+                                            <span className="text-xs font-bold text-emerald-400 ml-2 tabular-nums">{fmt(val)}</span>
                                         </div>
-                                        <div className="w-full h-1 bg-slate-100 rounded-full mt-0.5">
+                                        <div className="w-full h-1 bg-white/10 rounded-full mt-0.5">
                                             <div className="h-full rounded-full bg-emerald-500 transition-all"
                                                 style={{ width: `${a.totalIncome > 0 ? (val / a.totalIncome) * 100 : 0}%` }} />
                                         </div>
@@ -274,7 +274,7 @@ export const AnalyticsDashboard = ({ transactions }) => {
 
             {/* ── ROW 3: Health Score ──────────────────────────────── */}
             <motion.div variants={fade}>
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-7">
+                <div className="bg-[#181A20]/80 rounded-3xl border border-white/5 shadow-md p-7 backdrop-blur-3xl">
                     <div className="flex items-center gap-2.5 mb-6">
                         <div className="p-2.5 rounded-xl" style={{ background: `${a.healthColor}18` }}>
                             <Shield size={20} style={{ color: a.healthColor }} />
@@ -296,7 +296,7 @@ export const AnalyticsDashboard = ({ transactions }) => {
                                 />
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-3xl font-black text-slate-900">{a.healthScore}</span>
+                                <span className="text-3xl font-black text-white">{a.healthScore}</span>
                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">/100</span>
                             </div>
                         </div>
@@ -305,10 +305,10 @@ export const AnalyticsDashboard = ({ transactions }) => {
                             <p className="text-xs text-slate-400 mb-4">Based on savings rate, income vs. expense ratio</p>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {[
-                                    { label: 'Transactions', val: a.txCount, color: 'text-slate-800', bg: 'bg-slate-50' },
-                                    { label: 'Avg Income', val: fmt(a.avgInc), color: 'text-emerald-700', bg: 'bg-emerald-50' },
-                                    { label: 'Avg Expense', val: fmt(a.avgExp), color: 'text-rose-700', bg: 'bg-rose-50' },
-                                    { label: 'Net Saved', val: fmt(a.savings), color: 'text-indigo-700', bg: 'bg-indigo-50' },
+                                    { label: 'Transactions', val: a.txCount, color: 'text-white', bg: 'bg-white/5' },
+                                    { label: 'Avg Income', val: fmt(a.avgInc), color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                                    { label: 'Avg Expense', val: fmt(a.avgExp), color: 'text-rose-400', bg: 'bg-rose-500/10' },
+                                    { label: 'Net Saved', val: fmt(a.savings), color: 'text-orange-400', bg: 'bg-orange-500/10' },
                                 ].map(({ label, val, color, bg }) => (
                                     <div key={label} className={`${bg} p-3 rounded-2xl text-center`}>
                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
@@ -323,13 +323,13 @@ export const AnalyticsDashboard = ({ transactions }) => {
 
             {/* ── ROW 4: Trend Charts ──────────────────────────────── */}
             <motion.div variants={fade} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                <div className="bg-[#181A20]/80 rounded-3xl border border-white/5 shadow-md p-6 backdrop-blur-3xl">
                     <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
                         <BarChart3 size={14} className="text-rose-500" /> Expense Trend (monthly)
                     </h3>
                     <TrendBarChart transactions={transactions} type="expense" />
                 </div>
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                <div className="bg-[#181A20]/80 rounded-3xl border border-white/5 shadow-md p-6 backdrop-blur-3xl">
                     <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
                         <BarChart3 size={14} className="text-emerald-500" /> Income Trend (monthly)
                     </h3>
@@ -339,7 +339,7 @@ export const AnalyticsDashboard = ({ transactions }) => {
 
             {/* ── ROW 5: Mini Income vs Expense donut ─────────────── */}
             <motion.div variants={fade}>
-                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 relative overflow-hidden">
+                <div className="bg-[#181A20]/80 border border-white/5 rounded-3xl p-6 relative overflow-hidden shadow-[0_10px_40px_rgba(249,115,22,0.1)] backdrop-blur-3xl">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-400 via-pink-400 to-violet-400 rounded-t-3xl" />
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div>

@@ -30,7 +30,7 @@ export const BannerModal = ({ isOpen, onClose }) => {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
+                className="bg-[#181A20]/80 backdrop-blur-3xl border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
                 onClick={e => e.stopPropagation()}
             >
                 {settings.support_image_url && (
@@ -58,15 +58,15 @@ export const BannerModal = ({ isOpen, onClose }) => {
                             <X size={20} />
                         </button>
                     )}
-                    <h2 className="text-xl font-black text-slate-900 mb-2 pr-8 leading-tight">
+                    <h2 className="text-xl font-black text-white mb-2 pr-8 leading-tight">
                         {settings.support_title || "Announcement"}
                     </h2>
-                    <p className="text-sm text-slate-500 mb-6 leading-relaxed whitespace-pre-wrap">
+                    <p className="text-sm text-slate-400 mb-6 leading-relaxed whitespace-pre-wrap">
                         {settings.support_message}
                     </p>
                     <button
                         onClick={onClose}
-                        className="w-full py-3.5 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                        className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-sm font-bold shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)] hover:-translate-y-0.5 transition-all text-shadow-sm"
                     >
                         Got it
                     </button>

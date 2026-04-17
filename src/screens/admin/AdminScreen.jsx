@@ -47,7 +47,7 @@ export const AdminScreen = () => {
         });
 
         return () => subscription.unsubscribe();
-    };
+    }, []);
 
     // OTP countdown timer effect
     useEffect(() => {

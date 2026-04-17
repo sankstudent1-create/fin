@@ -123,29 +123,67 @@ export const AuthScreen = () => {
     };
 
     return (
-        <div className="min-h-screen w-full font-sans overflow-hidden bg-[#050505] flex items-center justify-center p-4 sm:p-8 relative selection:bg-orange-500/30 text-slate-50 antialiased">
-            {/* ─── Ambient Background Effects ─── */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-                {/* Fixed noise using inline SVG to avoid 403 Forbidden */}
-                <div 
-                    className="absolute inset-0 mix-blend-overlay z-0 opacity-20"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-                ></div>
+        <div className="min-h-screen w-full font-sans overflow-hidden bg-[#050505] flex lg:grid lg:grid-cols-2 selection:bg-orange-500/30 text-slate-50 antialiased">
+            
+            {/* ─── Left Marketing Panel (Desktop Only) ─── */}
+            <div className="hidden lg:flex relative flex-col justify-between p-12 overflow-hidden bg-[#0B0D0F]">
+                {/* Visual Background meshes */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+                    <div 
+                        className="absolute inset-0 mix-blend-overlay z-0 opacity-20"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+                    ></div>
+                    <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-gradient-to-br from-orange-600/30 via-rose-600/20 to-[#050505]/30 rounded-full blur-[140px] mix-blend-screen" />
+                    <motion.div animate={{ rotate: -360, scale: [1, 1.3, 1] }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }} className="absolute -bottom-[20%] -left-[10%] w-[900px] h-[900px] bg-gradient-to-tr from-rose-600/20 via-orange-500/20 to-amber-500/10 rounded-full blur-[160px] mix-blend-screen" />
+                </div>
                 
-                {/* Enhanced mesh gradients for richer colors */}
-                <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] bg-gradient-to-br from-orange-600/40 via-rose-600/30 to-purple-800/30 rounded-full blur-[140px] mix-blend-screen" />
-                <motion.div animate={{ rotate: -360, scale: [1, 1.3, 1] }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }} className="absolute -bottom-[20%] -left-[10%] w-[900px] h-[900px] bg-gradient-to-tr from-rose-600/30 via-orange-500/30 to-amber-500/20 rounded-full blur-[160px] mix-blend-screen" />
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-[40px] z-0"></div>
+                <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-rose-500 rounded-[1rem] flex items-center justify-center shadow-[0_0_40px_rgba(249,115,22,0.4)] border border-orange-400/20">
+                        <Wallet className="text-white drop-shadow-md" size={24} />
+                    </div>
+                    <h1 className="text-2xl font-bold tracking-tight text-white">Orange <span className="font-light text-white/50">Finance</span></h1>
+                </div>
+
+                <div className="relative z-10 space-y-8 max-w-xl">
+                    <h2 className="text-5xl font-black leading-tight tracking-tight text-white drop-shadow-lg">
+                        Master your <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">wealth</span> with precision.
+                    </h2>
+                    <p className="text-lg text-white/60 font-medium leading-relaxed">
+                        The ultimate intelligent financial dashboard. Track spending, optimize earnings, and visualize your future with enterprise-grade analytics.
+                    </p>
+
+                    <div className="flex items-center gap-6 pt-4">
+                        <div className="flex -space-x-4">
+                            {[1,2,3,4].map(i => (
+                                <img key={i} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`} className="w-12 h-12 rounded-full border-2 border-[#0B0D0F] bg-[#14161A]" alt="user" />
+                            ))}
+                        </div>
+                        <div className="text-sm font-medium">
+                            <p className="text-white font-bold">Join 10,000+ users</p>
+                            <p className="text-white/50">scaling their net worth today.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="relative z-10 text-white/30 text-sm font-medium">
+                    &copy; {new Date().getFullYear()} Orange Finance. All rights reserved.
+                </div>
             </div>
 
-            {/* ─── Main Auth Card ─── */}
-            <div className="w-full max-w-[420px] relative z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: 40, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.7, type: "spring", bounce: 0.4 }}
-                    className="relative w-full rounded-[2.5rem] bg-zinc-900/40 backdrop-blur-3xl border border-white/10 p-8 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden group/card"
-                >
+            {/* ─── Right Auth Form Panel ─── */}
+            <div className="w-full flex items-center justify-center p-4 sm:p-8 relative z-10">
+                {/* Mobile Background Effects */}
+                <div className="lg:hidden absolute inset-0 overflow-hidden pointer-events-none select-none">
+                    <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] bg-gradient-to-br from-orange-600/20 to-rose-600/10 rounded-full blur-[100px] mix-blend-screen" />
+                </div>
+
+                <div className="w-full max-w-[440px] relative z-10">
+                    <motion.div
+                        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.7, type: "spring", bounce: 0.4 }}
+                        className="relative w-full rounded-[2.5rem] bg-[#181A20]/80 backdrop-blur-3xl border border-white/5 p-8 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden group/card"
+                    >
                     {/* Inner highlight for premium hardware feel */}
                     <div className="absolute inset-0 rounded-[2.5rem] ring-1 ring-inset ring-white/10 pointer-events-none"></div>
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>

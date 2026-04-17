@@ -43,9 +43,9 @@ export const TrendBarChart = ({ transactions, type = 'expense', range = 7 }) => 
             {/* Grid Lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7">
                 {[1, 0.75, 0.5, 0.25, 0].map((tick, i) => (
-                    <div key={i} className="w-full border-t border-dashed border-slate-100 relative">
+                    <div key={i} className="w-full border-t border-dashed border-white/5 relative">
                         {i < 4 && (
-                            <span className="absolute -top-3 right-0 text-[9px] text-slate-300 tabular-nums select-none">
+                            <span className="absolute -top-3 right-0 text-[9px] text-slate-500 tabular-nums select-none">
                                 ₹{Math.round(maxVal * tick).toLocaleString()}
                             </span>
                         )}
@@ -57,7 +57,7 @@ export const TrendBarChart = ({ transactions, type = 'expense', range = 7 }) => 
             <div className="absolute inset-0 flex items-end justify-between gap-1 sm:gap-2 pt-6 pb-0 pl-0 pr-4">
                 {dailyData.map((d, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center h-full justify-end group relative z-10">
-                        <div className={`w-full ${barMaxWidth} h-full flex items-end relative rounded-t-full bg-slate-50/50 overflow-hidden`}>
+                        <div className={`w-full ${barMaxWidth} h-full flex items-end relative rounded-t-full bg-white/5 overflow-hidden`}>
                             <motion.div
                                 initial={{ height: 0 }}
                                 animate={{ height: hasData ? `${Math.max((d.val / maxVal) * 100, d.val > 0 ? 6 : 2)}%` : '2%' }}
@@ -74,15 +74,15 @@ export const TrendBarChart = ({ transactions, type = 'expense', range = 7 }) => 
 
                         {/* Tooltip */}
                         {d.val > 0 && (
-                            <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 bg-slate-800 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-xl pointer-events-none whitespace-nowrap z-30">
-                                <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45" />
+                            <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 bg-white/10 backdrop-blur-3xl text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-xl pointer-events-none whitespace-nowrap z-30 border border-white/10">
+                                <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2 h-2 bg-white/20 border-r border-b border-white/10 rotate-45" />
                                 ₹{d.val.toLocaleString()}
                             </div>
                         )}
 
                         {/* Label */}
                         {showLabels && (
-                            <p className="text-[9px] font-bold uppercase text-slate-300 mt-2 text-center w-full truncate select-none">{d.label}</p>
+                            <p className="text-[9px] font-bold uppercase text-slate-500 mt-2 text-center w-full truncate select-none">{d.label}</p>
                         )}
                     </div>
                 ))}
@@ -91,7 +91,7 @@ export const TrendBarChart = ({ transactions, type = 'expense', range = 7 }) => 
             {/* No Data State */}
             {!hasData && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                    <p className="text-xs font-bold text-slate-300 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl">No {type} data in this period</p>
+                    <p className="text-xs font-bold text-slate-400 bg-[#181A20]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-white/5">No {type} data in this period</p>
                 </div>
             )}
         </div>

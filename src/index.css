@@ -1,20 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-    --color-primary: #f97316;
-    --color-primary-light: #fed7aa;
-    --color-primary-dark: #9a3412;
-    --color-bg-warm: #fff7ed;
+    --color-primary: #f97316; /* Bold Orange */
+    --color-primary-light: #fdba74;
+    --color-primary-dark: #c2410c;
+    --color-bg-base: #0B0D0F; /* Deep Space Black */
+    --color-surface: #14161A;
 
-    --shadow-warm: 0 10px 40px rgba(234, 88, 12, 0.08);
-    --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    --shadow-neon: 0 0 40px rgba(249, 115, 22, 0.15);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 @layer base {
     body {
-        @apply bg-bg-warm text-[#431407] antialiased;
-        font-family: 'Outfit', sans-serif;
+        @apply bg-[#0B0C10] text-[#f8fafc] antialiased;
+        font-family: 'Plus Jakarta Sans', sans-serif;
         -webkit-tap-highlight-color: transparent;
         /* PWA Safe Area Insets for notches and home indicators */
         padding-top: env(safe-area-inset-top);
@@ -22,24 +23,32 @@
         padding-left: env(safe-area-inset-left);
         padding-right: env(safe-area-inset-right);
     }
+    
+    h1, h2, h3, h4, h5, h6 {
+        @apply tracking-tight;
+    }
 }
 
 @layer components {
     .bg-mesh {
-        background-color: #ff9a9e;
+        background-color: #0B0C10;
         background-image:
-            radial-gradient(at 40% 20%, hsla(28, 100%, 74%, 1) 0px, transparent 50%),
-            radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 1) 0px, transparent 50%),
-            radial-gradient(at 0% 50%, hsla(355, 100%, 93%, 1) 0px, transparent 50%);
+            radial-gradient(at 10% 20%, hsla(189, 100%, 40%, 0.15) 0px, transparent 50%),
+            radial-gradient(at 90% 10%, hsla(234, 100%, 65%, 0.12) 0px, transparent 50%),
+            radial-gradient(at 50% 80%, hsla(330, 100%, 55%, 0.1) 0px, transparent 50%);
     }
 
     .glass-panel {
-        @apply bg-white/70 backdrop-blur-xl border border-white/40;
+        @apply bg-[#181A20]/70 backdrop-blur-2xl border border-white/5;
         box-shadow: var(--shadow-glass);
     }
 
+    .glass-panel-hover {
+        @apply transition-all duration-300 hover:bg-[#181A20]/90 hover:border-orange-500/30;
+    }
+
     .input-glow:focus {
-        @apply ring-4 ring-primary/10 border-primary outline-none;
+        @apply ring-4 ring-orange-500/20 border-orange-500 outline-none;
     }
 
     .hide-scrollbar::-webkit-scrollbar {

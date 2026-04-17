@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionTemplate, useMotionValue } from 'framer-motion';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const FORMAT_INR = (v) => {
@@ -12,30 +11,27 @@ const FORMAT_INR = (v) => {
 
 const CONFIGS = {
     income: {
-        gradient: 'from-emerald-500 to-teal-500',
-        light: 'bg-emerald-50',
-        text: 'text-emerald-600',
-        border: 'border-emerald-100',
-        badge: 'bg-emerald-100 text-emerald-700',
-        glow: 'shadow-emerald-500/10',
+        gradient: 'from-amber-400 to-orange-500',
+        light: 'bg-orange-500/10',
+        text: 'text-orange-400',
+        border: 'border-orange-500/20',
+        glow: 'rgba(249, 115, 22, 0.15)',
         label: 'Total Income',
     },
     expense: {
-        gradient: 'from-rose-500 to-pink-500',
-        light: 'bg-rose-50',
-        text: 'text-rose-600',
-        border: 'border-rose-100',
-        badge: 'bg-rose-100 text-rose-700',
-        glow: 'shadow-rose-500/10',
+        gradient: 'from-rose-400 to-red-500',
+        light: 'bg-rose-500/10',
+        text: 'text-rose-400',
+        border: 'border-rose-500/20',
+        glow: 'rgba(244, 63, 94, 0.15)',
         label: 'Total Expense',
     },
     balance: {
-        gradient: 'from-violet-500 to-indigo-500',
-        light: 'bg-violet-50',
-        text: 'text-violet-600',
-        border: 'border-violet-100',
-        badge: 'bg-violet-100 text-violet-700',
-        glow: 'shadow-violet-500/10',
+        gradient: 'from-orange-500 to-rose-500',
+        light: 'bg-orange-500/10',
+        text: 'text-orange-400',
+        border: 'border-orange-500/20',
+        glow: 'rgba(249, 115, 22, 0.2)',
         label: 'Net Balance',
     },
 };
@@ -45,35 +41,57 @@ export const StatCard = ({ label, value = 0, icon: Icon, type = 'balance', onCli
     const isNeg = value < 0;
     const Trend = type === 'income' ? TrendingUp : type === 'expense' ? TrendingDown : null;
 
+    // Spotlight active glow
+    let mouseX = useMotionValue(0);
+    let mouseY = useMotionValue(0);
+
+    function handleMouseMove({ currentTarget, clientX, clientY }) {
+        let { left, top } = currentTarget.getBoundingClientRect();
+        mouseX.set(clientX - left);
+        mouseY.set(clientY - top);
+    }
+
     return (
         <motion.div
-            whileHover={{ y: -3, scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onClick}
-            className={`relative bg-white rounded-2xl sm:rounded-3xl border ${cfg.border} shadow-sm hover:shadow-lg ${cfg.glow} transition-all cursor-pointer overflow-hidden p-4 sm:p-5 flex flex-col gap-3`}
+            onMouseMove={handleMouseMove}
+            className={`group relative rounded-3xl glass-panel ${cfg.border} overflow-hidden p-6 flex flex-col gap-4 cursor-pointer`}
         >
+            {/* Spotlight Glow Effect on Hover */}
+            <motion.div
+                className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition duration-300 group-hover:opacity-100"
+                style={{
+                    background: useMotionTemplate`
+                        radial-gradient(
+                            250px circle at ${mouseX}px ${mouseY}px,
+                            ${cfg.glow},
+                            transparent 80%
+                        )
+                    `,
+                }}
+            />
+
             {/* Icon */}
-            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${cfg.gradient} shadow-sm`}>
-                <Icon size={18} className="text-white" strokeWidth={2.5} />
+            <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center bg-gradient-to-br ${cfg.gradient} shadow-[0_0_20px_${cfg.glow}] relative z-10`}>
+                <Icon size={22} className="text-white drop-shadow-md" strokeWidth={2.5} />
             </div>
 
-            {/* Value */}
-            <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
-                <p className={`font-bold text-lg sm:text-xl tracking-tight ${isNeg ? 'text-rose-600' : 'text-slate-900'}`}>
+            {/* Value (Uses Space Grotesk via font-mono) */}
+            <div className="relative z-10 mt-2">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">{label}</p>
+                <p className={`font-mono font-bold text-3xl tracking-tight ${isNeg ? 'text-rose-400' : 'text-slate-50 drop-shadow-sm'}`}>
                     {isNeg ? '-' : ''}{FORMAT_INR(Math.abs(value))}
                 </p>
             </div>
 
             {/* Trend Badge */}
             {Trend && (
-                <div className={`absolute top-3 right-3 p-1.5 rounded-lg ${cfg.light}`}>
-                    <Trend size={12} className={cfg.text} />
+                <div className={`absolute top-6 right-6 p-2 rounded-xl ${cfg.light} backdrop-blur-md border border-white/5`}>
+                    <Trend size={16} className={cfg.text} />
                 </div>
             )}
-
-            {/* Decorative gradient bar at bottom */}
-            <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${cfg.gradient} opacity-50`} />
         </motion.div>
     );
 };

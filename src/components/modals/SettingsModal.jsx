@@ -907,7 +907,7 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                             className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-all group"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-cyan-50 text-cyan-600 rounded-xl group-hover:bg-cyan-100 transition-colors"><Mail size={18} /></div>
+                                <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl group-hover:bg-orange-100 transition-colors"><Mail size={18} /></div>
                                 <div className="text-left">
                                     <p className="font-semibold text-slate-800 text-sm">Change Email</p>
                                     <p className="text-[10px] text-slate-400">Verify identity, then update email</p>
@@ -975,7 +975,7 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                                         value={newEmail} onChange={e => setNewEmail(e.target.value)}
                                                         onKeyDown={e => e.key === 'Enter' && handleChangeEmail()}
                                                         autoFocus
-                                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-cyan-400 focus:bg-white outline-none transition-all"
+                                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-10 pr-4 font-semibold text-slate-800 text-sm focus:border-orange-400 focus:bg-white outline-none transition-all"
                                                     />
                                                 </div>
                                                 {emailMsg && emailMsg !== '✅ Password verified! Now enter your new email.' && (
@@ -984,7 +984,7 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                                 <button
                                                     onClick={handleChangeEmail}
                                                     disabled={emailLoading || !newEmail.trim()}
-                                                    className="w-full bg-cyan-600 text-white font-bold py-3 rounded-xl text-sm hover:bg-cyan-700 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                                    className="w-full bg-orange-600 text-white font-bold py-3 rounded-xl text-sm hover:bg-orange-700 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                                                 >
                                                     {emailLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
                                                     {emailLoading ? 'Sending...' : 'Send Confirmation Email'}
