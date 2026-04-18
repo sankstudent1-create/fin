@@ -14,7 +14,7 @@ export default {
         amber: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' },
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'sans-serif'],
+        sans: ['Poppins', 'sans-serif'],
         mono: ['Space Grotesk', 'monospace'],
       },
       animation: {

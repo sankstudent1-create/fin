@@ -983,64 +983,45 @@ export const Dashboard = ({ session }) => {
                                     </div>
                                 </motion.div>
 
-                                {/* Modern Bento Grid Layout */}
-                                <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-6 border-b border-white/5 pb-8">
-                                    {/* Left Column: Stats & Digest */}
-                                    <div className="md:col-span-8 flex flex-col gap-5">
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                                            <StatCard label="Balance" value={stats.balance} icon={Wallet} type="balance" onClick={() => setActiveTab('reports')} />
-                                            <StatCard label="Income" value={stats.income} icon={TrendingUp} type="income" />
-                                            <StatCard label="Expense" value={stats.expense} icon={TrendingDown} type="expense" />
-                                        </div>
-
-                                        {/* AI Financial Digest (New Widget) */}
-                                        <div className="glass-panel rounded-3xl p-6 relative overflow-hidden flex items-start gap-4 shadow-neon">
-                                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                                <Bot size={80} />
-                                            </div>
-                                            <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0 border border-orange-500/30">
-                                                <Sparkles size={18} className="text-orange-400" />
-                                            </div>
-                                            <div className="relative z-10 w-full">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <h3 className="text-xs font-bold text-orange-400 tracking-widest uppercase">AI Financial Digest</h3>
-                                                    <span className="text-[10px] font-mono text-white/40 bg-white/5 px-2 py-1 rounded-md">Live Analysis</span>
-                                                </div>
-                                                <p className="text-sm text-slate-300 leading-relaxed max-w-lg">
-                                                    Your expenses are <strong className="text-rose-400">up 12%</strong> this week. Subscription costs look stable. Save ₹2,500 more this month to hit your aggressive growth target.
-                                                </p>
-                                            </div>
-                                        </div>
+                                {/* Modern Layout after AI Digest removal */}
+                                <motion.div variants={itemVariants} className="flex flex-col gap-6 mt-6 border-b border-white/5 pb-8">
+                                    {/* Top Row: Stats */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                                        <StatCard label="Balance" value={stats.balance} icon={Wallet} type="balance" onClick={() => setActiveTab('reports')} />
+                                        <StatCard label="Income" value={stats.income} icon={TrendingUp} type="income" />
+                                        <StatCard label="Expense" value={stats.expense} icon={TrendingDown} type="expense" />
                                     </div>
 
-                                    {/* Right Column: Mini Tools & Subscriptions */}
-                                    <div className="md:col-span-4 flex flex-col gap-5">
-                                        {/* Quick Tools Grid */}
-                                        <div className="glass-panel p-5 rounded-3xl grid grid-cols-3 gap-3">
+                                    {/* Bottom Row: Mini Tools & Weekly Trend */}
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                                        {/* Quick Tools */}
+                                        <div className="md:col-span-7 lg:col-span-8 glass-panel p-6 rounded-3xl grid grid-cols-3 sm:grid-cols-6 gap-4 border border-white/5">
                                             {TOOLS.slice(0, 6).map(tool => (
                                                 <motion.button
                                                     key={tool.id}
-                                                    whileHover={{ y: -2, scale: 1.05 }}
+                                                    whileHover={{ y: -2, scale: 1.07, boxShadow: '0 0 20px rgba(255,165,0,0.4)' }}
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => setShowCalculator(tool.id)}
-                                                    className="bg-white/5 hover:bg-white/10 p-3 rounded-2xl border border-white/5 transition-all flex flex-col items-center gap-2"
+                                                    className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/5 transition-all flex flex-col items-center justify-center gap-3 shadow-neon"
                                                 >
-                                                    <div className={`p-2 rounded-xl bg-opacity-20`}>
-                                                        <tool.icon size={18} className="text-orange-400" />
+                                                    <div className="p-2.5 rounded-xl bg-opacity-20 bg-gradient-to-br from-orange-500/20 to-rose-500/20">
+                                                        <tool.icon size={20} className="text-orange-400" />
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-wider">{tool.name.split(' ')[0]}</span>
+                                                    <span className="text-[10px] font-bold text-slate-300 text-center uppercase tracking-wider">{tool.name.split(' ')[0]}</span>
                                                 </motion.button>
                                             ))}
                                         </div>
 
                                         {/* Weekly Trend Chart Snippet */}
-                                        <div className="glass-panel flex-1 rounded-3xl p-5 border border-white/5 relative overflow-hidden flex flex-col">
+                                        <div className="md:col-span-5 lg:col-span-4 glass-panel rounded-3xl p-6 border border-white/5 relative overflow-hidden flex flex-col min-h-[160px]">
                                             <div className="flex justify-between items-center mb-4">
                                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Weekly Trend</h3>
                                                 <span className="text-[9px] font-bold bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400" /> Expense</span>
                                             </div>
-                                            <div className="flex-1 min-h-[100px]">
-                                                <TrendBarChart transactions={filteredTransactions} type="expense" />
+                                            <div className="flex-1 w-full relative">
+                                                <div className="absolute inset-0">
+                                                    <TrendBarChart transactions={filteredTransactions} type="expense" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

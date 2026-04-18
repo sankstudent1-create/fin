@@ -285,7 +285,7 @@ export const AuthScreen = () => {
                                             placeholder="Full Name"
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
-                                            className="w-full bg-black/20 border-2 border-white/10 rounded-2xl py-4 pl-12 pr-4 font-bold text-white focus:border-orange-500/80 focus:bg-white/5 outline-none transition-all placeholder:text-white/30 focus:ring-4 focus:ring-orange-500/20 shadow-inner"
+                                            className="w-full glass-panel input-glow py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/30"
                                             required={!isLogin}
                                         />
                                     </div>
@@ -301,7 +301,7 @@ export const AuthScreen = () => {
                                     placeholder="Email Address"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-black/20 border-2 border-white/10 rounded-2xl py-4 pl-12 pr-4 font-bold text-white focus:border-orange-500/80 focus:bg-white/5 outline-none transition-all placeholder:text-white/30 focus:ring-4 focus:ring-orange-500/20 shadow-inner"
+                                    className="w-full glass-panel input-glow py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/30"
                                     required
                                 />
                             </div>
@@ -315,7 +315,7 @@ export const AuthScreen = () => {
                                     placeholder="Password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-black/20 border-2 border-white/10 rounded-2xl py-4 pl-12 pr-4 font-bold text-white focus:border-orange-500/80 focus:bg-white/5 outline-none transition-all placeholder:text-white/30 focus:ring-4 focus:ring-orange-500/20 shadow-inner"
+                                    className="w-full glass-panel input-glow py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/30"
                                     required
                                 />
                             </div>
@@ -350,7 +350,7 @@ export const AuthScreen = () => {
                                 whileTap={{ scale: 0.98 }}
                                 type="submit"
                                 disabled={loading || isOffline}
-                                className="w-full relative group/btn overflow-hidden bg-gradient-to-r from-orange-500 to-rose-500 text-white font-black py-4 rounded-2xl shadow-[0_8px_30px_rgba(249,115,22,0.4)] hover:shadow-[0_12px_40px_rgba(249,115,22,0.6)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="w-full relative group/btn overflow-hidden bg-gradient-to-r from-orange-500 to-rose-500 text-white font-black py-4 rounded-2xl shadow-[0_8px_30px_rgba(249,115,22,0.4)] hover:shadow-[0_12px_40px_rgba(249,115,22,0.6)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed glass-panel"
                             >
                                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300 ease-out"></div>
                                 <span className="relative z-10 flex items-center gap-2 tracking-wide text-lg">

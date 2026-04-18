@@ -10,6 +10,7 @@ export const AdminScreen = () => {
     const [isAdmin, setIsAdmin] = useState(null);
     const [loading, setLoading] = useState(true);
     const hasVerified = useRef(false);
+    const isVerifying = useRef(false);
 
     // 2FA states for already-logged-in users accessing admin route
     const [needs2FA, setNeeds2FA] = useState(false);
@@ -58,7 +59,11 @@ export const AdminScreen = () => {
     }, [otpTimer]);
     
 
+    const isSending2FA = useRef(false);
     const trigger2FAEmail = async (userId, userEmail, token) => {
+        if (isSending2FA.current) return;
+        isSending2FA.current = true;
+        
         try {
             const res = await fetch('/api/send-admin-otp', {
                 method: 'POST',
@@ -71,15 +76,23 @@ export const AdminScreen = () => {
             const data = await res.json();
             if (res.ok && data.success) {
                 console.log("2FA sent specifically to already logged-in admin.");
-                // Start OTP timer (e.g., 60 seconds)
-                setOtpTimer(60);
+                // Start OTP timer (e.g., 120 seconds to match backend cooldown)
+                setOtpTimer(120);
+            } else if (res.status === 429) {
+                console.warn("OTP cooldown active. A waiting period is required before requesting anoher OTP.");
+                setOtpTimer(120); // Sync frontend timer visually
             }
         } catch (e) {
             console.error('Failed to send 2FA', e);
+        } finally {
+            isSending2FA.current = false;
         }
     };
 
     const verifyAdmin = async (userId, silent = false) => {
+        if (hasVerified.current || isVerifying.current) return;
+        isVerifying.current = true;
+
         if (!silent) setLoading(true);
         // Secure RPC function to check if they are in the admins table
         const { data, error } = await supabase.rpc('is_admin');
@@ -104,6 +117,7 @@ export const AdminScreen = () => {
             await supabase.auth.signOut();
             alert('Access Denied. You are not registered as an Admin.');
         }
+        isVerifying.current = false;
         if (!silent) setLoading(false);
     };
 

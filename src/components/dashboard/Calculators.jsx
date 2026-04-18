@@ -316,21 +316,21 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
     if (!currentTool) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in" onClick={onClose}>
-            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-y-auto max-h-[90vh] animate-slide-up hide-scrollbar ring-1 ring-white/50" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in" onClick={onClose}>
+            <div className="glass-panel w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-y-auto max-h-[90vh] animate-slide-up hide-scrollbar border border-white/10" onClick={e => e.stopPropagation()}>
 
                 {/* Header */}
-                <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl p-6 flex items-center justify-between border-b border-slate-100">
+                <div className="sticky top-0 z-20 bg-[#0B0C10]/95 backdrop-blur-xl p-6 flex items-center justify-between border-b border-white/5">
                     <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-2xl shadow-sm border ${currentTool.color}`}>
                             <currentTool.icon size={28} />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight">{translate(`tool_${toolId}`)}</h3>
+                            <h3 className="text-xl font-black text-white tracking-tight">{translate(`tool_${toolId}`)}</h3>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{translate(`${toolId}_desc`)}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-100 text-slate-400 transition-colors">
+                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-slate-400 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -361,7 +361,7 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
                                             type="number"
                                             value={data.amount}
                                             onChange={e => setData({ ...data, amount: e.target.value })}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pl-10 pr-4 py-4 font-bold text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-all text-lg"
+                                            className="w-full glass-panel input-glow pl-10 pr-4 py-4 font-bold text-white transition-all text-lg"
                                             placeholder="5000"
                                             autoFocus
                                         />
@@ -374,7 +374,7 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
                                         type="number"
                                         value={data.duration}
                                         onChange={e => setData({ ...data, duration: e.target.value })}
-                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-all text-lg"
+                                        className="w-full glass-panel input-glow px-6 py-4 font-bold text-white transition-all text-lg"
                                         placeholder={toolId === 'ppf' ? '15' : '5'}
                                     />
                                 </div>
@@ -387,7 +387,7 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
                                             step="0.1"
                                             value={data.expense_ratio}
                                             onChange={e => setData({ ...data, expense_ratio: e.target.value })}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-all text-lg"
+                                            className="w-full glass-panel input-glow px-6 py-4 font-bold text-white transition-all text-lg"
                                             placeholder="1.0"
                                         />
                                     </div>
@@ -400,16 +400,16 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
                                             type="number"
                                             value={data.rate}
                                             onChange={e => setData({ ...data, rate: e.target.value })}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-all text-lg"
+                                            className="w-full glass-panel input-glow px-6 py-4 font-bold text-white transition-all text-lg"
                                             placeholder={toolId === 'fd' ? '6.5' : '12'}
                                         />
                                     </div>
                                 )}
                             </div>
 
-                            <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/5">
                                 <div>
-                                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">{translate('detailed_report')}</p>
+                                    <p className="text-xs font-bold text-slate-300 uppercase tracking-wide">{translate('detailed_report')}</p>
                                 </div>
                                 <button
                                     onClick={() => setShowDetailed(!showDetailed)}
@@ -421,7 +421,7 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
 
                             <button
                                 onClick={handleCalculate}
-                                className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 active:scale-95 transition-all shadow-xl shadow-slate-900/20 text-lg tracking-tight"
+                                className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white font-black py-4 rounded-2xl shadow-[0_8px_30px_rgba(249,115,22,0.4)] hover:shadow-[0_12px_40px_rgba(249,115,22,0.6)] active:scale-95 transition-all glass-panel text-lg tracking-tight"
                             >
                                 {translate('calculate')}
                             </button>
