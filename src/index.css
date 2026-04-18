@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -15,7 +15,7 @@
 @layer base {
     body {
         @apply bg-[#0B0C10] text-[#f8fafc] antialiased;
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Outfit', sans-serif;
         -webkit-tap-highlight-color: transparent;
         /* PWA Safe Area Insets for notches and home indicators */
         padding-top: env(safe-area-inset-top);
