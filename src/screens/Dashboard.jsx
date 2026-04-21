@@ -671,54 +671,56 @@ export const Dashboard = ({ session }) => {
 
     // High-quality PDF Generator (html2canvas)
     const generateHighQualityPDF = async (calcData = null) => {
-        // Create an isolated container for capture to avoid theme/layout interference
-        const container = document.createElement('div');
-        container.style.cssText = 'position:fixed;left:0;top:-9999px;width:210mm;background:#ffffff;z-index:-1000;opacity:1;visibility:visible;';
-        document.body.appendChild(container);
+        // Find existing print root (easiest to capture styles)
+        const existingRoot = document.getElementById('print-root');
+        let captureTarget = existingRoot;
+        let cleanup = null;
 
-        const root = ReactDOM.createRoot(container);
-        await new Promise((resolve) => {
-            root.render(
-                <div id="print-root-export" style={{ background: '#fff', width: '210mm', opacity: 1, visibility: 'visible' }}>
-                    <PrintStyles />
-                    {calcData ? (
-                        <PrintView
-                            user={user}
-                            calculatorData={calcData}
-                            isPrinting={true}
-                        />
-                    ) : (
-                        <PrintableReport
-                            user={user}
-                            stats={stats}
-                            transactions={filteredTransactions}
-                            filterLabel={filterLabel}
-                        />
-                    )}
-                </div>
-            );
-            // Wait for data and fonts to settle
-            setTimeout(resolve, 3500);
-        });
+        if (!existingRoot) {
+            const container = document.createElement('div');
+            container.style.cssText = 'position:fixed;left:50%;top:0;transform:translateX(-50%);width:210mm;background:#ffffff;z-index:-9999;opacity:1;visibility:visible;';
+            document.body.appendChild(container);
 
-        const canvas = await html2canvas(container.querySelector('#print-root-export'), {
+            const root = ReactDOM.createRoot(container);
+            await new Promise((resolve) => {
+                root.render(
+                    <div id="print-root-temp" style={{ background: '#fff', width: '210mm' }}>
+                        <PrintStyles />
+                        {calcData ? (
+                            <PrintView user={user} calculatorData={calcData} isPrinting={true} />
+                        ) : (
+                            <PrintableReport user={user} stats={stats} transactions={filteredTransactions} filterLabel={filterLabel} />
+                        )}
+                    </div>
+                );
+                setTimeout(resolve, 4000);
+            });
+            captureTarget = container.querySelector('#print-root-temp');
+            cleanup = () => { root.unmount(); document.body.removeChild(container); };
+        }
+
+        const canvas = await html2canvas(captureTarget, {
             scale: 2,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
             logging: false,
-            windowWidth: 794,
+            width: captureTarget.offsetWidth || 794,
+            height: captureTarget.scrollHeight || 1123,
             onclone: (clonedDoc) => {
-                const el = clonedDoc.getElementById('print-root-export');
+                const el = clonedDoc.getElementById('print-root-temp') || clonedDoc.getElementById('print-root');
                 if (el) {
                     el.style.opacity = '1';
                     el.style.visibility = 'visible';
                     el.style.display = 'block';
+                    el.style.position = 'relative';
+                    el.style.top = '0';
+                    el.style.left = '0';
                 }
             }
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = 210;
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
@@ -731,8 +733,7 @@ export const Dashboard = ({ session }) => {
             yOffset += pageHeight;
         }
 
-        root.unmount();
-        document.body.removeChild(container);
+        if (cleanup) cleanup();
 
         const pdfBlob = pdf.output('blob');
         const defaultName = calcData 
@@ -1179,7 +1180,7 @@ export const Dashboard = ({ session }) => {
                 </main>
 
                 {/* Chat Trigger (Floating above dock) */}
-                <div className="fixed bottom-[7.5rem] right-6 z-50 pointer-events-none">
+                <div className="fixed bottom-[8.5rem] right-6 z-50 pointer-events-none">
                     <motion.button
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
@@ -1194,7 +1195,7 @@ export const Dashboard = ({ session }) => {
                 </div>
 
                 {/* Bottom Navigation — Futuristic Floating Crystal Dock */}
-                <div className="fixed bottom-9 left-0 right-0 z-50 px-4 pointer-events-none">
+                <div className="fixed bottom-12 left-0 right-0 z-50 px-4 pointer-events-none">
                     <div className="max-w-[440px] mx-auto pointer-events-auto">
                         <div className="bg-[#0A0B10]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] p-2.5 flex items-center justify-between relative overflow-hidden group/dock">
                             {/* Inner ambient top-glow border */}
@@ -1227,7 +1228,7 @@ export const Dashboard = ({ session }) => {
                             </div>
 
                             {/* Center Action (Pulse FAB) */}
-                            <div className="absolute left-1/2 -translate-x-1/2 -top-1">
+                            <div className="absolute left-1/2 -translate-x-1/2 -top-2">
                                 <div className="absolute inset-0 bg-orange-500/25 blur-2xl rounded-full animate-pulse" />
                                 <motion.button
                                     whileHover={{ y: -6, scale: 1.05 }}
