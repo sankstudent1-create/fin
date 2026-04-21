@@ -671,23 +671,31 @@ export const Dashboard = ({ session }) => {
 
     // High-quality PDF Generator (html2canvas)
     const generateHighQualityPDF = async (calcData = null) => {
-        // Wait for fonts to be ready globally first
+        // Wait for fonts to settle
         try { await document.fonts.ready; } catch(e) {}
 
         const existingRoot = document.getElementById('print-root');
         let captureTarget = existingRoot;
         let cleanup = null;
+        let originalTransform = "";
 
-        if (!existingRoot) {
+        if (existingRoot) {
+            // If already in preview overlay, temporarily reset transform for perfect capture
+            const parent = existingRoot.parentElement;
+            if (parent) {
+                originalTransform = parent.style.transform;
+                parent.style.transform = 'scale(1)';
+            }
+        } else {
             const container = document.createElement('div');
-            // Center off-screen to ensure viewport-based calculations in CSS work
-            container.style.cssText = 'position:fixed;left:50%;top:0;transform:translateX(-50%);width:210mm;background:#ffffff;z-index:-9999;opacity:1;visibility:visible;';
+            // Fixed position within viewport but off-screen-ish to ensure painting
+            container.style.cssText = 'position:fixed;left:50%;top:20px;transform:translateX(-50%);width:210mm;background:#ffffff;z-index:9999;opacity:1;visibility:visible;box-shadow:0 0 100px rgba(0,0,0,0.5);';
             document.body.appendChild(container);
 
             const root = ReactDOM.createRoot(container);
             await new Promise((resolve) => {
                 root.render(
-                    <div id="print-root-temp" style={{ background: '#fff', width: '210mm', minHeight: '297mm' }}>
+                    <div id="print-root-temp" style={{ background: '#fff', width: '210mm', minHeight: '297mm', padding: '1px' }}>
                         <PrintStyles />
                         {calcData ? (
                             <PrintView user={user} calculatorData={calcData} isPrinting={true} />
@@ -696,30 +704,35 @@ export const Dashboard = ({ session }) => {
                         )}
                     </div>
                 );
-                // Aggressive 5.5s wait for complex React state and rendering
-                setTimeout(resolve, 5500);
+                // Heavy 15s wait as requested to ensure FULL rendering
+                setTimeout(resolve, 15000);
             });
             captureTarget = container.querySelector('#print-root-temp');
             cleanup = () => { root.unmount(); document.body.removeChild(container); };
         }
 
         const canvas = await html2canvas(captureTarget, {
-            scale: 2.5, // Even higher quality
+            scale: 2,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: false,
-            width: 794, // Standard A4 points width
+            logging: true, // Enable logging to see what's happening
+            width: 794,
             onclone: (clonedDoc) => {
                 const el = clonedDoc.getElementById('print-root-temp') || clonedDoc.getElementById('print-root');
                 if (el) {
                     el.style.opacity = '1';
                     el.style.visibility = 'visible';
                     el.style.display = 'block';
-                    el.style.position = 'relative';
+                    el.style.transform = 'none';
                 }
             }
         });
+
+        // Restore original transform if we modified it
+        if (existingRoot && originalTransform) {
+            existingRoot.parentElement.style.transform = originalTransform;
+        }
 
         const imgData = canvas.toDataURL('image/jpeg', 1.0);
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -1181,7 +1194,7 @@ export const Dashboard = ({ session }) => {
                 </main>
 
                 {/* Chat Trigger (Floating above dock) */}
-                <div className="fixed bottom-[11rem] right-6 z-50 pointer-events-none">
+                <div className="fixed bottom-[13rem] right-6 z-50 pointer-events-none">
                     <motion.button
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
@@ -1196,7 +1209,7 @@ export const Dashboard = ({ session }) => {
                 </div>
 
                 {/* Bottom Navigation — Futuristic Floating Crystal Dock */}
-                <div className="fixed bottom-20 left-0 right-0 z-50 px-4 pointer-events-none">
+                <div className="fixed bottom-28 left-0 right-0 z-50 px-4 pointer-events-none">
                     <div className="max-w-[440px] mx-auto pointer-events-auto">
                         <div className="bg-[#0A0B10]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] p-2.5 flex items-center justify-between relative overflow-hidden group/dock">
                             {/* Inner ambient top-glow border */}
@@ -1229,7 +1242,7 @@ export const Dashboard = ({ session }) => {
                             </div>
 
                             {/* Center Action (Pulse FAB) */}
-                            <div className="absolute left-1/2 -translate-x-1/2 -top-1.5">
+                            <div className="absolute left-1/2 -translate-x-1/2 -top-1">
                                 <div className="absolute inset-0 bg-orange-500/25 blur-2xl rounded-full animate-pulse" />
                                 <motion.button
                                     whileHover={{ y: -6, scale: 1.05 }}
