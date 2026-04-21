@@ -123,10 +123,10 @@ export const AuthScreen = () => {
     };
 
     return (
-        <div className="min-h-screen w-full font-sans overflow-hidden bg-[#050505] flex lg:grid lg:grid-cols-2 selection:bg-orange-500/30 text-slate-50 antialiased">
+        <div className="min-h-screen w-full font-sans overflow-hidden bg-primary flex lg:grid lg:grid-cols-2 selection:bg-orange-500/30 text-main antialiased transition-colors duration-500">
             
             {/* ─── Left Marketing Panel (Desktop Only) ─── */}
-            <div className="hidden lg:flex relative flex-col justify-between p-12 overflow-hidden bg-[#0B0D0F]">
+            <div className="hidden lg:flex relative flex-col justify-between p-12 overflow-hidden bg-secondary border-r border-main">
                 {/* Visual Background meshes */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
                     <div 
@@ -146,15 +146,15 @@ export const AuthScreen = () => {
                         <div className="absolute inset-x-0 top-0 h-px bg-white/40"></div>
                         <Wallet className="text-white drop-shadow-lg relative z-10" size={28} />
                     </motion.div>
-                    <h1 className="text-3xl font-black tracking-tight text-white font-outfit">Orange <span className="font-light text-white/40">Finance</span></h1>
+                    <h1 className="text-3xl font-black tracking-tight text-main font-outfit">Orange <span className="font-light text-dim">Finance</span></h1>
                 </div>
 
                 <div className="relative z-10 space-y-10 max-w-xl">
-                    <h2 className="text-6xl font-black leading-[1.1] tracking-tighter text-white drop-shadow-2xl font-outfit">
+                    <h2 className="text-6xl font-black leading-[1.1] tracking-tighter text-main drop-shadow-2xl font-outfit">
                         The evolution of <br/>
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-rose-400">financial control.</span>
                     </h2>
-                    <p className="text-xl text-white/50 font-medium leading-relaxed font-outfit">
+                    <p className="text-xl text-dim font-medium leading-relaxed font-outfit">
                         Scale your net worth with enterprise-grade analytics, smart forecasting, and a premium workspace designed for modern investors.
                     </p>
 
@@ -188,7 +188,7 @@ export const AuthScreen = () => {
                         initial={{ opacity: 0, y: 40, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ duration: 0.7, type: "spring", bounce: 0.4 }}
-                        className="relative w-full rounded-[2.5rem] bg-[#181A20]/80 backdrop-blur-3xl border border-white/5 p-8 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden group/card"
+                        className="relative w-full rounded-[2.5rem] bg-secondary/80 backdrop-blur-3xl border border-main p-8 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.3)] overflow-hidden group/card"
                     >
                     {/* Inner highlight for premium hardware feel */}
                     <div className="absolute inset-0 rounded-[2.5rem] ring-1 ring-inset ring-white/10 pointer-events-none"></div>
@@ -213,13 +213,13 @@ export const AuthScreen = () => {
                         </motion.div>
                         <motion.h1 
                             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                            className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2 drop-shadow-md"
+                            className="text-3xl sm:text-4xl font-black text-main tracking-tight mb-2 drop-shadow-md"
                         >
                             {isLogin ? 'Welcome Back' : 'Join Orange'}
                         </motion.h1>
                         <motion.p 
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-                            className="text-white/60 font-medium text-sm sm:text-base leading-relaxed tracking-wide"
+                            className="text-dim font-medium text-sm sm:text-base leading-relaxed tracking-wide"
                         >
                             {isLogin ? 'Enter your credentials to access your portfolio.' : 'Start your journey to better financial health today.'}
                         </motion.p>
@@ -374,9 +374,9 @@ export const AuthScreen = () => {
 
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="relative my-8 text-center">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-white/10"></div>
+                            <div className="w-full border-t border-main"></div>
                         </div>
-                        <span className="relative bg-[#1A1A1C] px-4 text-[10px] font-black text-white/40 uppercase tracking-widest rounded-full py-1.5 border border-white/10">
+                        <span className="relative bg-secondary px-4 text-[10px] font-black text-dim uppercase tracking-widest rounded-full py-1.5 border border-main">
                             Quick Access
                         </span>
                     </motion.div>
@@ -402,7 +402,7 @@ export const AuthScreen = () => {
                             whileTap={{ scale: 0.97 }}
                             type="button"
                             onClick={() => alert("Guest mode coming soon!")}
-                            className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:border-orange-500/50 hover:bg-orange-500/10 py-3 rounded-2xl font-bold text-white transition-all shadow-sm group"
+                            className="flex items-center justify-center gap-2 bg-surface border border-main hover:border-orange-500/50 hover:bg-orange-500/10 py-3 rounded-2xl font-bold text-main transition-all shadow-sm group"
                         >
                             <Sparkles size={18} className="text-orange-400 group-hover:scale-110 transition-transform" />
                             Guest
