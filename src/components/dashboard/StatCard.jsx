@@ -57,7 +57,7 @@ export const StatCard = ({ label, value = 0, icon: Icon, type = 'balance', onCli
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
             onMouseMove={handleMouseMove}
-            className={`group relative rounded-3xl glass-panel ${cfg.border} overflow-hidden p-6 flex flex-col gap-4 cursor-pointer`}
+            className={`group relative rounded-3xl glass-panel border-main overflow-hidden p-6 flex flex-col gap-4 cursor-pointer transition-all duration-300`}
         >
             {/* Spotlight Glow Effect on Hover */}
             <motion.div
@@ -80,15 +80,15 @@ export const StatCard = ({ label, value = 0, icon: Icon, type = 'balance', onCli
 
             {/* Value (Uses Space Grotesk via font-mono) */}
             <div className="relative z-10 mt-2">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">{label}</p>
-                <p className={`font-mono font-bold text-3xl tracking-tight ${isNeg ? 'text-rose-400' : 'text-slate-50 drop-shadow-sm'}`}>
+                <p className="text-xs font-bold text-dim uppercase tracking-[0.2em] mb-1">{label}</p>
+                <p className={`font-mono font-bold text-3xl tracking-tight ${isNeg ? 'text-rose-500' : 'text-main drop-shadow-sm'}`}>
                     {isNeg ? '-' : ''}{FORMAT_INR(Math.abs(value))}
                 </p>
             </div>
 
             {/* Trend Badge */}
             {Trend && (
-                <div className={`absolute top-6 right-6 p-2 rounded-xl ${cfg.light} backdrop-blur-md border border-white/5`}>
+                <div className={`absolute top-6 right-6 p-2 rounded-xl ${cfg.light} backdrop-blur-md border border-main`}>
                     <Trend size={16} className={cfg.text} />
                 </div>
             )}

@@ -962,17 +962,17 @@ export const Dashboard = ({ session }) => {
             />
 
             {/* MAIN APP — gets hidden during print via CSS */}
-            <div className={`${isPrinting ? 'print-hide' : ''} min-h-screen bg-bg-base font-sans antialiased text-slate-100 selection:bg-orange-500/30`} data-print-hide="true">
+            <div className={`${isPrinting ? 'print-hide' : ''} min-h-screen bg-primary font-sans antialiased text-main selection:bg-orange-500/30 transition-colors duration-400`} data-print-hide="true">
 
                 {/* Header */}
-                <header className="sticky top-0 z-40 bg-[#0B0D0F]/70 backdrop-blur-3xl border-b border-white/5 px-4 sm:px-6 py-4">
+                <header className="sticky top-0 z-40 bg-secondary/70 backdrop-blur-3xl border-b border-main px-4 sm:px-6 py-4">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="w-11 h-11 bg-gradient-to-br from-orange-400 to-rose-500 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.3)] border border-orange-400/20">
                                 <Wallet className="text-white drop-shadow-md" size={22} />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold text-white tracking-tight leading-tight">Orange <span className="font-light text-white/50">Finance</span></h1>
+                                <h1 className="text-xl font-bold text-main tracking-tight leading-tight">Orange <span className="font-light text-dim">Finance</span></h1>
                                 {/* ── Online / Offline / Syncing chip ── */}
                                 <div className="flex items-center gap-1.5 mt-1">
                                     {syncStatus === 'syncing' ? (
@@ -1047,20 +1047,20 @@ export const Dashboard = ({ session }) => {
                                 {/* Greeting */}
                                 <motion.div variants={itemVariants} className="flex items-center justify-between">
                                     <div>
-                                        <h2 className="text-2xl font-black text-slate-100 tracking-tight">
+                                        <h2 className="text-2xl font-black text-main tracking-tight">
                                             {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300 drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]">{firstName}</span> 👋
                                         </h2>
-                                        <p className="text-sm text-slate-400 font-medium mt-1">Here's your financial overview</p>
+                                        <p className="text-sm text-dim font-medium mt-1">Here's your financial overview</p>
                                     </div>
                                     {/* Quick filter chip */}
                                     <div className="relative z-30">
                                         <button
                                             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                                            className="flex items-center gap-2 glass-panel border-white/5 hover:bg-white/5 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-300 transition-all hover:text-white"
+                                            className="flex items-center gap-2 glass-panel border-main hover:bg-surface px-4 py-2.5 rounded-2xl text-xs font-bold text-dim transition-all hover:text-main"
                                         >
                                             <Calendar size={14} className="text-orange-400" />
                                             {filterLabel}
-                                            <ChevronDown size={14} className={`transition-transform text-slate-500 ${showFilterDropdown ? 'rotate-180' : ''}`} />
+                                            <ChevronDown size={14} className={`transition-transform text-muted ${showFilterDropdown ? 'rotate-180' : ''}`} />
                                         </button>
                                         <AnimatePresence>
                                             {showFilterDropdown && (
@@ -1068,7 +1068,7 @@ export const Dashboard = ({ session }) => {
                                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                    className="absolute right-0 top-12 bg-[#181A20]/95 backdrop-blur-3xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 p-2 min-w-[180px]"
+                                                    className="absolute right-0 top-12 bg-secondary/95 backdrop-blur-3xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-main p-2 min-w-[200px]"
                                                 >
                                                     {FILTER_OPTIONS.map(opt => (
                                                         <button
@@ -1244,87 +1244,91 @@ export const Dashboard = ({ session }) => {
                     </motion.button>
                 </div>
 
-                {/* Bottom Navigation — Futuristic Floating Crystal Dock */}
-                <div className="fixed bottom-28 left-0 right-0 z-50 px-4 pointer-events-none">
-                    <div className="max-w-[440px] mx-auto pointer-events-auto">
-                        <div className="bg-[#0A0B10]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] p-2.5 flex items-center justify-between relative overflow-hidden group/dock">
-                            {/* Inner ambient top-glow border */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-orange-500/50 to-transparent group-hover/dock:w-[80%] transition-all duration-700" />
+                {/* Bottom Navigation — Redesigned 'Orbital Dock' from scratch */}
+                <div className="fixed bottom-8 left-0 right-0 z-50 px-4 pointer-events-none">
+                    <div className="max-w-[480px] mx-auto pointer-events-auto">
+                        <div className="relative glass-panel !p-2 flex items-center justify-between shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] !rounded-full overflow-visible">
                             
-                            {/* Navigation Tabs (Left) */}
-                            <div className="flex items-center gap-1">
+                            {/* Sliding Active Indicator (Background) */}
+                            <div className="absolute inset-y-2 left-2 right-2 flex items-center pointer-events-none">
+                                {/* The width/pos logic here is dynamic based on activeTab */}
+                                <motion.div 
+                                    className="h-full bg-orange-500/10 border border-orange-500/20 rounded-full"
+                                    initial={false}
+                                    animate={{ 
+                                        x: activeTab === 'home' ? 0 : activeTab === 'reports' ? 82 : 0, 
+                                        width: (activeTab === 'home' || activeTab === 'reports') ? 78 : 0,
+                                        opacity: (activeTab === 'home' || activeTab === 'reports') ? 1 : 0
+                                    }}
+                                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                />
+                            </div>
+
+                            {/* Left Group */}
+                            <div className="flex items-center gap-1 z-10 px-1">
                                 {[
                                     { id: 'home', icon: Home, label: 'Vault' },
-                                    { id: 'reports', icon: BarChart3, label: 'Analytics' },
+                                    { id: 'reports', icon: BarChart3, label: 'Insight' },
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`relative group px-4 py-3 rounded-[1.25rem] transition-all duration-300 ${activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                        className={`relative group px-1 flex flex-col items-center justify-center w-20 h-14 rounded-full transition-all ${activeTab === tab.id ? 'text-orange-500' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
-                                        {activeTab === tab.id && (
-                                            <motion.div
-                                                layoutId="navPill"
-                                                className="absolute inset-0 bg-white/5 border border-white/10 rounded-[1.25rem] shadow-inner"
-                                                transition={{ type: 'spring', bounce: 0.1, duration: 0.6 }}
-                                            />
-                                        )}
-                                        <div className="relative flex flex-col items-center gap-1">
-                                            <tab.icon size={19} strokeWidth={activeTab === tab.id ? 2.5 : 2} className={activeTab === tab.id ? 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'transition-colors'} />
-                                            <span className="text-[8px] font-black uppercase tracking-[0.1em] leading-none opacity-80">{tab.label}</span>
-                                        </div>
+                                        <tab.icon size={20} strokeWidth={activeTab === tab.id ? 2.5 : 2} className="relative z-10" />
+                                        <span className="text-[9px] font-bold uppercase tracking-wide mt-1 relative z-10">{tab.label}</span>
                                     </button>
                                 ))}
                             </div>
 
-                            {/* Center Action (Pulse FAB) */}
-                            <div className="absolute left-1/2 -translate-x-1/2 -top-5 sm:-top-6 z-20">
-                                <div className="absolute inset-0 bg-orange-500/30 blur-3xl rounded-full animate-pulse" />
+                            {/* Center Action (Super FAB) */}
+                            <div className="absolute left-1/2 -translate-x-1/2 -top-8 sm:-top-10 group/fab">
+                                {/* Radiant backgrounds */}
+                                <div className="absolute inset-0 bg-orange-500/40 blur-3xl rounded-full animate-pulse group-hover/fab:bg-orange-500/60 transition-all duration-500" />
+                                <div className="absolute inset-0 bg-gradient-to-tr from-orange-400/20 to-rose-500/20 blur-xl rounded-full group-hover/fab:scale-150 transition-all duration-700" />
+                                
                                 <motion.button
-                                    whileHover={{ y: -8, scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
+                                    whileHover={{ y: -6, scale: 1.08, rotate: 5 }}
+                                    whileTap={{ scale: 0.9, rotate: -5 }}
                                     onClick={() => { 
                                         setEditTransaction(null); 
-                                        setTxForm({ 
-                                            title: '', 
-                                            amount: '', 
-                                            type: 'expense', 
-                                            category: 'Other', 
-                                            date: new Date().toISOString().split('T')[0] 
-                                        }); 
+                                        setTxForm({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] }); 
                                         setShowTransaction(true); 
                                     }}
-                                    className="relative w-16 h-16 sm:w-18 sm:h-18 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-[2.25rem] flex items-center justify-center text-white shadow-[0_20px_40px_rgba(249,115,22,0.4)] ring-[8px] ring-[#0A0B10]/95 group"
+                                    className="relative w-18 h-18 sm:w-20 sm:h-20 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-[2.5rem] flex items-center justify-center text-white shadow-[0_15px_35px_rgba(249,115,22,0.4)] ring-[10px] ring-[var(--bg-primary)] group"
                                 >
-                                    <div className="absolute inset-0 rounded-[2.25rem] ring-1 ring-inset ring-white/30 pointer-events-none" />
-                                    <Plus size={32} strokeWidth={3.5} className="drop-shadow-lg group-active:rotate-90 transition-transform duration-300" />
+                                    <div className="absolute inset-0 rounded-[2.5rem] ring-2 ring-inset ring-white/30 pointer-events-none group-hover:rotate-45 transition-transform duration-500" />
+                                    <Plus size={36} strokeWidth={3} className="drop-shadow-lg" />
+                                    
+                                    {/* Orbital rings on hover */}
+                                    <div className="absolute inset-[-8px] border border-orange-500/20 rounded-[3rem] opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
+                                    <div className="absolute inset-[-16px] border border-orange-500/10 rounded-[3.5rem] opacity-0 group-hover:opacity-100 group-hover:scale-125 transition-all duration-700" />
                                 </motion.button>
                             </div>
 
-                            {/* Right Side Tabs (Utility) */}
-                            <div className="flex items-center gap-1">
+                            {/* Right Group */}
+                            <div className="flex items-center gap-1 z-10 px-1">
                                 <button
                                     onClick={() => setShowVoiceAssistant(true)}
-                                    className="px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-400 transition-all group"
+                                    className="flex flex-col items-center justify-center w-20 h-14 rounded-full text-slate-400 hover:text-rose-400 transition-all group"
                                 >
-                                    <div className="flex flex-col items-center gap-1">
-                                        <div className="relative">
-                                            <Mic size={19} strokeWidth={2} className="group-hover:scale-110 transition-transform" />
-                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
-                                        </div>
-                                        <span className="text-[8px] font-black uppercase tracking-[0.1em] leading-none opacity-80">Voice</span>
+                                    <div className="relative">
+                                        <Mic size={20} strokeWidth={2} />
+                                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
                                     </div>
+                                    <span className="text-[9px] font-bold uppercase tracking-wide mt-1">Siri</span>
                                 </button>
                                 <button
                                     onClick={() => setShowSettings(true)}
-                                    className="px-4 py-3 rounded-2xl text-slate-500 hover:text-orange-400 transition-all group"
+                                    className="flex flex-col items-center justify-center w-20 h-14 rounded-full text-slate-400 hover:text-orange-400 transition-all group"
                                 >
-                                    <div className="flex flex-col items-center gap-1">
-                                        <Settings size={19} strokeWidth={2} className="group-hover:rotate-45 transition-transform" />
-                                        <span className="text-[8px] font-black uppercase tracking-[0.1em] leading-none opacity-80">More</span>
-                                    </div>
+                                    <Settings size={20} strokeWidth={2} className="group-hover:rotate-90 transition-transform duration-500" />
+                                    <span className="text-[9px] font-bold uppercase tracking-wide mt-1">Menu</span>
                                 </button>
                             </div>
+                            
+                            {/* Inner ambient bottom highlight */}
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                         </div>
                     </div>
                 </div>

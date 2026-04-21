@@ -64,7 +64,7 @@ export const TransactionItem = ({ transaction, categories = [], onEdit, onDelete
             exit={{ opacity: 0, scale: 0.96 }}
             whileHover={{ scale: 1.02, x: 2 }}
             onClick={() => onEdit && onEdit(transaction)}
-            className="group relative flex items-center gap-4 p-4 glass-panel border-white/5 hover:border-orange-500/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden rounded-2xl"
+            className="group relative flex items-center gap-4 p-4 glass-panel border-main hover:border-orange-500/40 hover:bg-surface transition-all cursor-pointer overflow-hidden"
         >
             {/* Category Icon / Emoji */}
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-lg bg-white/5 border border-white/10 ${color.text} shadow-inner`}>
@@ -76,9 +76,9 @@ export const TransactionItem = ({ transaction, categories = [], onEdit, onDelete
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-                <p className="font-bold text-slate-100 text-[15px] truncate tracking-wide">{transaction.title}</p>
+                <p className="font-bold text-main text-[15px] truncate tracking-wide">{transaction.title}</p>
                 <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 ${color.text} uppercase tracking-wider`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-surface border border-main ${color.text} uppercase tracking-wider`}>
                         {transaction.category}
                     </span>
                     <span className="text-[10px] text-slate-500">•</span>
@@ -88,22 +88,22 @@ export const TransactionItem = ({ transaction, categories = [], onEdit, onDelete
 
             {/* Amount */}
             <div className="flex items-center gap-2 shrink-0">
-                <span className={`font-mono font-bold text-lg tracking-tight ${isExpense ? 'text-slate-200' : 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]'}`}>
+                <span className={`font-mono font-bold text-lg tracking-tight ${isExpense ? 'text-main/90' : 'text-emerald-500 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]'}`}>
                     {isExpense ? '-' : '+'}₹{parseFloat(transaction.amount).toLocaleString('en-IN')}
                 </span>
             </div>
 
             {/* Hover Actions */}
-            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#181A20] via-[#181A20]/90 to-transparent translate-x-full group-hover:translate-x-0 transition-transform duration-300 flex items-center justify-end pr-4 gap-2 z-20">
+            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-bg-secondary via-bg-secondary to-transparent translate-x-full group-hover:translate-x-0 transition-transform duration-300 flex items-center justify-end pr-4 gap-2 z-20">
                 <button
                     onClick={(e) => { e.stopPropagation(); onEdit && onEdit(transaction); }}
-                    className="p-2 bg-white/10 text-orange-400 rounded-xl hover:bg-orange-500/20 hover:scale-110 transition-all border border-orange-500/20"
+                    className="p-2 bg-surface text-orange-400 rounded-xl hover:bg-orange-500/20 hover:scale-110 transition-all border border-orange-500/20"
                 >
                     <Pencil size={14} />
                 </button>
                 <button
                     onClick={(e) => { e.stopPropagation(); onDelete(transaction.id); }}
-                    className="p-2 bg-white/10 text-rose-400 rounded-xl hover:bg-rose-500/20 hover:scale-110 transition-all border border-rose-500/20"
+                    className="p-2 bg-surface text-rose-400 rounded-xl hover:bg-rose-500/20 hover:scale-110 transition-all border border-rose-500/20"
                 >
                     <Trash2 size={14} />
                 </button>
