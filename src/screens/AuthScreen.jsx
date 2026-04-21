@@ -276,7 +276,6 @@ export const AuthScreen = () => {
                     </AnimatePresence>
 
                     <form onSubmit={handleAuth} className="space-y-4 relative z-10">
-                        <AnimatePresence mode="popLayout">
                         <AnimatePresence mode='wait'>
                             {!isLogin && (
                                 <motion.div 
