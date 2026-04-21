@@ -725,6 +725,7 @@ export const Dashboard = ({ session }) => {
         root.unmount();
         document.body.removeChild(container);
 
+        const pdfBlob = pdf.output('blob');
         const defaultName = calcData 
             ? `${calcData.toolName.replace(/\s+/g, '_')}_Analysis`
             : `OrangeFin_Report_${(filterLabel || 'All_Time').replace(/\s+/g, '_')}`;
@@ -1178,23 +1179,23 @@ export const Dashboard = ({ session }) => {
                     </AnimatePresence>
                 </main>
 
-                {/* Bottom Navigation — Futuristic Floating Dock */}
+                {/* Bottom Navigation — Futuristic Floating Crystal Dock */}
                 <div className="fixed bottom-6 left-0 right-0 z-50 px-4 pointer-events-none">
-                    <div className="max-w-md mx-auto pointer-events-auto">
-                        <div className="bg-[#050505]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] p-2 flex items-center justify-between relative overflow-hidden">
-                            {/* Inner ambient glow */}
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
+                    <div className="max-w-[420px] mx-auto pointer-events-auto">
+                        <div className="bg-[#0A0B10]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] p-2.5 flex items-center justify-between relative overflow-hidden group/dock">
+                            {/* Inner ambient top-glow border */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-orange-500/50 to-transparent group-hover/dock:w-[80%] transition-all duration-700" />
                             
-                            {/* Navigation Tabs */}
+                            {/* Navigation Tabs (Left) */}
                             <div className="flex items-center gap-1">
                                 {[
-                                    { id: 'home', icon: Home, label: 'Home' },
-                                    { id: 'reports', icon: BarChart3, label: 'Analysis' },
+                                    { id: 'home', icon: Home, label: 'Vault' },
+                                    { id: 'reports', icon: BarChart3, label: 'Analytics' },
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`relative group px-5 py-3 rounded-2xl transition-all duration-300 ${activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                        className={`relative group px-4 py-3 rounded-2xl transition-all duration-300 ${activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
                                     >
                                         {activeTab === tab.id && (
                                             <motion.div
@@ -1204,18 +1205,18 @@ export const Dashboard = ({ session }) => {
                                             />
                                         )}
                                         <div className="relative flex flex-col items-center gap-1">
-                                            <tab.icon size={20} strokeWidth={activeTab === tab.id ? 2.5 : 2} className={activeTab === tab.id ? 'text-orange-500' : ''} />
-                                            <span className="text-[9px] font-black uppercase tracking-widest leading-none">{tab.label}</span>
+                                            <tab.icon size={19} strokeWidth={activeTab === tab.id ? 2.5 : 2} className={activeTab === tab.id ? 'text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'transition-colors'} />
+                                            <span className="text-[8px] font-black uppercase tracking-[0.1em] leading-none opacity-80">{tab.label}</span>
                                         </div>
                                     </button>
                                 ))}
                             </div>
 
-                            {/* Center Action (FAB Integration) */}
+                            {/* Center Action (Pulse FAB) */}
                             <div className="absolute left-1/2 -translate-x-1/2 -top-5">
-                                <div className="absolute inset-0 bg-orange-500/20 blur-2xl rounded-full" />
+                                <div className="absolute inset-0 bg-orange-500/25 blur-2xl rounded-full animate-pulse" />
                                 <motion.button
-                                    whileHover={{ y: -4, scale: 1.05 }}
+                                    whileHover={{ y: -6, scale: 1.05 }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => { 
                                         setEditTransaction(null); 
@@ -1228,30 +1229,34 @@ export const Dashboard = ({ session }) => {
                                         }); 
                                         setShowTransaction(true); 
                                     }}
-                                    className="relative w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-600 rounded-2xl flex items-center justify-center text-white shadow-[0_10px_30px_rgba(249,115,22,0.5)] ring-4 ring-[#050505]"
+                                    className="relative w-15 h-15 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-2xl flex items-center justify-center text-white shadow-[0_15px_35px_rgba(249,115,22,0.5)] ring-[6px] ring-[#0A0B10]/80 group"
                                 >
-                                    <Plus size={28} strokeWidth={3} className="drop-shadow-lg" />
+                                    <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/30 pointer-events-none" />
+                                    <Plus size={30} strokeWidth={3.5} className="drop-shadow-lg group-active:rotate-90 transition-transform duration-300" />
                                 </motion.button>
                             </div>
 
-                            {/* Right Side Tabs */}
+                            {/* Right Side Tabs (Utility) */}
                             <div className="flex items-center gap-1">
                                 <button
                                     onClick={() => setShowVoiceAssistant(true)}
-                                    className="px-5 py-3 rounded-2xl text-slate-500 hover:text-orange-500 transition-all group"
+                                    className="px-4 py-3 rounded-2xl text-slate-500 hover:text-rose-400 transition-all group"
                                 >
                                     <div className="flex flex-col items-center gap-1">
-                                        <Mic size={20} strokeWidth={2} className="group-hover:animate-pulse" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest leading-none">Voice</span>
+                                        <div className="relative">
+                                            <Mic size={19} strokeWidth={2} className="group-hover:scale-110 transition-transform" />
+                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
+                                        </div>
+                                        <span className="text-[8px] font-black uppercase tracking-[0.1em] leading-none opacity-80">Voice</span>
                                     </div>
                                 </button>
                                 <button
                                     onClick={() => setShowSettings(true)}
-                                    className="px-5 py-3 rounded-2xl text-slate-500 hover:text-orange-500 transition-all"
+                                    className="px-4 py-3 rounded-2xl text-slate-500 hover:text-orange-400 transition-all group"
                                 >
                                     <div className="flex flex-col items-center gap-1">
-                                        <Settings size={20} strokeWidth={2} />
-                                        <span className="text-[9px] font-black uppercase tracking-widest leading-none">More</span>
+                                        <Settings size={19} strokeWidth={2} className="group-hover:rotate-45 transition-transform" />
+                                        <span className="text-[8px] font-black uppercase tracking-[0.1em] leading-none opacity-80">More</span>
                                     </div>
                                 </button>
                             </div>
