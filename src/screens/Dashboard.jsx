@@ -725,8 +725,11 @@ export const Dashboard = ({ session }) => {
         root.unmount();
         document.body.removeChild(container);
 
-        const pdfBlob = pdf.output('blob');
-        return new File([pdfBlob], `OrangeFin_Report_${(filterLabel || 'All_Time').replace(/\s+/g, '_')}.pdf`, { type: 'application/pdf' });
+        const defaultName = calcData 
+            ? `${calcData.toolName.replace(/\s+/g, '_')}_Analysis`
+            : `OrangeFin_Report_${(filterLabel || 'All_Time').replace(/\s+/g, '_')}`;
+
+        return new File([pdfBlob], `${defaultName}.pdf`, { type: 'application/pdf' });
     };
 
     // Calculator PDF → uses window.print() via PrintView (same premium design as analytics)
@@ -752,18 +755,18 @@ export const Dashboard = ({ session }) => {
     const handleCalcDownload = async (toolName, inputData, result) => {
         setIsSharing(true);
         try {
-            // Use getCalcPDFFile for reliable jsPDF-based generation (fixes blank white screen issues with html2canvas)
-            const file = getCalcPDFFile(toolName, inputData, result, user);
+            const inputs = getFormattedInputs(toolName, inputData);
+            const file = await generateHighQualityPDF({ toolName, inputs, result });
             
             const url = URL.createObjectURL(file);
             const a = document.createElement('a');
             a.href = url;
-            a.download = file.name;
+            a.download = `${toolName.replace(/\s+/g, '_')}_Report.pdf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('PDF Downloaded! 📥');
+            showToast('Premium PDF Downloaded! 📥');
         } catch (err) {
             console.error('Download error:', err);
             showToast('Download failed', 'error');
@@ -842,14 +845,24 @@ export const Dashboard = ({ session }) => {
     const handleCalcShare = async (toolName, data, result) => {
         setIsSharing(true);
         try {
-            const file = getCalcPDFFile(toolName, data, result, user);
+            const inputs = getFormattedInputs(toolName, data);
+            const file = await generateHighQualityPDF({ toolName, inputs, result });
             if (navigator.canShare?.({ files: [file] })) {
-                await navigator.share({ files: [file], title: `${toolName} Report`, text: `${toolName} projection from Orange Finance` });
+                await navigator.share({ 
+                    files: [file], 
+                    title: `${toolName} Report`, 
+                    text: `My ${toolName} projection from Orange Finance` 
+                });
             } else {
-                generateCalculatorPDF(toolName, data, result);
+                const url = URL.createObjectURL(file);
+                window.open(url, '_blank');
+                showToast('Sharing link opened! 📤');
             }
         } catch (err) {
-            if (err.name !== 'AbortError') console.error('Share error:', err);
+            if (err.name !== 'AbortError') {
+                console.error('Share error:', err);
+                showToast('Share failed', 'error');
+            }
         }
         setIsSharing(false);
     };
@@ -1031,38 +1044,22 @@ export const Dashboard = ({ session }) => {
                                         <StatCard label="Expense" value={stats.expense} icon={TrendingDown} type="expense" />
                                     </div>
 
-                                    {/* Bottom Row: Mini Tools & Weekly Trend */}
-                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                                        {/* Quick Tools */}
-                                        <div className="md:col-span-7 lg:col-span-8 glass-panel p-6 rounded-3xl grid grid-cols-3 sm:grid-cols-6 gap-4 border border-white/5">
-                                            {TOOLS.slice(0, 6).map(tool => (
-                                                <motion.button
-                                                    key={tool.id}
-                                                    whileHover={{ y: -2, scale: 1.07, boxShadow: '0 0 20px rgba(255,165,0,0.4)' }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={() => setShowCalculator(tool.id)}
-                                                    className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/5 transition-all flex flex-col items-center justify-center gap-3 shadow-neon"
-                                                >
-                                                    <div className="p-2.5 rounded-xl bg-opacity-20 bg-gradient-to-br from-orange-500/20 to-rose-500/20">
-                                                        <tool.icon size={20} className="text-orange-400" />
-                                                    </div>
-                                                    <span className="text-[10px] font-bold text-slate-300 text-center uppercase tracking-wider">{tool.name.split(' ')[0]}</span>
-                                                </motion.button>
-                                            ))}
-                                        </div>
-
-                                        {/* Weekly Trend Chart Snippet */}
-                                        <div className="md:col-span-5 lg:col-span-4 glass-panel rounded-3xl p-6 border border-white/5 relative overflow-hidden flex flex-col min-h-[160px]">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Weekly Trend</h3>
-                                                <span className="text-[9px] font-bold bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400" /> Expense</span>
-                                            </div>
-                                            <div className="flex-1 w-full relative">
-                                                <div className="absolute inset-0">
-                                                    <TrendBarChart transactions={filteredTransactions} type="expense" />
+                                    {/* Bottom Row: Mini Tools */}
+                                    <div className="glass-panel p-6 rounded-3xl grid grid-cols-3 sm:grid-cols-6 gap-4 border border-white/5">
+                                        {TOOLS.slice(0, 6).map(tool => (
+                                            <motion.button
+                                                key={tool.id}
+                                                whileHover={{ y: -2, scale: 1.07, boxShadow: '0 0 20px rgba(255,165,0,0.4)' }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => setShowCalculator(tool.id)}
+                                                className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/5 transition-all flex flex-col items-center justify-center gap-3 shadow-neon"
+                                            >
+                                                <div className="p-2.5 rounded-xl bg-opacity-20 bg-gradient-to-br from-orange-500/20 to-rose-500/20">
+                                                    <tool.icon size={20} className="text-orange-400" />
                                                 </div>
-                                            </div>
-                                        </div>
+                                                <span className="text-[10px] font-bold text-slate-300 text-center uppercase tracking-wider">{tool.name.split(' ')[0]}</span>
+                                            </motion.button>
+                                        ))}
                                     </div>
                                 </motion.div>
 
@@ -1181,67 +1178,83 @@ export const Dashboard = ({ session }) => {
                     </AnimatePresence>
                 </main>
 
-                {/* Bottom Navigation — Premium Glassmorphism */}
-                <div className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)] pointer-events-none">
-                    <div className="px-3 pb-2 sm:pb-3">
-                        <div className="max-w-lg mx-auto bg-[#0B0D0F]/90 backdrop-blur-3xl rounded-[1.75rem] shadow-[0_10px_50px_rgba(0,0,0,0.8)] border border-white/10 flex items-center justify-between px-2 sm:px-3 py-1.5 pointer-events-auto relative">
-                            {/* Left tabs */}
-                            {[
-                                { id: 'home', icon: Home, label: 'Home' },
-                                { id: 'reports', icon: BarChart3, label: 'Analytics' },
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`relative flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl transition-all active:scale-90 ${activeTab === tab.id
-                                        ? 'text-orange-400'
-                                        : 'text-slate-500 hover:text-slate-300'
-                                        }`}
-                                >
-                                    {activeTab === tab.id && (
-                                        <motion.div
-                                            layoutId="navIndicator"
-                                            className="absolute inset-0 bg-orange-500/10 rounded-2xl border border-orange-500/20"
-                                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                                        />
-                                    )}
-                                    <tab.icon size={20} strokeWidth={activeTab === tab.id ? 2.5 : 1.5} className="relative z-10" />
-                                    <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider relative z-10">{tab.label}</span>
-                                </button>
-                            ))}
+                {/* Bottom Navigation — Futuristic Floating Dock */}
+                <div className="fixed bottom-6 left-0 right-0 z-50 px-4 pointer-events-none">
+                    <div className="max-w-md mx-auto pointer-events-auto">
+                        <div className="bg-[#050505]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] p-2 flex items-center justify-between relative overflow-hidden">
+                            {/* Inner ambient glow */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
+                            
+                            {/* Navigation Tabs */}
+                            <div className="flex items-center gap-1">
+                                {[
+                                    { id: 'home', icon: Home, label: 'Home' },
+                                    { id: 'reports', icon: BarChart3, label: 'Analysis' },
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`relative group px-5 py-3 rounded-2xl transition-all duration-300 ${activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        {activeTab === tab.id && (
+                                            <motion.div
+                                                layoutId="navPill"
+                                                className="absolute inset-0 bg-white/5 border border-white/10 rounded-2xl shadow-inner"
+                                                transition={{ type: 'spring', bounce: 0.1, duration: 0.6 }}
+                                            />
+                                        )}
+                                        <div className="relative flex flex-col items-center gap-1">
+                                            <tab.icon size={20} strokeWidth={activeTab === tab.id ? 2.5 : 2} className={activeTab === tab.id ? 'text-orange-500' : ''} />
+                                            <span className="text-[9px] font-black uppercase tracking-widest leading-none">{tab.label}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
 
-                            {/* Center FAB */}
-                            <div className="relative -mt-7 mx-1">
-                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-rose-500 rounded-full blur-[15px] opacity-60 scale-90" />
+                            {/* Center Action (FAB Integration) */}
+                            <div className="absolute left-1/2 -translate-x-1/2 -top-5">
+                                <div className="absolute inset-0 bg-orange-500/20 blur-2xl rounded-full" />
                                 <motion.button
-                                    whileHover={{ scale: 1.08 }}
-                                    whileTap={{ scale: 0.88 }}
-                                    onClick={() => { setEditTransaction(null); setTxForm({ title: '', amount: '', type: 'expense', category: 'Other', date: new Date().toISOString().split('T')[0] }); setShowTransaction(true); }}
-                                    className="relative w-[52px] h-[52px] sm:w-14 sm:h-14 bg-gradient-to-br from-orange-400 w-full to-rose-600 rounded-full flex items-center justify-center text-white shadow-xl shadow-orange-500/50 ring-4 ring-[#0B0D0F]"
+                                    whileHover={{ y: -4, scale: 1.05 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => { 
+                                        setEditTransaction(null); 
+                                        setTxForm({ 
+                                            title: '', 
+                                            amount: '', 
+                                            type: 'expense', 
+                                            category: 'Other', 
+                                            date: new Date().toISOString().split('T')[0] 
+                                        }); 
+                                        setShowTransaction(true); 
+                                    }}
+                                    className="relative w-14 h-14 bg-gradient-to-br from-orange-400 to-rose-600 rounded-2xl flex items-center justify-center text-white shadow-[0_10px_30px_rgba(249,115,22,0.5)] ring-4 ring-[#050505]"
                                 >
-                                    <Plus size={24} strokeWidth={3} className="drop-shadow-md" />
+                                    <Plus size={28} strokeWidth={3} className="drop-shadow-lg" />
                                 </motion.button>
                             </div>
 
-                            {/* Right tabs */}
-                            <button
-                                onClick={() => setShowVoiceAssistant(true)}
-                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-500 hover:text-orange-400 transition-all active:scale-90"
-                            >
-                                <Mic size={20} strokeWidth={1.5} />
-                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Voice</span>
-                            </button>
-                            <button
-                                onClick={() => setShowChatbot(true)}
-                                className="flex flex-col items-center gap-0.5 py-2.5 px-4 sm:px-5 rounded-2xl text-slate-500 hover:text-orange-400 transition-all active:scale-90 relative"
-                            >
-                                <Bot size={20} strokeWidth={1.5} />
-                                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Chat</span>
-                                <span className="absolute top-2 right-[18px] flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                                </span>
-                            </button>
+                            {/* Right Side Tabs */}
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setShowVoiceAssistant(true)}
+                                    className="px-5 py-3 rounded-2xl text-slate-500 hover:text-orange-500 transition-all group"
+                                >
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Mic size={20} strokeWidth={2} className="group-hover:animate-pulse" />
+                                        <span className="text-[9px] font-black uppercase tracking-widest leading-none">Voice</span>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={() => setShowSettings(true)}
+                                    className="px-5 py-3 rounded-2xl text-slate-500 hover:text-orange-500 transition-all"
+                                >
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Settings size={20} strokeWidth={2} />
+                                        <span className="text-[9px] font-black uppercase tracking-widest leading-none">More</span>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

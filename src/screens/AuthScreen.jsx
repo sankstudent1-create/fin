@@ -277,21 +277,23 @@ export const AuthScreen = () => {
 
                     <form onSubmit={handleAuth} className="space-y-4 relative z-10">
                         <AnimatePresence mode="popLayout">
+                        <AnimatePresence mode='wait'>
                             {!isLogin && (
                                 <motion.div 
-                                    initial={{ opacity: 0, x: -20, height: 0 }} 
-                                    animate={{ opacity: 1, x: 0, height: 'auto' }} 
-                                    exit={{ opacity: 0, x: 20, height: 0 }}
+                                    initial={{ opacity: 0, y: -10, scale: 0.95 }} 
+                                    animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                     transition={{ duration: 0.2 }}
+                                    className="mb-4"
                                 >
                                     <div className="relative group">
-                                        <User size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-orange-400 transition-colors" />
+                                        <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-orange-400 group-focus-within:scale-110 transition-all" />
                                         <input
                                             type="text"
                                             placeholder="Full Name"
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
-                                            className="w-full glass-panel input-glow py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/30"
+                                            className="auth-input w-full"
                                             required={!isLogin}
                                         />
                                     </div>
@@ -299,29 +301,29 @@ export const AuthScreen = () => {
                             )}
                         </AnimatePresence>
 
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mb-4">
                             <div className="relative group">
-                                <Mail size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-orange-400 transition-colors" />
+                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-orange-400 group-focus-within:scale-110 transition-all" />
                                 <input
                                     type="email"
                                     placeholder="Email Address"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full glass-panel input-glow py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/30"
+                                    className="auth-input w-full"
                                     required
                                 />
                             </div>
                         </motion.div>
 
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mb-6">
                             <div className="relative group">
-                                <Lock size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-orange-400 transition-colors" />
+                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-orange-400 group-focus-within:scale-110 transition-all" />
                                 <input
                                     type="password"
                                     placeholder="Password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full glass-panel input-glow py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/30"
+                                    className="auth-input w-full"
                                     required
                                 />
                             </div>

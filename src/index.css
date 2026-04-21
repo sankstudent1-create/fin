@@ -42,16 +42,27 @@
     }
 
     .glass-panel {
-        @apply bg-[#181A20]/70 backdrop-blur-2xl border border-white/5;
-        box-shadow: var(--shadow-glass);
+        @apply bg-[#0A0B10]/40 backdrop-blur-3xl border border-white/10 rounded-2xl;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
     }
 
     .glass-panel-hover {
-        @apply transition-all duration-300 hover:bg-[#181A20]/90 hover:border-orange-500/30;
+        @apply transition-all duration-300 hover:bg-[#0A0B10]/60 hover:border-orange-500/40;
     }
 
     .input-glow:focus {
-        @apply ring-4 ring-orange-500/20 border-orange-500 outline-none;
+        @apply ring-[5px] ring-orange-500/10 border-orange-500/50 outline-none bg-white/5;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+    }
+
+    .auth-input {
+        @apply glass-panel py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/20 transition-all duration-300;
+        @apply border-white/5 bg-[#0A0B10]/60;
+    }
+
+    .auth-input:focus {
+        @apply border-orange-500/50 bg-[#0A0B10]/80 ring-[6px] ring-orange-500/10 outline-none;
+        box-shadow: 0 0 20px rgba(0,0,0,0.4), inset 0 0 10px rgba(0,0,0,0.2);
     }
 
     .hide-scrollbar::-webkit-scrollbar {

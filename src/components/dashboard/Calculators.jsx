@@ -290,8 +290,7 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onDownload, onShare,
         const r = parseFloat(data.rate);
         const er = parseFloat(data.expense_ratio) || 0;
 
-        if (!p || (!n && toolId !== 'interest')) {
-            showToast?.('Please enter valid amount and duration', 'error');
+        if (!p && toolId !== 'age') {
             return;
         }
 
@@ -299,36 +298,35 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onDownload, onShare,
 
         switch (toolId) {
             case 'sip':
-                res = calculateSIP(p, n * 12, r || 12, er);
+                res = calculateSIP(p, (n || 10) * 12, r || 12, er);
                 break;
             case 'lumpsum':
-                res = calculateLumpsum(p, n, r || 12, er);
+                res = calculateLumpsum(p, n || 10, r || 12, er);
                 break;
             case 'fd':
-                res = calculateFD(p, n, r || 6.5);
+                res = calculateFD(p, n || 5, r || 6.5);
                 break;
             case 'ppf':
-                res = calculatePPF(p, n);
+                res = calculatePPF(p, n || 15);
                 break;
             case 'interest':
-                res = calculateSimpleInterest(p, n, r || 10);
+                res = calculateSimpleInterest(p, n || 1, r || 10);
                 break;
             default:
                 break;
         }
         setResult({ ...res, detailed: showDetailed });
-        showToast?.('Calculated successfully! 🎯');
     };
 
     useEffect(() => { 
         setResult(null); 
         if (toolId !== 'age') {
             setData({ amount: '5000', duration: '10', rate: '12', expense_ratio: '1' });
-            // Small delay to ensure state updates before calculation if needed, 
-            // though direct call with defaults is better
-            setTimeout(handleCalculate, 50);
+            setTimeout(handleCalculate, 100);
         } else {
-            setData({ amount: '', duration: '', rate: '', expense_ratio: '1' });
+            // Default to Year 2000 for Age Calculator
+            const defaultDOB = '2000-01-01';
+            setData({ amount: defaultDOB, duration: '', rate: '', expense_ratio: '1' });
         }
     }, [toolId]);
 

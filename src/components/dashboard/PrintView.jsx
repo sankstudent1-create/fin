@@ -136,232 +136,137 @@ export const CalculatorReport = ({ data, user }) => {
                 <PageHeader user={user} subtitle="Investment Report" page={1} totalPages={2} />
 
                 {/* Tool name eyebrow */}
-                <p style={{
-                    fontSize: 10, color: '#f97316', fontWeight: 700, textTransform: 'uppercase',
-                    letterSpacing: '0.15em', marginBottom: 4
-                }}>
-                    {toolName} · Projection
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <div style={{ width: 4, height: 16, background: '#f97316', borderRadius: 4 }} />
+                    <p style={{
+                        fontSize: 10, color: '#f97316', fontWeight: 800, textTransform: 'uppercase',
+                        letterSpacing: '0.15em'
+                    }}>
+                        {toolName} Analysis
+                    </p>
+                </div>
+                
                 <h1 className="mont" style={{
-                    fontSize: 26, fontWeight: 900, color: '#0f172a',
-                    letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: 22
+                    fontSize: 32, fontWeight: 900, color: '#0f172a',
+                    letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 24
                 }}>
-                    Investment Summary
+                    Projection Summary
                 </h1>
 
-                {/* ── HERO DARK CARD ──────────── */}
+                {/* ── PREMIUM HERO DARK CARD ──────────── */}
                 <div className="no-break" style={{
-                    background: '#0f172a', borderRadius: 18, padding: '26px 28px',
-                    marginBottom: 20, position: 'relative', overflow: 'hidden'
+                    background: '#0f172a', borderRadius: 24, padding: '32px',
+                    marginBottom: 24, position: 'relative', overflow: 'hidden',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
                 }}>
-                    {/* Top accent line */}
-                    <div style={{
-                        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-                        background: 'linear-gradient(90deg,#f97316,#ec4899,#8b5cf6)',
-                        borderRadius: '18px 18px 0 0'
-                    }} />
-                    {/* BG circles */}
-                    <div style={{
-                        position: 'absolute', top: -50, right: -50, width: 180, height: 180,
-                        borderRadius: '50%', background: 'rgba(255,255,255,0.03)'
-                    }} />
-                    <div style={{
-                        position: 'absolute', bottom: -30, left: -30, width: 120, height: 120,
-                        borderRadius: '50%', background: 'rgba(249,115,22,0.06)'
-                    }} />
+                    {/* Brand Watermark */}
+                    <div style={{ 
+                        position: 'absolute', top: -30, right: -20, fontSize: 120, 
+                        fontWeight: 900, color: 'rgba(255,255,255,0.02)', pointerEvents: 'none' 
+                    }}>
+                        FIN
+                    </div>
 
-                    <div style={{ position: 'relative' }}>
-                        {/* 3-col grid */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginBottom: 20 }}>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 24, marginBottom: 28 }}>
+                            {/* Maturity Card */}
+                            <div style={{ 
+                                background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)',
+                                borderRadius: 16, padding: '20px'
+                            }}>
+                                <p style={{ fontSize: 9, color: '#fdb777', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Net Maturity Value</p>
+                                <p className="mont" style={{ fontSize: 28, fontWeight: 950, color: 'white', letterSpacing: '-0.02em' }}>{fmt(netTotal)}</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                                    <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: '#f97316', color: 'white' }}>High Growth</span>
+                                    {tax > 0 && <span style={{ fontSize: 8, color: '#fca5a5', fontWeight: 600 }}>Net after tax</span>}
+                                </div>
+                            </div>
+
                             {/* Invested */}
-                            <div>
-                                <p style={{
-                                    fontSize: 8, color: '#64748b', fontWeight: 700, textTransform: 'uppercase',
-                                    letterSpacing: '0.12em', marginBottom: 4
-                                }}>Total Invested</p>
-                                <p className="mont" style={{
-                                    fontSize: 20, fontWeight: 900, color: 'white',
-                                    letterSpacing: '-0.03em'
-                                }}>{fmt(invested)}</p>
-                                <div style={{ marginTop: 6, height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 99 }}>
-                                    <div style={{
-                                        height: '100%', width: `${invPct.toFixed(0)}%`,
-                                        background: 'linear-gradient(90deg,#f97316,#fbbf24)', borderRadius: 99
-                                    }} />
-                                </div>
-                                <p style={{ fontSize: 8, color: '#94a3b8', marginTop: 4 }}>{invPct.toFixed(0)}% of corpus</p>
+                            <div style={{ padding: '8px 4px' }}>
+                                <p style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Total Capital</p>
+                                <p className="mont" style={{ fontSize: 22, fontWeight: 900, color: 'white' }}>{fmt(invested)}</p>
+                                <p style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>Principal amount</p>
                             </div>
+
                             {/* Returns */}
-                            <div>
-                                <p style={{
-                                    fontSize: 8, color: '#34d399', fontWeight: 700, textTransform: 'uppercase',
-                                    letterSpacing: '0.12em', marginBottom: 4
-                                }}>Wealth Created</p>
-                                <p className="mont" style={{
-                                    fontSize: 20, fontWeight: 900, color: '#34d399',
-                                    letterSpacing: '-0.03em'
-                                }}>+{fmt(returns)}</p>
-                                <div style={{ marginTop: 6, height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 99 }}>
-                                    <div style={{
-                                        height: '100%', width: `${retPct.toFixed(0)}%`,
-                                        background: 'linear-gradient(90deg,#34d399,#6ee7b7)', borderRadius: 99
-                                    }} />
-                                </div>
-                                <p style={{ fontSize: 8, color: '#6ee7b7', marginTop: 4 }}>
-                                    {gainPct}% gain · {multiplier}× money
-                                </p>
-                            </div>
-                            {/* Net Maturity */}
-                            <div style={{
-                                background: 'rgba(249,115,22,0.12)', borderRadius: 12,
-                                padding: '12px 14px', border: '1px solid rgba(249,115,22,0.2)'
-                            }}>
-                                <p style={{
-                                    fontSize: 8, color: '#fdba74', fontWeight: 700, textTransform: 'uppercase',
-                                    letterSpacing: '0.12em', marginBottom: 4
-                                }}>Net Maturity Value</p>
-                                <p className="mont" style={{
-                                    fontSize: 20, fontWeight: 900, color: 'white',
-                                    letterSpacing: '-0.03em'
-                                }}>{fmt(netTotal)}</p>
-                                {tax > 0 && (
-                                    <p style={{ fontSize: 8, color: '#fca5a5', marginTop: 4 }}>
-                                        After est. tax of {fmt(tax)}
-                                    </p>
-                                )}
+                            <div style={{ padding: '8px 4px' }}>
+                                <p style={{ fontSize: 9, color: '#34d399', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Wealth Gain</p>
+                                <p className="mont" style={{ fontSize: 22, fontWeight: 900, color: '#34d399' }}>+{fmt(returns)}</p>
+                                <p style={{ fontSize: 10, color: '#10b981', fontWeight: 700, marginTop: 4 }}>{gainPct}% ROI</p>
                             </div>
                         </div>
 
-                        {/* Invested vs Returns bar */}
-                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 14 }}>
-                            <div style={{
-                                display: 'flex', justifyContent: 'space-between', fontSize: 8,
-                                color: '#64748b', fontWeight: 600, marginBottom: 6,
-                                textTransform: 'uppercase', letterSpacing: '0.08em'
-                            }}>
-                                <span>▪ Invested  {invPct.toFixed(0)}%</span>
-                                <span style={{ color: '#94a3b8' }}>Corpus Split</span>
-                                <span>Returns  {retPct.toFixed(0)}% ▪</span>
-                            </div>
-                            <div style={{ height: 10, background: 'rgba(255,255,255,0.07)', borderRadius: 99, overflow: 'hidden' }}>
-                                <div style={{
-                                    height: '100%', width: `${invPct.toFixed(0)}%`,
-                                    background: 'linear-gradient(90deg,#f97316,#fbbf24)', borderRadius: 99
-                                }} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── 2-col: Inputs | Tax table ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 14, marginBottom: 20 }}
-                    className="no-break">
-                    {/* Inputs/Parameters */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: '14px 16px' }}>
-                        <p style={{
-                            fontSize: 8, fontWeight: 800, color: '#64748b', textTransform: 'uppercase',
-                            letterSpacing: '0.12em', marginBottom: 12
-                        }}>Parameters</p>
-                        {Object.entries(inputs).map(([label, val]) => (
-                            <div key={label} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8, marginBottom: 8 }}>
-                                <p style={{ fontSize: 8, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>{label}</p>
-                                <p className="mont" style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{val}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Tax Treatment */}
-                    <div style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 14, padding: '14px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                            <div style={{ width: 3, height: 14, background: '#6366f1', borderRadius: 4 }} />
-                            <p style={{
-                                fontSize: 8, fontWeight: 800, color: '#4338ca', textTransform: 'uppercase',
-                                letterSpacing: '0.12em'
-                            }}>Tax Treatment (FY 2025-26)</p>
-                        </div>
-                        {isPPF ? (
-                            <div style={{
-                                background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 10,
-                                padding: '10px 12px', textAlign: 'center'
-                            }}>
-                                <p style={{ fontSize: 20, marginBottom: 4 }}>✅</p>
-                                <p style={{ fontSize: 11, fontWeight: 800, color: '#065f46' }}>100% TAX FREE</p>
-                                <p style={{ fontSize: 8, color: '#059669', marginTop: 2 }}>EEE Status — Exempt · Exempt · Exempt</p>
-                                <p className="mont" style={{ fontSize: 14, fontWeight: 900, color: '#0f172a', marginTop: 8 }}>
-                                    {fmt(netTotal)} fully yours!
-                                </p>
-                            </div>
-                        ) : (
-                            <>
-                                {[
-                                    ['Total Gains', fmt(returns), '#374151'],
-                                    isEquity
-                                        ? ['LTCG Exempt (₹1.25L)', `-${fmt(Math.min(returns, 125000))}`, '#059669']
-                                        : ['TDS Deducted @ 10%', `-${fmt(tax)}`, '#dc2626'],
-                                    isEquity
-                                        ? ['Taxable Amount @12.5%', fmt(Math.max(0, returns - 125000)), '#d97706']
-                                        : null,
-                                    ['Est. Tax Liability', fmt(tax), '#dc2626'],
-                                    ['Net Take-Home', fmt(netTotal), '#0f172a'],
-                                ].filter(Boolean).map(([label, val, color]) => (
-                                    <div key={label} style={{
-                                        display: 'flex', justifyContent: 'space-between',
-                                        alignItems: 'center', padding: '7px 0',
-                                        borderBottom: '1px solid #e0e7ff'
-                                    }}>
-                                        <span style={{ fontSize: 9, color: '#64748b', fontWeight: 500 }}>{label}</span>
-                                        <span style={{ fontSize: 10, fontWeight: 800, color }}>{val}</span>
+                        {/* Progress Bar */}
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                <div style={{ display: 'flex', gap: 12 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <div style={{ width: 8, height: 8, borderRadius: 2, background: '#f97316' }} />
+                                        <span style={{ fontSize: 9, color: '#cbd5e1', fontWeight: 600 }}>Principal ({invPct.toFixed(0)}%)</span>
                                     </div>
-                                ))}
-                            </>
-                        )}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <div style={{ width: 8, height: 8, borderRadius: 2, background: '#34d399' }} />
+                                        <span style={{ fontSize: 9, color: '#cbd5e1', fontWeight: 600 }}>Profit ({retPct.toFixed(0)}%)</span>
+                                    </div>
+                                </div>
+                                <span style={{ fontSize: 9, color: '#64748b', fontWeight: 800 }}>FUNDING RATIO</span>
+                            </div>
+                            <div style={{ height: 12, background: 'rgba(255,255,255,0.05)', borderRadius: 99, overflow: 'hidden', display: 'flex' }}>
+                                <div style={{ width: `${invPct}%`, height: '100%', background: '#f97316' }} />
+                                <div style={{ width: `${retPct}%`, height: '100%', background: '#34d399' }} />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* ── Disclaimer ─────────────────── */}
-                <div className="no-break" style={{
-                    background: '#fefce8', border: '1px solid #fde68a',
-                    borderRadius: 10, padding: '10px 14px', marginBottom: 16
-                }}>
-                    <p style={{ fontSize: 8, color: '#92400e', lineHeight: 1.6 }}>
-                        <strong>Disclaimer:</strong> This projection is for illustration purposes only.
-                        Returns are not guaranteed and may vary based on actual market performance.
-                        Tax estimates follow FY 2025-26 rules. Consult a SEBI-registered financial advisor
-                        before making investment decisions.
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 16, marginBottom: 24 }}>
+                    {/* Left: Inputs */}
+                    <div className="no-break" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 20, padding: '24px' }}>
+                        <h3 style={{ fontSize: 10, fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Input Parameters</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {Object.entries(inputs).map(([label, val]) => (
+                                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #f1f5f9', paddingBottom: 8 }}>
+                                    <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{label}</span>
+                                    <span className="mont" style={{ fontSize: 16, fontWeight: 900, color: '#0f172a' }}>{val}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Right: Insights */}
+                    <div className="no-break" style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 20, padding: '24px' }}>
+                        <h3 style={{ fontSize: 10, fontWeight: 900, color: '#4338ca', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Investment Insights</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ background: 'white', borderRadius: 12, padding: '12px 16px', border: '1px solid #dee5ff' }}>
+                                <p style={{ fontSize: 9, color: '#64748b', fontWeight: 700, marginBottom: 4 }}>WEALTH MULTIPLIER</p>
+                                <p className="mont" style={{ fontSize: 24, fontWeight: 950, color: '#0f172a' }}>{multiplier}× <span style={{ fontSize: 12, color: '#10b981' }}>Total Assets</span></p>
+                            </div>
+                            <div style={{ background: 'white', borderRadius: 12, padding: '12px 16px', border: '1px solid #dee5ff' }}>
+                                <p style={{ fontSize: 9, color: '#64748b', fontWeight: 700, marginBottom: 4 }}>MONTHLY AVG GROWTH</p>
+                                <p className="mont" style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>{fmt(returns / (inputs['Duration (Years)'] * 12 || 120))}/mo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Disclaimer */}
+                <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 12, padding: '12px 16px', marginBottom: 20 }}>
+                    <p style={{ fontSize: 8, color: '#92400e', lineHeight: 1.5 }}>
+                        **Disclaimer:** This report is for informational purposes. Market investments are subject to risk. Returns projected are estimated based on your inputs and do not guarantee future performance. Tax estimates follow FY 2025-26 guidelines.
                     </p>
                 </div>
 
-                <PageFooter page={1} total={2} />
+                <PageFooter />
             </div>
 
-            {/* ── PAGE 2 — Year-wise Table ──────────────────────── */}
-            <div className="print-page pg-break" style={{ paddingBottom: '30mm' }}>
-                {/* Mini header row */}
-                <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid #e2e8f0'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{
-                            width: 26, height: 26, background: 'linear-gradient(135deg,#f97316,#ec4899)',
-                            borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                            <span style={{ color: 'white', fontSize: 11, fontWeight: 900 }}>₹</span>
-                        </div>
-                        <h2 className="mont" style={{
-                            fontSize: 16, fontWeight: 900, color: '#0f172a',
-                            letterSpacing: '-0.03em', margin: 0
-                        }}>
-                            Year-wise Growth Projection
-                        </h2>
-                    </div>
-                    <span style={{
-                        fontSize: 8, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase',
-                        letterSpacing: '0.1em'
-                    }}>
-                        {toolName}
-                    </span>
-                </div>
+            {/* ── PAGE 2 — Year-wise Analysis ──────────────────────── */}
+            <div className="print-page pg-break" style={{ paddingBottom: '20mm' }}>
+                <PageHeader user={user} subtitle="Yearly Breakdown" page={2} totalPages={2} />
+                
+                <h2 className="mont" style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.04em', marginBottom: 16 }}>
+                    Growth Trajectory
+                </h2>
 
                 {/* Section label */}
                 <p style={{
