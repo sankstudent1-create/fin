@@ -56,8 +56,9 @@
     }
 
     .auth-input {
-        @apply glass-panel py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/20 transition-all duration-300;
-        @apply border-white/5 bg-[#0A0B10]/60;
+        @apply bg-[#0A0B10]/60 backdrop-blur-3xl py-4 pl-12 pr-4 font-bold text-white placeholder:text-white/20 transition-all duration-300;
+        @apply border-white/5;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
     }
 
     .auth-input:focus {
