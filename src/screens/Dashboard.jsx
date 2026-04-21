@@ -669,7 +669,7 @@ export const Dashboard = ({ session }) => {
 
     // --- PDF & SHARING (FIXED) ---
 
-    // High-quality PDF Generator (html2canvas)
+    const generateHighQualityPDF = async (calcData = null) => {
         // Try to capture existing preview root first (most reliable)
         let element = document.getElementById('print-root');
         let unmountAction = null;
