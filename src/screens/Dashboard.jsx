@@ -5,7 +5,7 @@ import {
     Home, BarChart3, Settings, Wallet, TrendingUp, TrendingDown,
     Plus, Search, Calendar, ChevronDown, ChevronLeft, Download, Share2,
     Receipt, ScanLine, Headphones, Loader2, X, Check, ShieldCheck,
-    FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic, MonitorSmartphone
+    FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic, MonitorSmartphone, MessageSquareText
 } from 'lucide-react';
 import { useActivityTracker } from '../hooks/useActivityTracker';
 import { AIChatbot } from '../components/modals/AIChatbot';
@@ -733,24 +733,14 @@ export const Dashboard = ({ session }) => {
         return new File([pdfBlob], `${defaultName}.pdf`, { type: 'application/pdf' });
     };
 
-    // Calculator PDF → uses window.print() via PrintView (same premium design as analytics)
     const handleCalcPrint = (toolName, inputData, result) => {
         // Build inputs display object
         const inputs = getFormattedInputs(toolName, inputData);
 
         setCalculatorPrintData({ toolName, inputs, result });
-        setPrintVariant('classic');
+        setPrintVariant('premium'); // Default to premium for print
         setIsPrinting(true);
         setShowCalculator(null);
-        
-        // Wait for state to settle then print
-        setTimeout(() => {
-            window.print();
-            setTimeout(() => {
-                setIsPrinting(false);
-                setCalculatorPrintData(null);
-            }, 500);
-        }, 1000);
     };
 
     const handleCalcDownload = async (toolName, inputData, result) => {
@@ -789,11 +779,11 @@ export const Dashboard = ({ session }) => {
         );
     };
 
-    // Download analytics report as high-quality PDF
+    // Download analytics or calculator report as high-quality PDF
     const handleDownloadReport = async () => {
         setIsSharing(true); // Reuse isSharing state for loading spinner on the UI
         try {
-            const file = await generateHighQualityPDF();
+            const file = await generateHighQualityPDF(calculatorPrintData);
             const url = URL.createObjectURL(file);
             const a = document.createElement('a');
             a.href = url;
@@ -814,7 +804,7 @@ export const Dashboard = ({ session }) => {
     const handleShare = async () => {
         setIsSharing(true);
         try {
-            const file = await generateHighQualityPDF();
+            const file = await generateHighQualityPDF(calculatorPrintData);
             if (navigator.canShare?.({ files: [file] })) {
                 await navigator.share({
                     files: [file],
@@ -1179,9 +1169,24 @@ export const Dashboard = ({ session }) => {
                     </AnimatePresence>
                 </main>
 
+                {/* Chat Trigger (Floating above dock) */}
+                <div className="fixed bottom-[7.5rem] right-6 z-50 pointer-events-none">
+                    <motion.button
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        whileHover={{ scale: 1.1, y: -4 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowChatbot(true)}
+                        className="pointer-events-auto w-12 h-12 bg-[#0A0B10]/90 backdrop-blur-3xl border border-white/10 rounded-2xl flex items-center justify-center text-orange-500 shadow-[0_15px_30px_rgba(0,0,0,0.4)] group transition-all"
+                    >
+                        <div className="absolute inset-0 bg-orange-500/10 blur-xl rounded-full group-hover:bg-orange-500/20 transition-all" />
+                        <MessageSquareText size={22} className="relative group-hover:animate-bounce" />
+                    </motion.button>
+                </div>
+
                 {/* Bottom Navigation — Futuristic Floating Crystal Dock */}
-                <div className="fixed bottom-6 left-0 right-0 z-50 px-4 pointer-events-none">
-                    <div className="max-w-[420px] mx-auto pointer-events-auto">
+                <div className="fixed bottom-9 left-0 right-0 z-50 px-4 pointer-events-none">
+                    <div className="max-w-[440px] mx-auto pointer-events-auto">
                         <div className="bg-[#0A0B10]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] p-2.5 flex items-center justify-between relative overflow-hidden group/dock">
                             {/* Inner ambient top-glow border */}
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-orange-500/50 to-transparent group-hover/dock:w-[80%] transition-all duration-700" />
@@ -1544,7 +1549,7 @@ export const Dashboard = ({ session }) => {
 
             {/* Print Preview Overlay (when user clicks Preview) */}
             <AnimatePresence>
-                {isPrinting && !calculatorPrintData && (
+                {isPrinting && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -1555,7 +1560,10 @@ export const Dashboard = ({ session }) => {
                         <div className="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 px-6 py-3 flex items-center justify-between no-print">
                             <div className="flex items-center gap-3">
                                 <button
-                                    onClick={() => setIsPrinting(false)}
+                                    onClick={() => {
+                                        setIsPrinting(false);
+                                        setCalculatorPrintData(null);
+                                    }}
                                     className="p-2 -ml-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
                                 >
                                     <ChevronLeft size={20} />
@@ -1590,7 +1598,10 @@ export const Dashboard = ({ session }) => {
                                         <span className="hidden sm:inline">{isSharing ? 'Generating...' : 'Download'}</span>
                                     </button>
                                     <button
-                                        onClick={() => setIsPrinting(false)}
+                                        onClick={() => {
+                                            setIsPrinting(false);
+                                            setCalculatorPrintData(null);
+                                        }}
                                         className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all"
                                     >
                                         <X size={14} /> <span className="hidden sm:inline">Close</span>
@@ -1610,9 +1621,9 @@ export const Dashboard = ({ session }) => {
                                     stats={stats}
                                     transactions={filteredTransactions}
                                     filterLabel={filterLabel}
-                                    calculatorData={null}
+                                    calculatorData={calculatorPrintData}
                                     isPrinting={true}
-                                    variant="classic"
+                                    variant={printVariant || 'premium'}
                                 />
                             </div>
                         </div>
