@@ -746,8 +746,6 @@ export const Dashboard = ({ session }) => {
         return new File([pdfBlob], `${defaultName}.pdf`, { type: 'application/pdf' });
     };
 
-    };
-
     const handleCalcPrint = (toolName, inputData, result) => {
         // Build inputs display object
         const inputs = getFormattedInputs(toolName, inputData);
@@ -1711,6 +1709,6 @@ export const Dashboard = ({ session }) => {
                     );
                 })()}
             </AnimatePresence>
-        
+        </>
     );
 };
