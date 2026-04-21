@@ -1711,6 +1711,6 @@ export const Dashboard = ({ session }) => {
                     );
                 })()}
             </AnimatePresence>
-        </>
+        
     );
 };
