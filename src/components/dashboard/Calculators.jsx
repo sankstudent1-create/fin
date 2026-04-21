@@ -261,7 +261,12 @@ const TaxInfoCard = ({ toolId }) => {
 // --- MAIN COMPONENT ---
 
 export const CalculatorModal = ({ toolId, onClose, onPrint, onDownload, onShare, isSharing, showToast, t: propT }) => {
-    const [data, setData] = useState({ amount: '', duration: '', rate: '', expense_ratio: '1' });
+    const [data, setData] = useState({ 
+        amount: toolId === 'age' ? '' : '5000', 
+        duration: toolId === 'age' ? '' : '10', 
+        rate: '12', 
+        expense_ratio: '1' 
+    });
     const [result, setResult] = useState(null);
     const [showDetailed, setShowDetailed] = useState(false);
     const [showProjections, setShowProjections] = useState(false);
@@ -315,7 +320,17 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onDownload, onShare,
         showToast?.('Calculated successfully! 🎯');
     };
 
-    useEffect(() => { setResult(null); }, [toolId]);
+    useEffect(() => { 
+        setResult(null); 
+        if (toolId !== 'age') {
+            setData({ amount: '5000', duration: '10', rate: '12', expense_ratio: '1' });
+            // Small delay to ensure state updates before calculation if needed, 
+            // though direct call with defaults is better
+            setTimeout(handleCalculate, 50);
+        } else {
+            setData({ amount: '', duration: '', rate: '', expense_ratio: '1' });
+        }
+    }, [toolId]);
 
     if (!currentTool) return null;
 

@@ -138,29 +138,35 @@ export const AuthScreen = () => {
                 </div>
                 
                 <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-rose-500 rounded-[1rem] flex items-center justify-center shadow-[0_0_40px_rgba(249,115,22,0.4)] border border-orange-400/20">
-                        <Wallet className="text-white drop-shadow-md" size={24} />
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tight text-white">Orange <span className="font-light text-white/50">Finance</span></h1>
+                    <motion.div 
+                        animate={{ rotate: [0, 10, 0, -10, 0] }}
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                        className="w-14 h-14 bg-gradient-to-br from-orange-500 via-rose-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-[0_0_50px_rgba(249,115,22,0.5)] border border-white/20 relative overflow-hidden"
+                    >
+                        <div className="absolute inset-x-0 top-0 h-px bg-white/40"></div>
+                        <Wallet className="text-white drop-shadow-lg relative z-10" size={28} />
+                    </motion.div>
+                    <h1 className="text-3xl font-black tracking-tight text-white font-outfit">Orange <span className="font-light text-white/40">Finance</span></h1>
                 </div>
 
-                <div className="relative z-10 space-y-8 max-w-xl">
-                    <h2 className="text-5xl font-black leading-tight tracking-tight text-white drop-shadow-lg">
-                        Master your <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">wealth</span> with precision.
+                <div className="relative z-10 space-y-10 max-w-xl">
+                    <h2 className="text-6xl font-black leading-[1.1] tracking-tighter text-white drop-shadow-2xl font-outfit">
+                        The evolution of <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-rose-400">financial control.</span>
                     </h2>
-                    <p className="text-lg text-white/60 font-medium leading-relaxed">
-                        The ultimate intelligent financial dashboard. Track spending, optimize earnings, and visualize your future with enterprise-grade analytics.
+                    <p className="text-xl text-white/50 font-medium leading-relaxed font-outfit">
+                        Scale your net worth with enterprise-grade analytics, smart forecasting, and a premium workspace designed for modern investors.
                     </p>
 
-                    <div className="flex items-center gap-6 pt-4">
-                        <div className="flex -space-x-4">
-                            {[1,2,3,4].map(i => (
-                                <img key={i} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=user${i}`} className="w-12 h-12 rounded-full border-2 border-[#0B0D0F] bg-[#14161A]" alt="user" />
+                    <div className="flex items-center gap-8 pt-6">
+                        <div className="flex -space-x-5">
+                            {[1,2,3,4,5].map(i => (
+                                <img key={i} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=user${i*7}`} className="w-14 h-14 rounded-full border-4 border-[#0B0D0F] bg-[#14161A] shadow-xl" alt="user" />
                             ))}
                         </div>
-                        <div className="text-sm font-medium">
-                            <p className="text-white font-bold">Join 10,000+ users</p>
-                            <p className="text-white/50">scaling their net worth today.</p>
+                        <div className="text-sm font-bold font-outfit uppercase tracking-widest">
+                            <p className="text-orange-500">Global Trust</p>
+                            <p className="text-white/40">10k+ Portfolios</p>
                         </div>
                     </div>
                 </div>
@@ -416,23 +422,8 @@ export const AuthScreen = () => {
                 </motion.div>
 
                 {/* Footer outside the card */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2 }}
-                    className="absolute -bottom-16 left-0 right-0 text-center z-10 pointer-events-none"
-                >
-                    <div className="flex flex-col items-center justify-center gap-2">
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 flex items-center gap-2">
-                            <Lock size={10} /> Secured with Bank-Grade Encryption
-                        </p>
-                        <div className="flex gap-2 opacity-30 mt-1">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse delay-100"></div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse delay-200"></div>
-                        </div>
-                    </div>
                 </motion.div>
             </div>
         </div>
-    </div>
     );
 };

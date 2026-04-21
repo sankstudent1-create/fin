@@ -26,7 +26,7 @@ import { SupportModal } from '../components/modals/SupportModal';
 import { DigitalIDModal } from '../components/modals/DigitalIDModal';
 import { CategoryManager, fetchCategories, getCategoryIcon, getCategoryColor } from '../components/modals/CategoryManager';
 import { useOfflineSync } from '../hooks/useOfflineSync';
-import { createPDF, getPDFFile } from '../utils/pdfGenerator';
+import { createPDF, getPDFFile, getCalcPDFFile } from '../utils/pdfGenerator';
 import { generateCalculatorPDF } from '../utils/reportGenerator';
 import { playSound } from '../hooks/useSoundEngine';
 import { MONTH_NAMES, TOOLS, DEFAULT_CATEGORIES, ICON_MAP } from '../config/constants';
@@ -672,7 +672,8 @@ export const Dashboard = ({ session }) => {
     // High-quality PDF Generator (html2canvas)
     const generateHighQualityPDF = async (calcData = null) => {
         const container = document.createElement('div');
-        container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
+        // Use absolute instead of fixed to prevent html2canvas blank page issues with off-screen elements
+        container.style.cssText = 'position:absolute;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
         document.body.appendChild(container);
 
         const root = ReactDOM.createRoot(container);
@@ -751,14 +752,13 @@ export const Dashboard = ({ session }) => {
     const handleCalcDownload = async (toolName, inputData, result) => {
         setIsSharing(true);
         try {
-            const inputs = getFormattedInputs(toolName, inputData);
-            const calcData = { toolName, inputs, result };
-            const file = await generateHighQualityPDF(calcData);
+            // Use getCalcPDFFile for reliable jsPDF-based generation (fixes blank white screen issues with html2canvas)
+            const file = getCalcPDFFile(toolName, inputData, result, user);
             
             const url = URL.createObjectURL(file);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `OrangeFin_${toolName.replace(/\s+/g, '_')}_Report.pdf`;
+            a.download = file.name;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
