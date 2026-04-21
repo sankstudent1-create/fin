@@ -420,9 +420,6 @@ export const AuthScreen = () => {
                         </p>
                     </motion.div>
                 </motion.div>
-
-                {/* Footer outside the card */}
-                </motion.div>
             </div>
         </div>
     );
