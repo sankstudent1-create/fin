@@ -15,7 +15,7 @@ export const PrintStyles = () => (
         /* Fonts are preloaded in index.html (already cached) */
         @page { size: A4 portrait; margin: 0; }
 
-        #print-root *, #print-root-export * {
+        #print-root *, #print-root-export *, #print-root-temp * {
             font-family: 'Outfit', -apple-system, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;

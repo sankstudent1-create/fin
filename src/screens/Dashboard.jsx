@@ -671,44 +671,39 @@ export const Dashboard = ({ session }) => {
 
     // High-quality PDF Generator (html2canvas)
     const generateHighQualityPDF = async (calcData = null) => {
-        // Wait for fonts to settle
-        try { await document.fonts.ready; } catch(e) {}
+        // Ensure fonts are loaded before anything
+        try { await document.fonts.ready; } catch (e) { console.warn('fonts ready error', e); }
+        console.log('Generating PDF – calcData?', !!calcData);
 
-        const existingRoot = document.getElementById('print-root');
-        let captureTarget = existingRoot;
-        let cleanup = null;
-        let originalTransform = "";
+        // Always render into a fresh off‑screen container – guarantees a clean paint layer
+        const container = document.createElement('div');
+        container.style.cssText = 'position:fixed;left:50%;top:20px;transform:translateX(-50%);width:210mm;background:#ffffff;z-index:9999;opacity:1;visibility:visible;box-shadow:0 0 100px rgba(0,0,0,0.5);';
+        document.body.appendChild(container);
+        const root = ReactDOM.createRoot(container);
 
-        if (existingRoot) {
-            // If already in preview overlay, temporarily reset transform for perfect capture
-            const parent = existingRoot.parentElement;
-            if (parent) {
-                originalTransform = parent.style.transform;
-                parent.style.transform = 'scale(1)';
-            }
-        } else {
-            const container = document.createElement('div');
-            // Fixed position within viewport but off-screen-ish to ensure painting
-            container.style.cssText = 'position:fixed;left:50%;top:20px;transform:translateX(-50%);width:210mm;background:#ffffff;z-index:9999;opacity:1;visibility:visible;box-shadow:0 0 100px rgba(0,0,0,0.5);';
-            document.body.appendChild(container);
+        // Choose appropriate component based on whether we are printing a calculator or the analytics dashboard
+        const Content = calcData ? (
+            <PrintView user={user} calculatorData={calcData} isPrinting={true} />
+        ) : (
+            <PrintableReport user={user} stats={stats} transactions={filteredTransactions} filterLabel={filterLabel} />
+        );
 
-            const root = ReactDOM.createRoot(container);
-            await new Promise((resolve) => {
-                root.render(
-                    <div id="print-root-temp" style={{ background: '#fff', width: '210mm', minHeight: '297mm', padding: '1px' }}>
-                        <PrintStyles />
-                        {calcData ? (
-                            <PrintView user={user} calculatorData={calcData} isPrinting={true} />
-                        ) : (
-                            <PrintableReport user={user} stats={stats} transactions={filteredTransactions} filterLabel={filterLabel} />
-                        )}
-                    </div>
-                );
-                // Heavy 15s wait as requested to ensure FULL rendering
-                setTimeout(resolve, 15000);
-            });
-            captureTarget = container.querySelector('#print-root-temp');
-            cleanup = () => { root.unmount(); document.body.removeChild(container); };
+        await new Promise((resolve) => {
+            root.render(
+                <div id="print-root-temp" style={{ background: '#fff', width: '210mm', minHeight: '297mm', padding: '1px' }}>
+                    <PrintStyles />
+                    {Content}
+                </div>
+            );
+            // Shorter wait for calculator PDFs (5 s) – longer for full analytics (15 s)
+            const waitMs = calcData ? 5000 : 15000;
+            setTimeout(resolve, waitMs);
+        });
+
+        const captureTarget = container.querySelector('#print-root-temp');
+        if (!captureTarget) {
+            console.error('Capture target not found');
+            return null;
         }
 
         const canvas = await html2canvas(captureTarget, {
@@ -716,10 +711,10 @@ export const Dashboard = ({ session }) => {
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: true, // Enable logging to see what's happening
+            logging: true,
             width: 794,
             onclone: (clonedDoc) => {
-                const el = clonedDoc.getElementById('print-root-temp') || clonedDoc.getElementById('print-root');
+                const el = clonedDoc.getElementById('print-root-temp');
                 if (el) {
                     el.style.opacity = '1';
                     el.style.visibility = 'visible';
@@ -729,10 +724,9 @@ export const Dashboard = ({ session }) => {
             }
         });
 
-        // Restore original transform if we modified it
-        if (existingRoot && originalTransform) {
-            existingRoot.parentElement.style.transform = originalTransform;
-        }
+        // Clean up the temporary DOM node
+        root.unmount();
+        document.body.removeChild(container);
 
         const imgData = canvas.toDataURL('image/jpeg', 1.0);
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -740,21 +734,18 @@ export const Dashboard = ({ session }) => {
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         const pageHeight = 297;
         let yOffset = 0;
-
         while (yOffset < pdfHeight) {
             if (yOffset > 0) pdf.addPage();
             pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfWidth, pdfHeight);
             yOffset += pageHeight;
         }
-
-        if (cleanup) cleanup();
-
         const pdfBlob = pdf.output('blob');
-        const defaultName = calcData 
+        const defaultName = calcData
             ? `${calcData.toolName.replace(/\s+/g, '_')}_Analysis`
             : `OrangeFin_Report_${(filterLabel || 'All_Time').replace(/\s+/g, '_')}`;
-
         return new File([pdfBlob], `${defaultName}.pdf`, { type: 'application/pdf' });
+    };
+
     };
 
     const handleCalcPrint = (toolName, inputData, result) => {
