@@ -669,55 +669,56 @@ export const Dashboard = ({ session }) => {
 
     // --- PDF & SHARING (FIXED) ---
 
+    // High-quality PDF Generator (html2canvas)
     const generateHighQualityPDF = async (calcData = null) => {
-        // Try to capture existing preview root first (most reliable)
-        let element = document.getElementById('print-root');
-        let unmountAction = null;
+        // Create an isolated container for capture to avoid theme/layout interference
+        const container = document.createElement('div');
+        container.style.cssText = 'position:fixed;left:0;top:-9999px;width:210mm;background:#ffffff;z-index:-1000;opacity:1;visibility:visible;';
+        document.body.appendChild(container);
 
-        if (!element) {
-            const container = document.createElement('div');
-            container.style.cssText = 'position:fixed;left:0;top:-9999px;width:210mm;background:#ffffff;z-index:-100;opacity:1;';
-            document.body.appendChild(container);
+        const root = ReactDOM.createRoot(container);
+        await new Promise((resolve) => {
+            root.render(
+                <div id="print-root-export" style={{ background: '#fff', width: '210mm', opacity: 1, visibility: 'visible' }}>
+                    <PrintStyles />
+                    {calcData ? (
+                        <PrintView
+                            user={user}
+                            calculatorData={calcData}
+                            isPrinting={true}
+                        />
+                    ) : (
+                        <PrintableReport
+                            user={user}
+                            stats={stats}
+                            transactions={filteredTransactions}
+                            filterLabel={filterLabel}
+                        />
+                    )}
+                </div>
+            );
+            // Wait for data and fonts to settle
+            setTimeout(resolve, 3500);
+        });
 
-            const root = ReactDOM.createRoot(container);
-            await new Promise((resolve) => {
-                root.render(
-                    <div id="print-root-export">
-                        <PrintStyles />
-                        {calcData ? (
-                            <PrintView
-                                user={user}
-                                calculatorData={calcData}
-                                isPrinting={true}
-                            />
-                        ) : (
-                            <PrintableReport
-                                user={user}
-                                stats={stats}
-                                transactions={filteredTransactions}
-                                filterLabel={filterLabel}
-                            />
-                        )}
-                    </div>
-                );
-                setTimeout(resolve, 2000);
-            });
-            element = container.querySelector('#print-root-export') || container;
-            unmountAction = () => {
-                root.unmount();
-                document.body.removeChild(container);
-            };
-        }
-
-        const canvas = await html2canvas(element, {
+        const canvas = await html2canvas(container.querySelector('#print-root-export'), {
             scale: 2,
             useCORS: true,
+            allowTaint: true,
             backgroundColor: '#ffffff',
             logging: false,
             windowWidth: 794,
+            onclone: (clonedDoc) => {
+                const el = clonedDoc.getElementById('print-root-export');
+                if (el) {
+                    el.style.opacity = '1';
+                    el.style.visibility = 'visible';
+                    el.style.display = 'block';
+                }
+            }
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = 210;
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
@@ -730,7 +731,8 @@ export const Dashboard = ({ session }) => {
             yOffset += pageHeight;
         }
 
-        if (unmountAction) unmountAction();
+        root.unmount();
+        document.body.removeChild(container);
 
         const pdfBlob = pdf.output('blob');
         const defaultName = calcData 
@@ -1225,7 +1227,7 @@ export const Dashboard = ({ session }) => {
                             </div>
 
                             {/* Center Action (Pulse FAB) */}
-                            <div className="absolute left-1/2 -translate-x-1/2 -top-3.5">
+                            <div className="absolute left-1/2 -translate-x-1/2 -top-1">
                                 <div className="absolute inset-0 bg-orange-500/25 blur-2xl rounded-full animate-pulse" />
                                 <motion.button
                                     whileHover={{ y: -6, scale: 1.05 }}
