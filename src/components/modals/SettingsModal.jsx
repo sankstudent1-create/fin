@@ -204,16 +204,16 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
 
             if (reportTxs.length === 0) throw new Error('No transactions in selected period.');
 
-            // Step 1: Render the premium AnalyticsReport off-screen
+            // Step 1: Render the premium AnalyticsReport off-screen (Truly Silent)
             const container = document.createElement('div');
-            container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
+            container.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:210mm;background:#fff;z-index:-9999;opacity:0.001;pointer-events:none;';
             document.body.appendChild(container);
 
-            // Create React root and render the same PrintView used by print()
+            // Create React root and render
             const root = ReactDOM.createRoot(container);
             await new Promise((resolve) => {
                 root.render(
-                    <div id="print-root-email">
+                    <div id="print-root-email" style={{ width: '210mm', padding: '1px' }}>
                         <PrintStyles />
                         <PrintableReport
                             user={user}
@@ -223,33 +223,35 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                         />
                     </div>
                 );
-                // Wait for fonts + rendering to settle
-                setTimeout(resolve, 1500);
+                // Increased wait for 10s to ensure full complex analytics are rendered
+                setTimeout(resolve, 10000);
             });
 
-            // Step 2: Capture with html2canvas at 2x resolution
+            // Step 2: Capture with html2canvas at ULTRA resolution
             const element = container.querySelector('#print-root-email');
             const canvas = await html2canvas(element, {
-                scale: 2,
+                scale: 3, // High quality
                 useCORS: true,
+                allowTaint: true,
                 backgroundColor: '#ffffff',
                 logging: false,
-                windowWidth: 794, // A4 width in px at 96dpi
+                width: 794, 
+                windowWidth: 1200, // Prevention of mobile/iOS truncation
+                scrollX: 0,
+                scrollY: 0,
             });
 
             // Step 3: Convert to PDF (A4 dimensions)
-            const imgData = canvas.toDataURL('image/jpeg', 0.92);
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = 210;
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-            // If content is taller than one page, split across pages
-            const pageHeight = 297; // A4 height in mm
+            const pageHeight = 297; 
             let yOffset = 0;
 
             while (yOffset < pdfHeight) {
                 if (yOffset > 0) pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfWidth, pdfHeight);
+                pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfWidth, pdfHeight, undefined, 'FAST');
                 yOffset += pageHeight;
             }
 

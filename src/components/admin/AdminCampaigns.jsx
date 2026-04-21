@@ -216,27 +216,42 @@ export const AdminCampaigns = ({ users, showToast }) => {
         setSelectedUserIds(newSet);
     };
 
-    // Advanced Branded PDF Generator
+    // Advanced Branded PDF Generator - Ultra Stable (High Quality)
     const generateCEOLetterPDF = async (user, stats) => {
         const container = document.createElement('div');
-        container.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;z-index:-1;';
+        // Silent off-screen rendering
+        container.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:210mm;background:#fff;z-index:-9999;opacity:0.001;pointer-events:none;';
         document.body.appendChild(container);
 
         const root = ReactDOM.createRoot(container);
         await new Promise((resolve) => {
             root.render(
-                <AdminCEOLetter user={user} stats={stats} customMessage={customMessage} subject={subject} includeStats={includeStats} imageUrl={imageUrl} />
+                <div style={{ width: '210mm', padding: '1px', background: '#fff' }}>
+                    <AdminCEOLetter user={user} stats={stats} customMessage={customMessage} subject={subject} includeStats={includeStats} imageUrl={imageUrl} />
+                </div>
             );
-            setTimeout(resolve, 800); // Wait for render
+            // Wait for render (5s to be safe for images/fonts)
+            setTimeout(resolve, 5000);
         });
 
-        const canvas = await html2canvas(container.firstChild, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false, windowWidth: 794 });
+        const canvas = await html2canvas(container.firstChild, {
+            scale: 2.5, // High quality balance for bulk
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            width: 794,
+            windowWidth: 1200, // Prevention of mobile viewport truncation
+            scrollX: 0,
+            scrollY: 0
+        });
+        
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = 210;
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
 
         root.unmount();
         document.body.removeChild(container);

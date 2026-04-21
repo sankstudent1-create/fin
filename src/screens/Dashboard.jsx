@@ -669,25 +669,38 @@ export const Dashboard = ({ session }) => {
 
     // --- PDF & SHARING (FIXED) ---
 
-    // High-quality PDF Generator (html2canvas)
+    // High-quality PDF Generator (html2canvas) - Ultra Stable & Silent
     const generateHighQualityPDF = async (calcData = null) => {
-        // Ensure fonts are loaded before anything
-        try { await document.fonts.ready; } catch (e) { console.warn('fonts ready error', e); }
-        console.log('Generating PDF – calcData?', !!calcData);
+        // Ensure fonts are fully loaded
+        try { await document.fonts.ready; } catch (e) { console.warn('Fonts loading delay', e); }
+        console.log('🚀 Initiating Silent PDF Engine...', { type: calcData ? 'Calculator' : 'Full Analytics' });
 
-        // Always render into a fresh off‑screen container – guarantees a clean paint layer
+        // Step 1: Create a silent off-screen container
         const container = document.createElement('div');
-        container.style.cssText = 'position:fixed;left:50%;top:20px;transform:translateX(-50%);width:210mm;background:#ffffff;z-index:9999;opacity:1;visibility:visible;box-shadow:0 0 100px rgba(0,0,0,0.5);';
+        // Rendered far off-screen so user sees NOTHING. No flickers.
+        container.style.cssText = `
+            position: fixed;
+            left: -10000px;
+            top: -10000px;
+            width: 210mm;
+            min-height: 297mm;
+            background: #ffffff;
+            z-index: -9999;
+            opacity: 0.001;
+            pointer-events: none;
+            overflow: visible;
+        `;
         document.body.appendChild(container);
         const root = ReactDOM.createRoot(container);
 
-        // Choose appropriate component based on whether we are printing a calculator or the analytics dashboard
+        // Content selection
         const Content = calcData ? (
             <PrintView user={user} calculatorData={calcData} isPrinting={true} />
         ) : (
             <PrintableReport user={user} stats={stats} transactions={filteredTransactions} filterLabel={filterLabel} />
         );
 
+        // Step 2: Render and wait for settlement
         await new Promise((resolve) => {
             root.render(
                 <div id="print-root-temp" style={{ background: '#fff', width: '210mm', minHeight: '297mm', padding: '1px' }}>
@@ -695,54 +708,71 @@ export const Dashboard = ({ session }) => {
                     {Content}
                 </div>
             );
-            // Shorter wait for calculator PDFs (5 s) – longer for full analytics (15 s)
-            const waitMs = calcData ? 5000 : 15000;
+            
+            // INCREASED TIMERS: 10s for calculators, 30s for full heavy analytics
+            // This ensures all charts, gradients, and font weights are finalized.
+            const waitMs = calcData ? 10000 : 30000;
             setTimeout(resolve, waitMs);
         });
 
         const captureTarget = container.querySelector('#print-root-temp');
         if (!captureTarget) {
-            console.error('Capture target not found');
+            console.error('❌ PDF Engine: Capture target lost.');
+            document.body.removeChild(container);
             return null;
         }
 
+        // Step 3: Capture at ULTRA resolution
+        // windowWidth: 1200 helps prevent layout compression/iOS "half-side" issues
         const canvas = await html2canvas(captureTarget, {
-            scale: 2,
+            scale: 3, // Increased to 3x for ultra-sharp prints without hitting browser mem limits
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: true,
-            width: 794,
-            onclone: (clonedDoc) => {
-                const el = clonedDoc.getElementById('print-root-temp');
+            logging: false,
+            width: 794, // Fixed A4 width (px)
+            windowWidth: 1200, // Forces a wider viewport during capture to avoid mobile truncation
+            scrollX: 0,
+            scrollY: 0,
+            onclone: (doc) => {
+                const el = doc.getElementById('print-root-temp');
                 if (el) {
                     el.style.opacity = '1';
                     el.style.visibility = 'visible';
                     el.style.display = 'block';
+                    el.style.position = 'relative';
+                    el.style.left = '0';
+                    el.style.top = '0';
                     el.style.transform = 'none';
                 }
             }
         });
 
-        // Clean up the temporary DOM node
-        root.unmount();
-        document.body.removeChild(container);
-
+        // Step 4: Multi-page assembly
         const imgData = canvas.toDataURL('image/jpeg', 1.0);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = 210;
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         const pageHeight = 297;
         let yOffset = 0;
+
+        // Ensure all content is captured iteratively
         while (yOffset < pdfHeight) {
             if (yOffset > 0) pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfWidth, pdfHeight);
+            pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfWidth, pdfHeight, undefined, 'FAST');
             yOffset += pageHeight;
         }
+
+        // Step 5: Finalization & Cleanup
+        root.unmount();
+        document.body.removeChild(container);
+
         const pdfBlob = pdf.output('blob');
         const defaultName = calcData
             ? `${calcData.toolName.replace(/\s+/g, '_')}_Analysis`
             : `OrangeFin_Report_${(filterLabel || 'All_Time').replace(/\s+/g, '_')}`;
+        
+        console.log('✅ PDF Generation Complete.');
         return new File([pdfBlob], `${defaultName}.pdf`, { type: 'application/pdf' });
     };
 
