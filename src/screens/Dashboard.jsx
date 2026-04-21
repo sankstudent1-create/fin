@@ -69,6 +69,23 @@ export const Dashboard = ({ session }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterPeriod, setFilterPeriod] = useState('30d');
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+    
+    // Preferences Reactive State
+    const [currentPrefs, setCurrentPrefs] = useState(getUserPrefs());
+
+    useEffect(() => {
+        const root = document.documentElement;
+        // Theme
+        if (currentPrefs.theme === 'light') {
+            root.classList.add('light-mode');
+            root.classList.remove('dark-mode');
+        } else {
+            root.classList.add('dark-mode');
+            root.classList.remove('light-mode');
+        }
+        // Density
+        root.setAttribute('data-density', currentPrefs.ui_density || 'normal');
+    }, [currentPrefs]);
 
     // Modal states
     const [showSettings, setShowSettings] = useState(false);
@@ -1261,10 +1278,10 @@ export const Dashboard = ({ session }) => {
                             </div>
 
                             {/* Center Action (Pulse FAB) */}
-                            <div className="absolute left-1/2 -translate-x-1/2 -top-1">
-                                <div className="absolute inset-0 bg-orange-500/25 blur-2xl rounded-full animate-pulse" />
+                            <div className="absolute left-1/2 -translate-x-1/2 -top-5 sm:-top-6 z-20">
+                                <div className="absolute inset-0 bg-orange-500/30 blur-3xl rounded-full animate-pulse" />
                                 <motion.button
-                                    whileHover={{ y: -6, scale: 1.05 }}
+                                    whileHover={{ y: -8, scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => { 
                                         setEditTransaction(null); 
@@ -1277,10 +1294,10 @@ export const Dashboard = ({ session }) => {
                                         }); 
                                         setShowTransaction(true); 
                                     }}
-                                    className="relative w-15 h-15 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-[2rem] flex items-center justify-center text-white shadow-[0_15px_35px_rgba(249,115,22,0.5)] ring-[6px] ring-[#0A0B10]/80 group"
+                                    className="relative w-16 h-16 sm:w-18 sm:h-18 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-[2.25rem] flex items-center justify-center text-white shadow-[0_20px_40px_rgba(249,115,22,0.4)] ring-[8px] ring-[#0A0B10]/95 group"
                                 >
-                                    <div className="absolute inset-0 rounded-[2rem] ring-1 ring-inset ring-white/30 pointer-events-none" />
-                                    <Plus size={30} strokeWidth={3.5} className="drop-shadow-lg group-active:rotate-90 transition-transform duration-300" />
+                                    <div className="absolute inset-0 rounded-[2.25rem] ring-1 ring-inset ring-white/30 pointer-events-none" />
+                                    <Plus size={32} strokeWidth={3.5} className="drop-shadow-lg group-active:rotate-90 transition-transform duration-300" />
                                 </motion.button>
                             </div>
 
@@ -1532,6 +1549,7 @@ export const Dashboard = ({ session }) => {
                     allTransactions={transactions}
                     stats={stats}
                     filterLabel={filterLabel}
+                    onPrefsChange={(p) => setCurrentPrefs(p)}
                 />
 
                 {/* Scanner Modal */}

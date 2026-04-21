@@ -63,7 +63,7 @@ const SectionLabel = ({ children }) => (
 );
 
 // ─── MAIN MODAL ──────────────────────────────────────────────────────────────
-export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload, onOpenDigitalID, transactions = [], allTransactions = [], stats = {}, filterLabel = '' }) => {
+export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload, onOpenDigitalID, transactions = [], allTransactions = [], stats = {}, filterLabel = '', onPrefsChange }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const [prefs, setPrefs] = useState(loadPrefs());
     const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || '');
@@ -82,7 +82,11 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
     // Keep localAvatar in sync when avatarUrl prop changes
     useEffect(() => { setLocalAvatar(avatarUrl || ''); }, [avatarUrl]);
 
-    useEffect(() => { savePrefs(prefs); }, [prefs]);
+    useEffect(() => { 
+        savePrefs(prefs); 
+        if (onPrefsChange) onPrefsChange(prefs);
+    }, [prefs]);
+
     const updatePref = (key, value) => setPrefs(prev => ({ ...prev, [key]: value }));
 
     // ── Avatar helpers ───────────────────────────────────────────────────────
@@ -133,13 +137,26 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
     const handleDeleteAvatar = async () => {
         setDeletingAvatar(true);
         try {
-            const ext = 'jpg';
-            const path = `${user.id}/avatar.${ext}`;
+            // Standardizing path to 'avatar' name
+            // We'll try to remove common extensions if extension mapping isn't fully tracked
+            // or better, extract from current localAvatar url
+            let fileName = 'avatar.jpg';
+            if (localAvatar && localAvatar.includes('/avatars/')) {
+                const parts = localAvatar.split('/');
+                const last = parts[parts.length - 1].split('?')[0];
+                if (last) fileName = last;
+            }
+            
+            const path = `${user.id}/${fileName}`;
             await supabase.storage.from('avatars').remove([path]);
-            await supabase.auth.updateUser({ data: { avatar_url: '' } });
-            setLocalAvatar('');
+            const { error } = await supabase.auth.updateUser({ data: { avatar_url: '' } });
+            if (!error) {
+                setLocalAvatar('');
+                showAvatarMsg('✅ Photo removed');
+            }
         } catch (err) {
             console.error('Avatar delete error:', err);
+            showAvatarMsg('❌ Error removing photo');
         }
         setDeletingAvatar(false);
     };
@@ -155,11 +172,23 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
 
     // ── Export ───────────────────────────────────────────────────────────────
     const handleExportData = () => {
-        const tx = localStorage.getItem(`cached_tx_${user?.id}`);
-        const url = 'data:text/json;charset=utf-8,' + encodeURIComponent(tx || '[]');
+        const data = {
+            profile: {
+                name: displayName,
+                email: user?.email,
+                avatar: localAvatar
+            },
+            preferences: prefs,
+            transactions: allTransactions,
+            exported_at: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `fin_data_${Date.now()}.json`;
+        a.href = url; 
+        a.download = `orange_fin_data_${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
     };
 
     // ── Email Report ─────────────────────────────────────────────────────────
@@ -296,6 +325,26 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
         }
     };
     const handleSignOut = async () => { await supabase.auth.signOut(); window.location.reload(); };
+    const handleDeleteAccount = async () => {
+        if (!window.confirm("⚠️ DANGER: Are you absolutely sure? This will delete all your transactions and sign you out permanently. This cannot be undone.")) return;
+        
+        try {
+            // 1. Delete all transactions
+            const { error: txError } = await supabase
+                .from('transactions')
+                .delete()
+                .eq('user_id', user.id);
+            
+            if (txError) throw txError;
+
+            // 2. Sign out
+            await supabase.auth.signOut();
+            window.location.reload();
+        } catch (err) {
+            console.error('Delete account error:', err);
+            alert("Error deleting data. Please contact support.");
+        }
+    };
 
     // ── Security: Reset Password, Change Email, Update Password ─────────
     const [resetSent, setResetSent] = useState(false);
@@ -746,7 +795,7 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                 </button>
                             ))}
                         </div>
-                        <p className="text-[10px] text-slate-400 ml-1 mt-1">Dark mode coming soon 🌙</p>
+                        <p className="text-[10px] text-slate-400 ml-1 mt-1">Updates colors and interface styling 🎨</p>
                     </div>
 
                     {/* UI Density / Size */}
@@ -1055,11 +1104,14 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                             <AlertTriangle size={16} />
                             <p className="text-xs font-bold uppercase tracking-wider">Danger Zone</p>
                         </div>
-                        <button className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-white border border-rose-200 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all group">
-                            <div className="p-2 bg-rose-100 text-rose-500 rounded-lg group-hover:bg-red-400 group-hover:text-white transition-colors"><Trash2 size={16} /></div>
+                        <button 
+                            onClick={handleDeleteAccount}
+                            className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-white border border-rose-200 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all group"
+                        >
+                            <div className="p-2 bg-rose-100 text-rose-500 rounded-lg group-hover:bg-rose-400 group-hover:text-white transition-colors"><Trash2 size={16} /></div>
                             <span className="font-semibold text-rose-800 group-hover:text-white text-sm">Delete Account & All Data</span>
                         </button>
-                        <p className="text-[9px] text-rose-400 ml-1">This action is permanent and cannot be undone.</p>
+                        <p className="text-[9px] text-rose-400 ml-1">This action is permanent and clears all transaction history.</p>
                     </div>
                 </div>
             );

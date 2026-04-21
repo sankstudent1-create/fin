@@ -427,6 +427,7 @@ export const AdminDashboard = ({ session, onLogout }) => {
                                                 }}
                                                 className="px-5 py-2.5 bg-yellow-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-yellow-700 transition-all"
                                             >
+                                                Send Reset
                                             </button>
                                         </div>
 
