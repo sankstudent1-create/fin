@@ -672,8 +672,8 @@ export const Dashboard = ({ session }) => {
     // High-quality PDF Generator (html2canvas)
     const generateHighQualityPDF = async (calcData = null) => {
         const container = document.createElement('div');
-        // Use absolute instead of fixed to prevent html2canvas blank page issues with off-screen elements
-        container.style.cssText = 'position:absolute;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
+        // Use fixed and explicit alpha to ensure capture visibility
+        container.style.cssText = 'position:fixed;left:0;top:-9999px;width:210mm;background:#ffffff;z-index:-100;opacity:1;';
         document.body.appendChild(container);
 
         const root = ReactDOM.createRoot(container);
@@ -697,7 +697,8 @@ export const Dashboard = ({ session }) => {
                     )}
                 </div>
             );
-            setTimeout(resolve, 1500);
+            // Increased timeout to 2.5s for complex calculator tables
+            setTimeout(resolve, 2500);
         });
 
         const element = container.querySelector('#print-root-export');
@@ -1218,7 +1219,7 @@ export const Dashboard = ({ session }) => {
                             </div>
 
                             {/* Center Action (Pulse FAB) */}
-                            <div className="absolute left-1/2 -translate-x-1/2 -top-5">
+                            <div className="absolute left-1/2 -translate-x-1/2 -top-3.5">
                                 <div className="absolute inset-0 bg-orange-500/25 blur-2xl rounded-full animate-pulse" />
                                 <motion.button
                                     whileHover={{ y: -6, scale: 1.05 }}

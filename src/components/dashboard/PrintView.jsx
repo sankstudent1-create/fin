@@ -15,14 +15,15 @@ export const PrintStyles = () => (
         /* Fonts are preloaded in index.html (already cached) */
         @page { size: A4 portrait; margin: 0; }
 
-        #print-root * {
+        #print-root *, #print-root-export * {
             font-family: 'Outfit', -apple-system, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             box-sizing: border-box;
         }
         #print-root h1, #print-root h2, #print-root h3,
-        #print-root .mont { font-family: 'Outfit', sans-serif !important; }
+        #print-root-export h1, #print-root-export h2, #print-root-export h3,
+        .mont { font-family: 'Outfit', sans-serif !important; }
 
         .print-page {
             width: 210mm;
