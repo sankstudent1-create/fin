@@ -10,6 +10,9 @@
 
     --shadow-neon: 0 0 40px rgba(249, 115, 22, 0.15);
     --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+
+    --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    --font-outfit: 'Outfit', sans-serif;
 }
 
 @layer base {

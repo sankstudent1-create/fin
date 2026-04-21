@@ -29,6 +29,32 @@
   <!-- iOS Splash Screens (orange theme) -->
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Sitemap -->
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+
+  <!-- Structured Data: FinancialService -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FinancialService",
+      "name": "Orange Finance",
+      "alternateName": "Orange Finance by Swinfosystems",
+      "url": "https://fin.swinfosystems.online/",
+      "logo": "https://img.icons8.com/color/512/wallet.png",
+      "description": "Smart personal finance tracker and investment calculator.",
+      "applicationCategory": "FinanceApplication",
+      "author": {
+        "@type": "Organization",
+        "name": "Swinfosystems"
+      }
+    }
+  </script>
+
   <!-- Favicon -->
   <link rel="icon" href="/favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="https://img.icons8.com/color/32/wallet.png" />
@@ -42,15 +68,31 @@
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Orange Finance by Swinfosystems" />
   <meta name="twitter:description" content="Smart personal finance tracker with AI advisor." />
-
-  <!-- Google Fonts: Plus Jakarta Sans + Space Grotesk + Montserrat (for PDF) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- Semantic Fallback for SEO (Pre-hydration) -->
+    <!-- Visually hidden but accessible to crawlers and screen readers -->
+    <header style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;">
+      <h1>Welcome to Orange Finance</h1>
+      <p>Your trusted partner for financial solutions by Swinfosystems.</p>
+      <nav>
+        <ul>
+          <li>Dashboard</li>
+          <li>Expense Reports</li>
+          <li>Savings Analytics</li>
+          <li>SIP Calculator</li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- Premium Self-Contained Loading State -->
+    <main style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background-color: #fff7ed; font-family: 'Outfit', sans-serif; color:#f97316;">
+      <h2 style="font-size: 2rem; font-weight: 800;">Orange Finance</h2>
+      <p>Loading your financial insights...</p>
+    </main>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

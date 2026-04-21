@@ -670,7 +670,7 @@ export const Dashboard = ({ session }) => {
     // --- PDF & SHARING (FIXED) ---
 
     // High-quality PDF Generator (html2canvas)
-    const generateHighQualityPDF = async () => {
+    const generateHighQualityPDF = async (calcData = null) => {
         const container = document.createElement('div');
         container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
         document.body.appendChild(container);
@@ -680,12 +680,20 @@ export const Dashboard = ({ session }) => {
             root.render(
                 <div id="print-root-export">
                     <PrintStyles />
-                    <PrintableReport
-                        user={user}
-                        stats={stats}
-                        transactions={filteredTransactions}
-                        filterLabel={filterLabel}
-                    />
+                    {calcData ? (
+                        <PrintView
+                            user={user}
+                            calculatorData={calcData}
+                            isPrinting={true}
+                        />
+                    ) : (
+                        <PrintableReport
+                            user={user}
+                            stats={stats}
+                            transactions={filteredTransactions}
+                            filterLabel={filterLabel}
+                        />
+                    )}
                 </div>
             );
             setTimeout(resolve, 1500);
@@ -722,28 +730,59 @@ export const Dashboard = ({ session }) => {
 
     // Calculator PDF → uses window.print() via PrintView (same premium design as analytics)
     const handleCalcPrint = (toolName, inputData, result) => {
-        // Build inputs display object (filter out empty/zero values)
+        // Build inputs display object
+        const inputs = getFormattedInputs(toolName, inputData);
+
+        setCalculatorPrintData({ toolName, inputs, result });
+        setPrintVariant('classic');
+        setIsPrinting(true);
+        setShowCalculator(null);
+        
+        // Wait for state to settle then print
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                setIsPrinting(false);
+                setCalculatorPrintData(null);
+            }, 500);
+        }, 1000);
+    };
+
+    const handleCalcDownload = async (toolName, inputData, result) => {
+        setIsSharing(true);
+        try {
+            const inputs = getFormattedInputs(toolName, inputData);
+            const calcData = { toolName, inputs, result };
+            const file = await generateHighQualityPDF(calcData);
+            
+            const url = URL.createObjectURL(file);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `OrangeFin_${toolName.replace(/\s+/g, '_')}_Report.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('PDF Downloaded! 📥');
+        } catch (err) {
+            console.error('Download error:', err);
+            showToast('Download failed', 'error');
+        }
+        setIsSharing(false);
+    };
+
+    const getFormattedInputs = (toolName, inputData) => {
         const inputLabels = {
             amount: toolName.includes('SIP') ? 'Monthly Investment (₹)' : 'Investment Amount (₹)',
             duration: 'Time Period (Years)',
             rate: 'Expected Return Rate (%)',
             expense_ratio: 'Expense Ratio (%)',
         };
-        const inputs = Object.fromEntries(
+        return Object.fromEntries(
             Object.entries(inputLabels)
                 .filter(([k]) => inputData[k] && parseFloat(inputData[k]) > 0)
                 .map(([k, label]) => [label, inputData[k]])
         );
-
-        setCalculatorPrintData({ toolName, inputs, result });
-        setPrintVariant('classic');   // uses the CalculatorReport component inside PrintView
-        setIsPrinting(true);
-        setShowCalculator(null);      // close modal so it doesn't bleed into print
-        setTimeout(() => {
-            window.print();
-            setIsPrinting(false);
-            setCalculatorPrintData(null);
-        }, 600);
     };
 
     // Download analytics report as high-quality PDF
@@ -1408,8 +1447,10 @@ export const Dashboard = ({ session }) => {
                         toolId={showCalculator}
                         onClose={() => setShowCalculator(null)}
                         onPrint={handleCalcPrint}
+                        onDownload={handleCalcDownload}
                         onShare={handleCalcShare}
                         isSharing={isSharing}
+                        showToast={showToast}
                     />
                 )}
 

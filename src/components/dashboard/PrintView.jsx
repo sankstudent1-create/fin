@@ -16,13 +16,13 @@ export const PrintStyles = () => (
         @page { size: A4 portrait; margin: 0; }
 
         #print-root * {
-            font-family: 'Poppins', -apple-system, sans-serif !important;
+            font-family: 'Outfit', -apple-system, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             box-sizing: border-box;
         }
         #print-root h1, #print-root h2, #print-root h3,
-        #print-root .mont { font-family: 'Montserrat', sans-serif !important; }
+        #print-root .mont { font-family: 'Outfit', sans-serif !important; }
 
         .print-page {
             width: 210mm;
@@ -109,7 +109,7 @@ const PageFooter = () => (
 /* ================================================================== */
 /*  CALCULATOR REPORT  (2 pages)                                        */
 /* ================================================================== */
-const CalculatorReport = ({ data, user }) => {
+export const CalculatorReport = ({ data, user }) => {
     if (!data) return null;
     const { toolName, inputs, result } = data;
 
@@ -769,7 +769,7 @@ export const AnalyticsReport = ({ user, stats, transactions, filterLabel }) => (
 /*  ROOT EXPORT                                                         */
 /* ================================================================== */
 export const PrintView = ({ user, stats, transactions, filterLabel, calculatorData, isPrinting }) => (
-    <div id="print-root" className={isPrinting ? 'print-active' : 'print-only'}>
+    <div id="print-root" className={isPrinting ? 'print-active' : 'print-only'} style={{ fontFamily: "'Outfit', sans-serif" }}>
         {calculatorData
             ? <CalculatorReport data={calculatorData} user={user} />
             : <AnalyticsReport user={user} stats={stats} transactions={transactions} filterLabel={filterLabel} />

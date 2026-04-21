@@ -260,7 +260,7 @@ const TaxInfoCard = ({ toolId }) => {
 
 // --- MAIN COMPONENT ---
 
-export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, t: propT }) => {
+export const CalculatorModal = ({ toolId, onClose, onPrint, onDownload, onShare, isSharing, showToast, t: propT }) => {
     const [data, setData] = useState({ amount: '', duration: '', rate: '', expense_ratio: '1' });
     const [result, setResult] = useState(null);
     const [showDetailed, setShowDetailed] = useState(false);
@@ -285,7 +285,10 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
         const r = parseFloat(data.rate);
         const er = parseFloat(data.expense_ratio) || 0;
 
-        if (!p || !n) return;
+        if (!p || (!n && toolId !== 'interest')) {
+            showToast?.('Please enter valid amount and duration', 'error');
+            return;
+        }
 
         let res = { invested: 0, total: 0, returns: 0, tax: 0, netTotal: 0, projections: [] };
 
@@ -309,6 +312,7 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
                 break;
         }
         setResult({ ...res, detailed: showDetailed });
+        showToast?.('Calculated successfully! 🎯');
     };
 
     useEffect(() => { setResult(null); }, [toolId]);
@@ -337,7 +341,12 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
 
                 {/* AGE CALCULATOR — special inline UI */}
                 {toolId === 'age' ? (
-                    <AgeCalculator />
+                    <AgeCalculator 
+                        onPrint={onPrint} 
+                        translate={translate} 
+                        onShare={onShare} 
+                        isSharing={isSharing}
+                    />
                 ) : (
                     <>
                         <div className="p-8 space-y-6">
@@ -593,13 +602,24 @@ export const CalculatorModal = ({ toolId, onClose, onPrint, onShare, isSharing, 
                                     )}
 
                                     {/* Action Buttons */}
-                                    <div className="flex gap-3 pt-1">
+                                    <div className="flex gap-3 pt-1 px-5 pb-4 sm:px-6">
+                                        {onDownload && (
+                                            <button
+                                                onClick={() => onDownload(translate(`tool_${toolId}`), data, result)}
+                                                disabled={isSharing}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white py-4 rounded-2xl text-xs font-black shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                            >
+                                                {isSharing ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                                {isSharing ? translate('generating') : translate('pdf_report')}
+                                            </button>
+                                        )}
                                         {onPrint && (
                                             <button
                                                 onClick={() => onPrint(translate(`tool_${toolId}`), data, result)}
-                                                className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3.5 rounded-2xl text-xs font-bold transition-all"
+                                                className="w-14 items-center justify-center bg-white border border-slate-100 hidden sm:flex rounded-2xl text-slate-400 hover:text-slate-600 transition-all font-bold"
+                                                title="Print"
                                             >
-                                                <Download size={15} /> PDF Report
+                                                <Info size={18} />
                                             </button>
                                         )}
                                         {onShare && (
@@ -651,7 +671,7 @@ const getZodiac = (month, day) => {
     return ZODIAC[0];
 };
 
-const AgeCalculator = () => {
+const AgeCalculator = ({ onPrint, onShare, isSharing, translate }) => {
     const [dob, setDob] = useState('');
     const [ageData, setAgeData] = useState(null);
     const [now, setNow] = useState(new Date());
@@ -755,12 +775,29 @@ const AgeCalculator = () => {
                         <span className="text-xs font-semibold text-slate-400">Seconds alive ⏱️</span>
                         <span className="text-sm font-black text-slate-800 tabular-nums font-mono">{ageData.totalSeconds.toLocaleString('en-IN')}</span>
                     </div>
+
+                    {/* Age Actions */}
+                    <div className="flex gap-2.5 pt-2 mb-4">
+                        <button
+                            onClick={() => onPrint?.('Age Report', { 'Date of Birth': dob }, ageData)}
+                            className="flex-1 bg-slate-900 text-white py-4 rounded-2xl text-xs font-black shadow-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Download size={16} /> Print Report
+                        </button>
+                        <button
+                            onClick={() => onShare?.('Age Report', { 'Date of Birth': dob }, ageData)}
+                            disabled={isSharing}
+                            className="w-14 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all"
+                        >
+                            {isSharing ? <Loader2 size={18} className="animate-spin text-orange-500" /> : <Share2 size={18} />}
+                        </button>
+                    </div>
                 </>
             ) : (
                 <div className="text-center py-10">
                     <div className="text-5xl mb-3">🎂</div>
-                    <p className="text-sm font-semibold text-slate-400">Enter your date of birth above</p>
-                    <p className="text-xs text-slate-300 mt-1">See your exact age, zodiac, next birthday & more</p>
+                    <p className="text-sm font-semibold text-slate-400 font-outfit">Enter your date of birth above</p>
+                    <p className="text-xs text-slate-300 mt-1 font-outfit">See your exact age, zodiac, next birthday & more</p>
                 </div>
             )}
         </div>
