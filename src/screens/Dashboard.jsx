@@ -1184,7 +1184,7 @@ export const Dashboard = ({ session }) => {
                         whileHover={{ scale: 1.1, y: -4 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setShowChatbot(true)}
-                        className="pointer-events-auto w-12 h-12 bg-[#0A0B10]/90 backdrop-blur-3xl border border-white/10 rounded-3xl flex items-center justify-center text-orange-500 shadow-[0_15px_30px_rgba(0,0,0,0.4)] group transition-all"
+                        className="pointer-events-auto w-12 h-12 bg-[#0A0B10]/90 backdrop-blur-3xl border border-white/10 rounded-[2rem] flex items-center justify-center text-orange-500 shadow-[0_15px_30px_rgba(0,0,0,0.4)] group transition-all"
                     >
                         <div className="absolute inset-0 bg-orange-500/10 blur-xl rounded-full group-hover:bg-orange-500/20 transition-all" />
                         <MessageSquareText size={22} className="relative group-hover:animate-bounce" />
@@ -1207,12 +1207,12 @@ export const Dashboard = ({ session }) => {
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`relative group px-4 py-3 rounded-2xl transition-all duration-300 ${activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                        className={`relative group px-4 py-3 rounded-[1.25rem] transition-all duration-300 ${activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
                                     >
                                         {activeTab === tab.id && (
                                             <motion.div
                                                 layoutId="navPill"
-                                                className="absolute inset-0 bg-white/5 border border-white/10 rounded-2xl shadow-inner"
+                                                className="absolute inset-0 bg-white/5 border border-white/10 rounded-[1.25rem] shadow-inner"
                                                 transition={{ type: 'spring', bounce: 0.1, duration: 0.6 }}
                                             />
                                         )}
@@ -1241,9 +1241,9 @@ export const Dashboard = ({ session }) => {
                                         }); 
                                         setShowTransaction(true); 
                                     }}
-                                    className="relative w-15 h-15 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-3xl flex items-center justify-center text-white shadow-[0_15px_35px_rgba(249,115,22,0.5)] ring-[6px] ring-[#0A0B10]/80 group"
+                                    className="relative w-15 h-15 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-[2rem] flex items-center justify-center text-white shadow-[0_15px_35px_rgba(249,115,22,0.5)] ring-[6px] ring-[#0A0B10]/80 group"
                                 >
-                                    <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/30 pointer-events-none" />
+                                    <div className="absolute inset-0 rounded-[2rem] ring-1 ring-inset ring-white/30 pointer-events-none" />
                                     <Plus size={30} strokeWidth={3.5} className="drop-shadow-lg group-active:rotate-90 transition-transform duration-300" />
                                 </motion.button>
                             </div>
