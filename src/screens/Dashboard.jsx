@@ -670,38 +670,45 @@ export const Dashboard = ({ session }) => {
     // --- PDF & SHARING (FIXED) ---
 
     // High-quality PDF Generator (html2canvas)
-    const generateHighQualityPDF = async (calcData = null) => {
-        const container = document.createElement('div');
-        // Use fixed and explicit alpha to ensure capture visibility
-        container.style.cssText = 'position:fixed;left:0;top:-9999px;width:210mm;background:#ffffff;z-index:-100;opacity:1;';
-        document.body.appendChild(container);
+        // Try to capture existing preview root first (most reliable)
+        let element = document.getElementById('print-root');
+        let unmountAction = null;
 
-        const root = ReactDOM.createRoot(container);
-        await new Promise((resolve) => {
-            root.render(
-                <div id="print-root-export">
-                    <PrintStyles />
-                    {calcData ? (
-                        <PrintView
-                            user={user}
-                            calculatorData={calcData}
-                            isPrinting={true}
-                        />
-                    ) : (
-                        <PrintableReport
-                            user={user}
-                            stats={stats}
-                            transactions={filteredTransactions}
-                            filterLabel={filterLabel}
-                        />
-                    )}
-                </div>
-            );
-            // Increased timeout to 2.5s for complex calculator tables
-            setTimeout(resolve, 2500);
-        });
+        if (!element) {
+            const container = document.createElement('div');
+            container.style.cssText = 'position:fixed;left:0;top:-9999px;width:210mm;background:#ffffff;z-index:-100;opacity:1;';
+            document.body.appendChild(container);
 
-        const element = container.querySelector('#print-root-export');
+            const root = ReactDOM.createRoot(container);
+            await new Promise((resolve) => {
+                root.render(
+                    <div id="print-root-export">
+                        <PrintStyles />
+                        {calcData ? (
+                            <PrintView
+                                user={user}
+                                calculatorData={calcData}
+                                isPrinting={true}
+                            />
+                        ) : (
+                            <PrintableReport
+                                user={user}
+                                stats={stats}
+                                transactions={filteredTransactions}
+                                filterLabel={filterLabel}
+                            />
+                        )}
+                    </div>
+                );
+                setTimeout(resolve, 2000);
+            });
+            element = container.querySelector('#print-root-export') || container;
+            unmountAction = () => {
+                root.unmount();
+                document.body.removeChild(container);
+            };
+        }
+
         const canvas = await html2canvas(element, {
             scale: 2,
             useCORS: true,
@@ -723,8 +730,7 @@ export const Dashboard = ({ session }) => {
             yOffset += pageHeight;
         }
 
-        root.unmount();
-        document.body.removeChild(container);
+        if (unmountAction) unmountAction();
 
         const pdfBlob = pdf.output('blob');
         const defaultName = calcData 
@@ -1178,7 +1184,7 @@ export const Dashboard = ({ session }) => {
                         whileHover={{ scale: 1.1, y: -4 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setShowChatbot(true)}
-                        className="pointer-events-auto w-12 h-12 bg-[#0A0B10]/90 backdrop-blur-3xl border border-white/10 rounded-2xl flex items-center justify-center text-orange-500 shadow-[0_15px_30px_rgba(0,0,0,0.4)] group transition-all"
+                        className="pointer-events-auto w-12 h-12 bg-[#0A0B10]/90 backdrop-blur-3xl border border-white/10 rounded-3xl flex items-center justify-center text-orange-500 shadow-[0_15px_30px_rgba(0,0,0,0.4)] group transition-all"
                     >
                         <div className="absolute inset-0 bg-orange-500/10 blur-xl rounded-full group-hover:bg-orange-500/20 transition-all" />
                         <MessageSquareText size={22} className="relative group-hover:animate-bounce" />
@@ -1235,9 +1241,9 @@ export const Dashboard = ({ session }) => {
                                         }); 
                                         setShowTransaction(true); 
                                     }}
-                                    className="relative w-15 h-15 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-2xl flex items-center justify-center text-white shadow-[0_15px_35px_rgba(249,115,22,0.5)] ring-[6px] ring-[#0A0B10]/80 group"
+                                    className="relative w-15 h-15 bg-gradient-to-br from-orange-400 via-rose-500 to-rose-600 rounded-3xl flex items-center justify-center text-white shadow-[0_15px_35px_rgba(249,115,22,0.5)] ring-[6px] ring-[#0A0B10]/80 group"
                                 >
-                                    <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/30 pointer-events-none" />
+                                    <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/30 pointer-events-none" />
                                     <Plus size={30} strokeWidth={3.5} className="drop-shadow-lg group-active:rotate-90 transition-transform duration-300" />
                                 </motion.button>
                             </div>
