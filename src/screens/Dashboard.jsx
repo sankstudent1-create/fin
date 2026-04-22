@@ -5,13 +5,15 @@ import {
     Home, BarChart3, Settings, Wallet, TrendingUp, TrendingDown,
     Plus, Search, Calendar, ChevronDown, ChevronLeft, Download, Share2,
     Receipt, ScanLine, Headphones, Loader2, X, Check, ShieldCheck,
-    FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic, MonitorSmartphone, MessageSquareText
+    FileText, Eye, Palette, Printer, Sparkles, Tag, Bot, Mic, MonitorSmartphone, MessageSquareText,
+    Sun, Moon
 } from 'lucide-react';
 import { useActivityTracker } from '../hooks/useActivityTracker';
 import { AIChatbot } from '../components/modals/AIChatbot';
 import { VoiceAssistantModal } from '../components/modals/VoiceAssistantModal';
 import { supabase } from '../config/supabase';
 import { StatCard } from '../components/dashboard/StatCard';
+import { BiometricLock } from '../components/modals/BiometricLock';
 import { TransactionItem } from '../components/dashboard/TransactionItem';
 import { TrendBarChart } from '../components/dashboard/TrendBarChart';
 import { AnalyticsDashboard } from '../components/dashboard/Analytics';
@@ -76,13 +78,26 @@ export const Dashboard = ({ session }) => {
     useEffect(() => {
         const root = document.documentElement;
         // Theme
-        if (currentPrefs.theme === 'light') {
-            root.classList.add('light-mode');
-            root.classList.remove('dark-mode');
-        } else {
-            root.classList.add('dark-mode');
-            root.classList.remove('light-mode');
-        }
+        const applyTheme = (theme) => {
+            if (theme === 'system') {
+                const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                root.classList.toggle('light-mode', !isDark);
+                root.classList.toggle('dark-mode', isDark);
+            } else if (theme === 'light') {
+                root.classList.add('light-mode');
+                root.classList.remove('dark-mode');
+            } else {
+                root.classList.add('dark-mode');
+                root.classList.remove('light-mode');
+            }
+        };
+        applyTheme(currentPrefs.theme);
+
+        // System theme listener
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => { if (currentPrefs.theme === 'system') applyTheme('system'); };
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
         // Density
         root.setAttribute('data-density', currentPrefs.ui_density || 'normal');
     }, [currentPrefs]);
@@ -151,6 +166,7 @@ export const Dashboard = ({ session }) => {
     const [previewZoom, setPreviewZoom] = useState(1);
     const [printVariant, setPrintVariant] = useState('classic');
     const [isSharing, setIsSharing] = useState(false);
+    const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
     const [calculatorPrintData, setCalculatorPrintData] = useState(null);
     const [showThemePicker, setShowThemePicker] = useState(false);
 
@@ -1023,6 +1039,18 @@ export const Dashboard = ({ session }) => {
                                 <ScanLine size={20} />
                             </button>
                             <button
+                                onClick={() => {
+                                    const newTheme = currentPrefs.theme === 'light' ? 'dark' : 'light';
+                                    const newPrefs = { ...currentPrefs, theme: newTheme };
+                                    setCurrentPrefs(newPrefs);
+                                    localStorage.setItem('orange_fin_prefs', JSON.stringify(newPrefs));
+                                }}
+                                className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 hover:bg-orange-500/20 hover:text-orange-400 transition-all hover:scale-105"
+                                title={`Switch to ${currentPrefs.theme === 'light' ? 'Dark' : 'Light'} Mode`}
+                            >
+                                {currentPrefs.theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                            </button>
+                            <button
                                 onClick={() => setShowSettings(true)}
                                 className="w-10 h-10 rounded-2xl overflow-hidden border border-white/10 hover:border-orange-500/50 hover:shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all"
                             >
@@ -1094,6 +1122,31 @@ export const Dashboard = ({ session }) => {
                                         <StatCard label="Income" value={stats.income} icon={TrendingUp} type="income" />
                                         <StatCard label="Expense" value={stats.expense} icon={TrendingDown} type="expense" />
                                     </div>
+
+                                    {/* Budget Progress Feature */}
+                                    {currentPrefs.budget_amount > 0 && (
+                                        <div className="glass-panel p-6 rounded-3xl border border-white/5 space-y-4">
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Monthly Budget Limit</p>
+                                                    <div className="flex items-baseline gap-2">
+                                                        <h3 className="text-2xl font-black text-main">₹{stats.expense.toLocaleString('en-IN')}</h3>
+                                                        <span className="text-xs font-bold text-dim">/ ₹{currentPrefs.budget_amount.toLocaleString('en-IN')}</span>
+                                                    </div>
+                                                </div>
+                                                <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${((stats.expense / currentPrefs.budget_amount) * 100) > 100 ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                                    {((stats.expense / currentPrefs.budget_amount) * 100) > 100 ? 'Limit Exceeded' : `${Math.round(100 - ((stats.expense / currentPrefs.budget_amount) * 100))}% Left`}
+                                                </div>
+                                            </div>
+                                            <div className="h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${Math.min((stats.expense / currentPrefs.budget_amount) * 100, 100)}%` }}
+                                                    className={`h-full rounded-full ${((stats.expense / currentPrefs.budget_amount) * 100) > 80 ? 'bg-gradient-to-r from-rose-500 to-red-600' : 'bg-gradient-to-r from-orange-400 to-amber-500'} shadow-[0_0_15px_rgba(249,115,22,0.3)]`}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Bottom Row: Mini Tools */}
                                     <div className="glass-panel p-6 rounded-3xl grid grid-cols-3 sm:grid-cols-6 gap-4 border border-white/5">
@@ -1222,9 +1275,21 @@ export const Dashboard = ({ session }) => {
                                     </div>
                                 </div>
 
-                                {/* Analytics Dashboard */}
-                                <AnalyticsDashboard transactions={filteredTransactions} />
-                            </motion.div>
+                                 {/* Analytics Dashboard Protected by Biometric Vault */}
+                                 {currentPrefs.biometric_enabled && !isVaultUnlocked ? (
+                                     <div className="h-[400px] flex items-center justify-center">
+                                         <BiometricLock
+                                             isOpen={true}
+                                             credentialId={currentPrefs.biometric_credential_id}
+                                             onUnlock={() => setIsVaultUnlocked(true)}
+                                             onCancel={() => setActiveTab('home')}
+                                             title="Data Vault Locked"
+                                         />
+                                     </div>
+                                 ) : (
+                                     <AnalyticsDashboard transactions={filteredTransactions} />
+                                 )}
+                             </motion.div>
                         )}
                     </AnimatePresence>
                 </main>

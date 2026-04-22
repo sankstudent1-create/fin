@@ -19,16 +19,19 @@ import { AnalyticsReport as PrintableReport, PrintStyles } from '../dashboard/Pr
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import ReactDOM from 'react-dom/client';
+import { isBiometricSupported, enrollBiometrics } from '../../utils/biometric';
 
 // ─── Preferences ────────────────────────────────────────────────────────────
 const PREFS_KEY = 'orange_fin_prefs';
 const DEFAULT_PREFS = {
     sound_enabled: true, sound_volume: 70, sound_duration: 300,
+    budget_amount: 50000,
     sound_effect: 'chime',
     sound_on_tx: true, sound_on_delete: true, sound_on_success: true,
     notification_enabled: true, popup_duration: 3000,
     popup_style: 'pill', popup_position: 'bottom',
-    theme: 'light', biometric_enabled: false,
+    theme: 'dark', biometric_enabled: false,
+    biometric_credential_id: null,
     ui_density: 'normal',   /* compact | normal | comfortable */
 };
 const loadPrefs = () => { try { const s = localStorage.getItem(PREFS_KEY); return s ? { ...DEFAULT_PREFS, ...JSON.parse(s) } : { ...DEFAULT_PREFS }; } catch { return { ...DEFAULT_PREFS }; } };
@@ -132,6 +135,33 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
         }
 
         setUploadingAvatar(false);
+    };
+
+// ── Biometric Toggle ───────────────────────────────────────────────────
+    const handleBiometricToggle = async () => {
+        if (prefs.biometric_enabled) {
+            updatePref('biometric_enabled', false);
+            updatePref('biometric_credential_id', null);
+            return;
+        }
+
+        try {
+            const supported = await isBiometricSupported();
+            if (!supported) {
+                alert("Biometric authentication is not supported on this device/browser.");
+                return;
+            }
+
+            const credId = await enrollBiometrics(user?.email || "Orange Finance User");
+            if (credId) {
+                updatePref('biometric_credential_id', credId);
+                updatePref('biometric_enabled', true);
+                showAvatarMsg('✅ Biometrics Enrolled!');
+            }
+        } catch (err) {
+            console.error("Biometric Enrollment Error:", err);
+            alert("Failed to enroll biometrics. Please ensure your device supports it and you have a secure lock active.");
+        }
     };
 
     const handleDeleteAvatar = async () => {
@@ -315,6 +345,7 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
             if (!res.ok) throw new Error(data.error || 'Failed to send email');
 
             setEmailSent(true);
+            showAvatarMsg('✅ Report Process Started!');
             setTimeout(() => setEmailSent(false), 5000);
         } catch (err) {
             console.error('Email report error:', err);
@@ -577,7 +608,7 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">📧 Email Report</p>
                         <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                            Send your financial report as a premium PDF to your registered email. Includes income, expenses, and full transaction history.
+                            Request your professional financial report. Our <b>backend engine</b> will generate a high-quality PDF and notify you via email once it's ready.
                         </p>
 
                         {/* Email preview */}
@@ -616,13 +647,13 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                                 }`}
                         >
                             {sendingEmail ? (
-                                <><Loader2 size={16} className="animate-spin" /> Generating & Sending...</>
+                                <><Loader2 size={16} className="animate-spin" /> Processing Backend Report...</>
                             ) : emailSent ? (
-                                <><Check size={16} /> Report Sent! Check your inbox ✉️</>
+                                <><Check size={16} /> Process Started! We'll notify you ✉️</>
                             ) : emailError ? (
                                 <><AlertTriangle size={16} /> {emailError}</>
                             ) : (
-                                <><Send size={16} /> Email My Report</>
+                                <><Send size={16} /> Generate & Email Report</>
                             )}
                         </button>
 
@@ -796,6 +827,30 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
                             ))}
                         </div>
                         <p className="text-[10px] text-slate-400 ml-1 mt-1">Updates colors and interface styling 🎨</p>
+                    </div>
+
+                    {/* Monthly Budget */}
+                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-5">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-white rounded-xl text-emerald-500 shadow-sm"><Sparkles size={18} /></div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-800">Monthly Budget Goal</p>
+                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Target spending limit</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                             <div className="relative flex-1">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+                                <input
+                                    type="number"
+                                    value={prefs.budget_amount}
+                                    onChange={e => updatePref('budget_amount', parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-white border border-emerald-100 rounded-xl pl-8 pr-4 py-3 font-mono font-bold text-slate-700 outline-none focus:border-emerald-400 transition-all text-sm"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-emerald-600/70 mt-3 font-medium italic">Setting a budget helps you track progress on the dashboard.</p>
                     </div>
 
                     {/* UI Density / Size */}
@@ -1073,8 +1128,8 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
 
                     <SectionLabel>Authentication</SectionLabel>
 
-                    <SettingRow icon={Fingerprint} title="Biometric Login" desc="Use Face ID or fingerprint" iconColor="text-emerald-500" iconBg="bg-emerald-50">
-                        <Toggle checked={prefs.biometric_enabled} onChange={() => updatePref('biometric_enabled', !prefs.biometric_enabled)} color="emerald" />
+                    <SettingRow icon={Fingerprint} title="Biometric Vault" desc="Lock Data & Admin with Face ID" iconColor="text-emerald-500" iconBg="bg-emerald-50">
+                        <Toggle checked={prefs.biometric_enabled} onChange={handleBiometricToggle} color="emerald" />
                     </SettingRow>
 
                     {/* Session Info */}

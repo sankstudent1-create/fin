@@ -4,6 +4,8 @@ import { AdminLogin } from '../../components/admin/AdminLogin';
 import { AdminDashboard } from '../../components/admin/AdminDashboard';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { BiometricLock } from '../../components/modals/BiometricLock';
+import { getUserPrefs } from '../../components/modals/SettingsModal';
 
 export const AdminScreen = () => {
     const [session, setSession] = useState(null);
@@ -11,6 +13,10 @@ export const AdminScreen = () => {
     const [loading, setLoading] = useState(true);
     const hasVerified = useRef(false);
     const isVerifying = useRef(false);
+
+    // Biometric states
+    const [prefs] = useState(getUserPrefs());
+    const [biometricLocked, setBiometricLocked] = useState(getUserPrefs().biometric_enabled);
 
     // 2FA states for already-logged-in users accessing admin route
     const [needs2FA, setNeeds2FA] = useState(false);
@@ -223,6 +229,18 @@ export const AdminScreen = () => {
                     </form>
                 </div>
             </div>
+        );
+    }
+
+    if (isAdmin && biometricLocked) {
+        return (
+            <BiometricLock
+                isOpen={true}
+                credentialId={prefs.biometric_credential_id}
+                onUnlock={() => setBiometricLocked(false)}
+                onCancel={() => window.location.href = '/'}
+                title="Admin Vault Locked"
+            />
         );
     }
 
