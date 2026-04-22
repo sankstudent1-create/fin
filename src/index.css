@@ -6,7 +6,13 @@
     --color-primary-light: #fdba74;
     --color-primary-dark: #c2410c;
     --color-bg-base: #0B0D0F; /* Deep Space Black */
-    --color-surface: #14161A;
+    --color-bg-surface: #14161A;
+
+    --color-main: var(--text-main);
+    --color-dim: var(--text-dim);
+    --color-muted: var(--text-muted);
+    --color-border-main: var(--border-main);
+    --color-surface: var(--bg-surface);
 
     --shadow-neon: 0 0 40px rgba(249, 115, 22, 0.15);
     --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
