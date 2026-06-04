@@ -21,19 +21,7 @@ import jsPDF from 'jspdf';
 import ReactDOM from 'react-dom/client';
 
 // ─── Preferences ────────────────────────────────────────────────────────────
-const PREFS_KEY = 'orange_fin_prefs';
-const DEFAULT_PREFS = {
-    sound_enabled: true, sound_volume: 70, sound_duration: 300,
-    sound_effect: 'chime',
-    sound_on_tx: true, sound_on_delete: true, sound_on_success: true,
-    notification_enabled: true, popup_duration: 3000,
-    popup_style: 'pill', popup_position: 'bottom',
-    theme: 'light', biometric_enabled: false,
-    ui_density: 'normal',   /* compact | normal | comfortable */
-};
-const loadPrefs = () => { try { const s = localStorage.getItem(PREFS_KEY); return s ? { ...DEFAULT_PREFS, ...JSON.parse(s) } : { ...DEFAULT_PREFS }; } catch { return { ...DEFAULT_PREFS }; } };
-const savePrefs = (p) => localStorage.setItem(PREFS_KEY, JSON.stringify(p));
-export const getUserPrefs = loadPrefs;
+import { getUserPrefs, saveUserPrefs } from '../../utils/preferences';
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 const Toggle = ({ checked, onChange, color = 'orange' }) => {
@@ -65,7 +53,7 @@ const SectionLabel = ({ children }) => (
 // ─── MAIN MODAL ──────────────────────────────────────────────────────────────
 export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload, onOpenDigitalID, transactions = [], allTransactions = [], stats = {}, filterLabel = '' }) => {
     const [activeTab, setActiveTab] = useState('profile');
-    const [prefs, setPrefs] = useState(loadPrefs());
+    const [prefs, setPrefs] = useState(getUserPrefs());
     const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || '');
     const [savingName, setSavingName] = useState(false);
     const [nameSaved, setNameSaved] = useState(false);
@@ -82,7 +70,7 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
     // Keep localAvatar in sync when avatarUrl prop changes
     useEffect(() => { setLocalAvatar(avatarUrl || ''); }, [avatarUrl]);
 
-    useEffect(() => { savePrefs(prefs); }, [prefs]);
+    useEffect(() => { saveUserPrefs(prefs); }, [prefs]);
     const updatePref = (key, value) => setPrefs(prev => ({ ...prev, [key]: value }));
 
     // ── Avatar helpers ───────────────────────────────────────────────────────
@@ -204,60 +192,8 @@ export const SettingsModal = ({ isOpen, onClose, user, avatarUrl, onAvatarUpload
 
             if (reportTxs.length === 0) throw new Error('No transactions in selected period.');
 
-            // Step 1: Render the premium AnalyticsReport off-screen
-            const container = document.createElement('div');
-            container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1;';
-            document.body.appendChild(container);
-
-            // Create React root and render the same PrintView used by print()
-            const root = ReactDOM.createRoot(container);
-            await new Promise((resolve) => {
-                root.render(
-                    <div id="print-root-email">
-                        <PrintStyles />
-                        <PrintableReport
-                            user={user}
-                            stats={reportStats}
-                            transactions={reportTxs}
-                            filterLabel={reportLabel}
-                        />
-                    </div>
-                );
-                // Wait for fonts + rendering to settle
-                setTimeout(resolve, 1500);
-            });
-
-            // Step 2: Capture with html2canvas at 2x resolution
-            const element = container.querySelector('#print-root-email');
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false,
-                windowWidth: 794, // A4 width in px at 96dpi
-            });
-
-            // Step 3: Convert to PDF (A4 dimensions)
-            const imgData = canvas.toDataURL('image/jpeg', 0.92);
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = 210;
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-            // If content is taller than one page, split across pages
-            const pageHeight = 297; // A4 height in mm
-            let yOffset = 0;
-
-            while (yOffset < pdfHeight) {
-                if (yOffset > 0) pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfWidth, pdfHeight);
-                yOffset += pageHeight;
-            }
-
-            // Cleanup
-            root.unmount();
-            document.body.removeChild(container);
-
-            // Step 4: Convert PDF to base64
+            // Generate native vector PDF (completely bypass html2canvas to fix Android 9 compatibility and speed up execution)
+            const pdf = createPDF(reportTxs, reportStats, user, reportLabel);
             const pdfBlob = pdf.output('blob');
             const base64 = await new Promise((resolve, reject) => {
                 const reader = new FileReader();

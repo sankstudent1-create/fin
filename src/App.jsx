@@ -7,6 +7,8 @@ import { ResetPasswordScreen } from './screens/ResetPasswordScreen';
 import { Dashboard } from './screens/Dashboard';
 import { SupportModal } from './components/modals/SupportModal';
 import { BannerModal } from './components/modals/BannerModal';
+import { BiometricLockModal } from './components/modals/BiometricLockModal';
+import { getUserPrefs } from './utils/preferences';
 
 import { AdminScreen } from './screens/admin/AdminScreen';
 
@@ -49,6 +51,31 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [isAdminRoute, setIsAdminRoute] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      const prefs = getUserPrefs();
+      if (prefs && prefs.biometric_enabled) {
+        setIsLocked(true);
+      }
+    } else {
+      setIsLocked(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && session) {
+        const prefs = getUserPrefs();
+        if (prefs && prefs.biometric_enabled) {
+          setIsLocked(true);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [session]);
 
   useEffect(() => {
     // Check if we are on the admin path
@@ -136,6 +163,16 @@ export default function App() {
       <AnimatePresence>
         {showSupport && session && !recoveryMode && (
           <BannerModal isOpen={showSupport} onClose={() => setShowSupport(false)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {isLocked && session && !recoveryMode && !isAdminRoute && (
+          <BiometricLockModal
+            isOpen={isLocked}
+            user={session.user}
+            supabase={supabase}
+            onUnlock={() => setIsLocked(false)}
+          />
         )}
       </AnimatePresence>
       {loading && !session ? (

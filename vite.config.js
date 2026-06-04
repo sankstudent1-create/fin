@@ -6,6 +6,7 @@ import vitePluginServiceWorker from './vite-plugin-sw.js'
 export default defineConfig({
   plugins: [react(), vitePluginServiceWorker()],
   build: {
+    target: ['chrome69', 'es2015'],
     // Disable automatic <link rel="modulepreload"> injection
     // This eliminates the ~150 "preloaded resource not used" browser warnings
     modulePreload: { polyfill: false },
